@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    OpenLeanPrint.Core is deliberately platform-neutral (plain net8.0, no Windows
+    dependencies). It contains the domain model and the imposition (N-up /
+    booklet) engine - pure geometry that can be unit-tested on any OS.
+    Everything Windows-specific (print capture, rendering, spooling) lives in
+    separate projects that reference this one.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>OpenLeanPrint.Core</RootNamespace>
+    <AssemblyName>OpenLeanPrint.Core</AssemblyName>
+  </PropertyGroup>
+
+</Project>

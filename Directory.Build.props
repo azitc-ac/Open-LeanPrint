@@ -1,0 +1,16 @@
+<Project>
+  <!--
+    Common build settings shared by every project in the OpenLeanPrint solution.
+    Kept intentionally minimal so the portable Core can build on any OS
+    (Linux/macOS CI as well as Windows), while the Windows app targets net8.0-windows.
+  -->
+  <PropertyGroup>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <!-- CS1591: missing XML doc comment on public member - too noisy for an early-stage repo. -->
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+  </PropertyGroup>
+</Project>
