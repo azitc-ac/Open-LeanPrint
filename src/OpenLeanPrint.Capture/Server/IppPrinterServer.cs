@@ -40,6 +40,9 @@ public sealed class IppPrinterServer : IDisposable
     private readonly HttpListener _listener = new();
     private readonly ConcurrentDictionary<int, PendingJob> _pendingJobs = new();
     private readonly DateTimeOffset _startedAt = DateTimeOffset.UtcNow;
+
+    // Stable UUID advertised as printer-uuid (IPP Everywhere requires one).
+    private const string PrinterUuid = "urn:uuid:6f4c6e50-7072-696e-7420-4f70656e4c50";
     private int _nextJobId;
     private CancellationTokenSource? _cts;
     private Task? _acceptLoop;
@@ -174,40 +177,91 @@ public sealed class IppPrinterServer : IDisposable
 
         int upTime = (int)Math.Max(1, (DateTimeOffset.UtcNow - _startedAt).TotalSeconds);
 
+        // --- Identity / URIs ---
         p.Add(new IppAttribute("printer-uri-supported", IppTag.Uri, _options.PrinterUri));
         p.Add(new IppAttribute("uri-authentication-supported", IppTag.Keyword, "none"));
         p.Add(new IppAttribute("uri-security-supported", IppTag.Keyword, "none"));
         p.Add(new IppAttribute("printer-name", IppTag.NameWithoutLanguage, _options.PrinterName));
         p.Add(new IppAttribute("printer-info", IppTag.TextWithoutLanguage, _options.PrinterName));
+        p.Add(new IppAttribute("printer-location", IppTag.TextWithoutLanguage, ""));
         p.Add(new IppAttribute("printer-make-and-model", IppTag.TextWithoutLanguage, "OpenLeanPrint Virtual Printer"));
+        p.Add(new IppAttribute("printer-uuid", IppTag.Uri, PrinterUuid));
+        p.Add(new IppAttribute("printer-device-id", IppTag.TextWithoutLanguage,
+            "MFG:OpenLeanPrint;MDL:Virtual Printer;CMD:PDF;CLS:PRINTER;"));
+
+        // --- State ---
         p.Add(new IppAttribute("printer-state", IppTag.Enum, (int)IppPrinterState.Idle));
         p.Add(new IppAttribute("printer-state-reasons", IppTag.Keyword, "none"));
+        p.Add(new IppAttribute("printer-is-accepting-jobs", IppTag.Boolean, true));
+        p.Add(new IppAttribute("queued-job-count", IppTag.Integer, _pendingJobs.Count));
+        p.Add(new IppAttribute("printer-up-time", IppTag.Integer, upTime));
+        p.Add(new IppAttribute("pages-per-minute", IppTag.Integer, 20));
+
+        // --- Protocol / operations ---
         p.Add(new IppAttribute("ipp-versions-supported", IppTag.Keyword, "1.1", "2.0"));
+        p.Add(new IppAttribute("ipp-features-supported", IppTag.Keyword, "ipp-everywhere"));
         p.Add(new IppAttribute("operations-supported", IppTag.Enum,
             (int)IppOperation.PrintJob, (int)IppOperation.ValidateJob,
             (int)IppOperation.CreateJob, (int)IppOperation.SendDocument,
-            (int)IppOperation.GetJobAttributes, (int)IppOperation.GetJobs,
-            (int)IppOperation.GetPrinterAttributes));
+            (int)IppOperation.CancelJob, (int)IppOperation.GetJobAttributes,
+            (int)IppOperation.GetJobs, (int)IppOperation.GetPrinterAttributes));
         p.Add(new IppAttribute("charset-configured", IppTag.Charset, "utf-8"));
         p.Add(new IppAttribute("charset-supported", IppTag.Charset, "utf-8"));
         p.Add(new IppAttribute("natural-language-configured", IppTag.NaturalLanguage, "en"));
         p.Add(new IppAttribute("generated-natural-language-supported", IppTag.NaturalLanguage, "en"));
+        p.Add(new IppAttribute("pdl-override-supported", IppTag.Keyword, "attempted"));
+        p.Add(new IppAttribute("compression-supported", IppTag.Keyword, "none"));
+        p.Add(new IppAttribute("job-creation-attributes-supported", IppTag.Keyword,
+            "copies", "media", "sides", "print-color-mode", "print-quality",
+            "printer-resolution", "orientation-requested"));
+
+        // --- Document formats (PDF preferred; raster advertised for IPP Everywhere acceptance) ---
         p.Add(new IppAttribute("document-format-default", IppTag.MimeMediaType, "application/pdf"));
         p.Add(new IppAttribute("document-format-supported", IppTag.MimeMediaType,
-            "application/pdf", "application/octet-stream"));
-        p.Add(new IppAttribute("printer-is-accepting-jobs", IppTag.Boolean, true));
-        p.Add(new IppAttribute("queued-job-count", IppTag.Integer, _pendingJobs.Count));
-        p.Add(new IppAttribute("pdl-override-supported", IppTag.Keyword, "attempted"));
-        p.Add(new IppAttribute("printer-up-time", IppTag.Integer, upTime));
-        p.Add(new IppAttribute("compression-supported", IppTag.Keyword, "none"));
-        p.Add(new IppAttribute("media-default", IppTag.Keyword, "iso_a4_210x297mm"));
-        p.Add(new IppAttribute("media-supported", IppTag.Keyword,
-            "iso_a4_210x297mm", "na_letter_8.5x11in"));
+            "application/pdf", "image/pwg-raster", "application/octet-stream"));
+
+        // --- Copies / finishings / quality ---
+        p.Add(new IppAttribute("copies-default", IppTag.Integer, 1));
+        p.Add(new IppAttribute("copies-supported", IppTag.RangeOfInteger, IppValues.RangeOfInteger(1, 999)));
+        p.Add(new IppAttribute("finishings-default", IppTag.Enum, 3)); // none
+        p.Add(new IppAttribute("finishings-supported", IppTag.Enum, 3));
+        p.Add(new IppAttribute("print-quality-default", IppTag.Enum, 4)); // normal
+        p.Add(new IppAttribute("print-quality-supported", IppTag.Enum, 3, 4, 5));
+        p.Add(new IppAttribute("orientation-requested-default", IppTag.Enum, 3)); // portrait
+        p.Add(new IppAttribute("orientation-requested-supported", IppTag.Enum, 3, 4)); // portrait, landscape
+        p.Add(new IppAttribute("color-supported", IppTag.Boolean, false));
+        p.Add(new IppAttribute("print-color-mode-default", IppTag.Keyword, "monochrome"));
+        p.Add(new IppAttribute("print-color-mode-supported", IppTag.Keyword, "monochrome"));
+
+        // --- Sides ---
         p.Add(new IppAttribute("sides-default", IppTag.Keyword, "one-sided"));
         p.Add(new IppAttribute("sides-supported", IppTag.Keyword,
             "one-sided", "two-sided-long-edge", "two-sided-short-edge"));
+
+        // --- Resolution ---
         p.Add(new IppAttribute("printer-resolution-default", IppTag.Resolution, IppValues.Resolution(300, 300)));
         p.Add(new IppAttribute("printer-resolution-supported", IppTag.Resolution, IppValues.Resolution(300, 300)));
+
+        // --- Media ---
+        p.Add(new IppAttribute("media-default", IppTag.Keyword, "iso_a4_210x297mm"));
+        p.Add(new IppAttribute("media-ready", IppTag.Keyword, "iso_a4_210x297mm"));
+        p.Add(new IppAttribute("media-supported", IppTag.Keyword,
+            "iso_a4_210x297mm", "na_letter_8.5x11in"));
+        p.Add(new IppAttribute("media-source-supported", IppTag.Keyword, "auto"));
+        p.Add(new IppAttribute("media-type-supported", IppTag.Keyword, "stationery"));
+        p.Add(new IppAttribute("media-left-margin-supported", IppTag.Integer, 0));
+        p.Add(new IppAttribute("media-right-margin-supported", IppTag.Integer, 0));
+        p.Add(new IppAttribute("media-top-margin-supported", IppTag.Integer, 0));
+        p.Add(new IppAttribute("media-bottom-margin-supported", IppTag.Integer, 0));
+        p.Add(new IppAttribute("output-bin-default", IppTag.Keyword, "face-down"));
+        p.Add(new IppAttribute("output-bin-supported", IppTag.Keyword, "face-down"));
+
+        // --- PWG Raster / URF descriptors (required for the class driver to accept a driverless queue) ---
+        p.Add(new IppAttribute("pwg-raster-document-resolution-supported", IppTag.Resolution, IppValues.Resolution(300, 300)));
+        p.Add(new IppAttribute("pwg-raster-document-sheet-back", IppTag.Keyword, "normal"));
+        p.Add(new IppAttribute("pwg-raster-document-type-supported", IppTag.Keyword, "sgray_8", "srgb_8"));
+        p.Add(new IppAttribute("urf-supported", IppTag.Keyword,
+            "CP1", "IS1", "MT1-2-3-4-5-6", "OB10", "PQ4", "RS300", "SRGB24", "V1.4", "W8", "DM1"));
 
         return response;
     }

@@ -17,4 +17,16 @@ public static class IppValues
         b[8] = units;
         return b;
     }
+
+    /// <summary>
+    /// Encodes an IPP <c>rangeOfInteger</c> value: lower and upper bounds as
+    /// two big-endian int32 (8 bytes total).
+    /// </summary>
+    public static byte[] RangeOfInteger(int lower, int upper)
+    {
+        var b = new byte[8];
+        BinaryPrimitives.WriteInt32BigEndian(b.AsSpan(0, 4), lower);
+        BinaryPrimitives.WriteInt32BigEndian(b.AsSpan(4, 4), upper);
+        return b;
+    }
 }

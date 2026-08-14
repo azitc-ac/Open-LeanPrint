@@ -58,6 +58,35 @@ public class IppServerTests
     }
 
     [Fact]
+    public async Task GetPrinterAttributes_AdvertisesIppEverywhereRequiredAttributes()
+    {
+        var options = new IppPrinterOptions { Port = FreePort() };
+        using var server = new IppPrinterServer(options);
+        server.Start();
+
+        var response = await PostAsync(options.HttpPrefix, NewRequest(IppOperation.GetPrinterAttributes, options.PrinterUri));
+        var printer = response.FirstGroup(IppTag.PrinterAttributes)!;
+
+        // A representative slice of the attributes the Windows IPP class driver
+        // needs before it will accept a driverless queue.
+        foreach (var name in new[]
+        {
+            "ipp-features-supported", "printer-uuid", "printer-device-id",
+            "print-color-mode-supported", "media-ready", "copies-supported",
+            "finishings-supported", "urf-supported", "pwg-raster-document-type-supported",
+            "job-creation-attributes-supported",
+        })
+        {
+            Assert.NotNull(printer.Find(name));
+        }
+
+        Assert.Equal("ipp-everywhere", printer.Find("ipp-features-supported")!.AsString());
+        Assert.StartsWith("urn:uuid:", printer.Find("printer-uuid")!.AsString());
+
+        await server.StopAsync();
+    }
+
+    [Fact]
     public async Task PrintJob_CapturesPdfAndParsesPages()
     {
         var options = new IppPrinterOptions { Port = FreePort() };
