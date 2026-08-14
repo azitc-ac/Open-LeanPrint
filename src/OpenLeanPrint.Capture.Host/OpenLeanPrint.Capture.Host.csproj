@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    A runnable host for the loopback IPP capture service. On Windows, register
+    the printer with scripts/Register-Printer.ps1, run this host, then print to
+    the "OpenLeanPrint" printer: captured jobs are logged and saved as PDFs.
+    It also runs on Linux/macOS for smoke-testing the server.
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>OpenLeanPrint.Capture.Host</RootNamespace>
+    <AssemblyName>OpenLeanPrint.Capture.Host</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\OpenLeanPrint.Capture\OpenLeanPrint.Capture.csproj" />
+  </ItemGroup>
+
+</Project>

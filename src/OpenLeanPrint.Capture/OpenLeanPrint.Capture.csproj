@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    OpenLeanPrint.Capture hosts a small loopback IPP print service and turns
+    captured jobs into the domain model. The IPP codec, the HTTP/IPP server and
+    the PDF page extraction are all platform-neutral (net8.0) so they can be
+    unit-tested on any OS. Only the printer *registration* is Windows-specific,
+    and that ships as a PowerShell script under /scripts.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>OpenLeanPrint.Capture</RootNamespace>
+    <AssemblyName>OpenLeanPrint.Capture</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="UglyToad.PdfPig" Version="1.7.0-custom-5" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\OpenLeanPrint.Core\OpenLeanPrint.Core.csproj" />
+  </ItemGroup>
+
+</Project>

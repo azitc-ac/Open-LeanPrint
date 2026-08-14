@@ -8,9 +8,10 @@ Designed from day one to run on **Windows on ARM (ARM64)** as well as x64, by
 avoiding the one thing that makes classic virtual-printer tools ARM-hostile:
 a third-party kernel/print driver.
 
-> Status: **early foundation.** The portable imposition engine (the geometric
-> core of the product) is implemented and unit-tested. The Windows capture,
-> rendering and UI layers are scaffolded on the roadmap below.
+> Status: **early foundation.** The portable imposition engine and the
+> driverless IPP **capture** layer (loopback IPP service + PDF extraction) are
+> implemented and unit-tested on any OS. Registering the printer on Windows and
+> the rendering/UI layers are next — see the roadmap below.
 
 ## Why another print tool?
 
@@ -55,12 +56,17 @@ Full detail, alternatives and trade-offs: [docs/ARCHITECTURE.md](docs/ARCHITECTU
 | Path | Description |
 |---|---|
 | `src/OpenLeanPrint.Core` | Platform-neutral domain model + imposition engine (net8.0, no Windows deps). |
+| `src/OpenLeanPrint.Capture` | Loopback IPP capture service + IPP codec + PDF page extraction (net8.0). |
+| `src/OpenLeanPrint.Capture.Host` | Runnable console host: logs and saves captured jobs. |
 | `tests/OpenLeanPrint.Core.Tests` | xUnit tests for the engine; run on any OS. |
+| `tests/OpenLeanPrint.Capture.Tests` | Codec, loopback-server and PDF tests; run on any OS. |
+| `scripts/` | Windows printer register/unregister PowerShell scripts. |
 | `docs/ARCHITECTURE.md` | How capture, rendering and forwarding fit together, and why. |
+| `docs/M1-CAPTURE.md` | The capture prototype: how to run and test it. |
 | `docs/ROADMAP.md` | Milestones from here to a usable app. |
 
-Planned (see roadmap): `src/OpenLeanPrint.Capture` (IPP loopback),
-`src/OpenLeanPrint.Render` (PDFium), `src/OpenLeanPrint.App` (WinUI 3 GUI).
+Planned (see roadmap): `src/OpenLeanPrint.Render` (PDFium),
+`src/OpenLeanPrint.App` (WinUI 3 GUI).
 
 ## Building & testing
 
