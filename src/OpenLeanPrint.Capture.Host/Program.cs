@@ -22,6 +22,12 @@ Directory.CreateDirectory(outDir);
 var options = new IppPrinterOptions { PrinterName = printerName, Port = port };
 using var server = new IppPrinterServer(options);
 
+server.RequestLog += (_, line) =>
+{
+    string stamp = DateTime.Now.ToString("HH:mm:ss", CultureInfo.InvariantCulture);
+    Console.WriteLine($"[{stamp}] {line}");
+};
+
 server.JobCaptured += (_, job) =>
 {
     string stamp = DateTime.Now.ToString("HH:mm:ss", CultureInfo.InvariantCulture);

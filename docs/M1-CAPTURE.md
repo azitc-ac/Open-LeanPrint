@@ -51,17 +51,24 @@ App prints ─► Microsoft in-box IPP class driver ─► OpenLeanPrint loopbac
    ```
    It prints the printer URI `ipp://localhost:6310/leanprint` and waits.
 
-2. **Register the printer** (new terminal):
+2. **Register the printer** — in an **elevated** PowerShell ("Run as
+   administrator"), from the repo folder:
    ```powershell
    .\scripts\Register-Printer.ps1 -Port 6310
    ```
-   If that does not produce a working printer, use the **manual method** (this
-   is the reliable path):
-   - Settings → *Printers & scanners* → **Add device**
-   - *The printer that I want isn't listed* → **Add manually**
-   - *Select a shared printer by name* and enter:
-     `http://localhost:6310/leanprint`
-   - Finish the wizard — Windows attaches using its IPP class driver.
+   This attaches the in-box **Microsoft IPP Class Driver** to the loopback URL.
+   The equivalent one-liner (Windows 11 / Protected Print) is just:
+   ```powershell
+   Add-Printer -IppURL http://localhost:6310/leanprint
+   ```
+   > Do **not** use *"Select a shared printer by name"* in the GUI — that path
+   > uses the legacy Internet Printing client, not the modern IPP class driver,
+   > and will not connect to the loopback service.
+
+   As soon as the printer is added, **watch the host window**: Windows sends a
+   `Get-Printer-Attributes` request, which the host now logs (e.g.
+   `POST /leanprint [...] IPP GetPrinterAttributes -> SuccessfulOk`). That line
+   confirms Windows is talking to the service.
 
 3. **Print** to the *OpenLeanPrint* printer from any app. The host logs the job
    (name, user, page count and sizes) and saves the PDF to `./captured/`.

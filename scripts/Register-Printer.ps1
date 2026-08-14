@@ -2,19 +2,18 @@
 .SYNOPSIS
     Registers a local Windows printer that points at the OpenLeanPrint loopback
     IPP capture service, using the in-box Microsoft IPP Class Driver (no
-    third-party print driver required).
+    third-party print driver required, Windows Protected Print compatible).
 
 .DESCRIPTION
-    OpenLeanPrint captures print jobs by hosting a loopback IPP endpoint and
-    letting Windows drive it with its built-in IPP class driver. This script
-    adds a printer connection to that endpoint.
-
-    NOTE: This script is a convenience wrapper and is still to be validated on
-    Windows on ARM / x64. If it does not create a working printer, use the
-    reliable manual method documented in docs/M1-CAPTURE.md ("Add a printer by
-    URL").
-
     Run the capture host FIRST (so the endpoint is listening), then this script.
+
+    IMPORTANT: run this in an **elevated** PowerShell ("Run as administrator") —
+    Add-Printer / Add-PrinterDriver usually require it.
+
+    The script tries the two supported ways to attach the IPP class driver to a
+    URL, newest first:
+      1. Add-Printer -IppURL <url>                        (Windows 11 / WPP)
+      2. Add-Printer -PortName <url> -DriverName "Microsoft IPP Class Driver"
 
 .PARAMETER Port
     TCP port the capture host listens on. Default 6310.
@@ -22,37 +21,71 @@
 .PARAMETER ResourcePath
     Resource path of the print queue. Default "leanprint".
 
+.PARAMETER Name
+    Printer name to create. Default "OpenLeanPrint".
+
 .EXAMPLE
     .\Register-Printer.ps1 -Port 6310
 #>
 [CmdletBinding()]
 param(
     [int]$Port = 6310,
-    [string]$ResourcePath = "leanprint"
+    [string]$ResourcePath = "leanprint",
+    [string]$Name = "OpenLeanPrint"
 )
 
 $ErrorActionPreference = "Stop"
-
-# Windows reaches the loopback IPP service over HTTP; the IPP client is invoked
-# via the "shared printer by URL" mechanism.
 $url = "http://localhost:$Port/$ResourcePath"
 
-Write-Host "Registering OpenLeanPrint printer -> $url"
+Write-Host "Registering printer '$Name' -> $url"
 Write-Host "(Make sure the capture host is running on port $Port first.)"
+Write-Host ""
 
+# 1. Make sure the in-box IPP class driver is available.
 try {
-    # This uses Windows' Internet Printing / IPP client to attach to the URL.
-    Add-Printer -ConnectionName $url
-    Write-Host "Printer connection added. Look for it in the printer list."
-    Write-Host "If it is missing or does not print, use the manual method in docs/M1-CAPTURE.md."
+    $driver = Get-PrinterDriver -Name "Microsoft IPP Class Driver" -ErrorAction SilentlyContinue
+    if (-not $driver) {
+        Write-Host "Installing 'Microsoft IPP Class Driver'..."
+        Add-PrinterDriver -Name "Microsoft IPP Class Driver"
+    }
 }
 catch {
-    Write-Warning "Automatic registration failed: $($_.Exception.Message)"
-    Write-Host ""
-    Write-Host "Reliable manual method:"
-    Write-Host "  1. Settings > Bluetooth & devices > Printers & scanners > Add device"
-    Write-Host "  2. 'The printer that I want isn't listed' / Add manually"
-    Write-Host "  3. 'Select a shared printer by name' and enter:"
-    Write-Host "       $url"
-    Write-Host "  4. Finish the wizard (Windows uses its IPP class driver)."
+    Write-Warning "Could not verify/add the IPP class driver: $($_.Exception.Message)"
+}
+
+$added = $false
+
+# 2. Preferred: Add-Printer -IppURL (Windows 11, Protected Print friendly).
+try {
+    Add-Printer -IppURL $url
+    Write-Host "Success: added via -IppURL."
+    $added = $true
+}
+catch {
+    Write-Warning "-IppURL method failed: $($_.Exception.Message)"
+}
+
+# 3. Fallback: explicit URL port + IPP class driver.
+if (-not $added) {
+    try {
+        Add-Printer -Name $Name -PortName $url -DriverName "Microsoft IPP Class Driver"
+        Write-Host "Success: added via -PortName + IPP class driver."
+        $added = $true
+    }
+    catch {
+        Write-Warning "-PortName method failed: $($_.Exception.Message)"
+    }
+}
+
+Write-Host ""
+if ($added) {
+    Write-Host "Printer added. Watch the capture host window: it should immediately"
+    Write-Host "log a 'Get-Printer-Attributes' request from Windows. Then print to the"
+    Write-Host "printer from any app to capture a job."
+}
+else {
+    Write-Host "Automatic registration did not succeed."
+    Write-Host "Try the manual method (elevated):"
+    Write-Host "    Add-Printer -IppURL $url"
+    Write-Host "or see docs/M1-CAPTURE.md for the GUI wizard steps."
 }

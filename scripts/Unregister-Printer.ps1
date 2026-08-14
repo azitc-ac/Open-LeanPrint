@@ -1,6 +1,10 @@
 <#
 .SYNOPSIS
-    Removes the OpenLeanPrint printer connection created by Register-Printer.ps1.
+    Removes the OpenLeanPrint printer created by Register-Printer.ps1.
+
+.DESCRIPTION
+    Run elevated ("Run as administrator"). Removes any printer whose name matches
+    -Name, or whose port points at the OpenLeanPrint loopback URL.
 
 .PARAMETER Port
     TCP port used when registering. Default 6310.
@@ -8,25 +12,36 @@
 .PARAMETER ResourcePath
     Resource path used when registering. Default "leanprint".
 
+.PARAMETER Name
+    Printer name used when registering. Default "OpenLeanPrint".
+
 .EXAMPLE
     .\Unregister-Printer.ps1 -Port 6310
 #>
 [CmdletBinding()]
 param(
     [int]$Port = 6310,
-    [string]$ResourcePath = "leanprint"
+    [string]$ResourcePath = "leanprint",
+    [string]$Name = "OpenLeanPrint"
 )
 
 $ErrorActionPreference = "Stop"
 $url = "http://localhost:$Port/$ResourcePath"
 
-$printer = Get-Printer | Where-Object { $_.Name -eq $url -or $_.Name -like "*$ResourcePath*" }
-if ($null -eq $printer) {
+# Match by printer name, by the URL used as a name, or by the port name.
+$printers = Get-Printer | Where-Object {
+    $_.Name -eq $Name -or
+    $_.Name -eq $url -or
+    $_.Name -like "*$ResourcePath*" -or
+    $_.PortName -like "*$ResourcePath*"
+}
+
+if (-not $printers) {
     Write-Host "No matching OpenLeanPrint printer found."
     return
 }
 
-foreach ($p in $printer) {
-    Write-Host "Removing printer: $($p.Name)"
+foreach ($p in $printers) {
+    Write-Host "Removing printer: $($p.Name)  (port: $($p.PortName))"
     Remove-Printer -Name $p.Name
 }

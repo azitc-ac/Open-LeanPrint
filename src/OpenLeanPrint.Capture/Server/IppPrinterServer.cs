@@ -53,6 +53,13 @@ public sealed class IppPrinterServer : IDisposable
     /// <summary>Raised on the thread pool whenever a complete job has been captured.</summary>
     public event EventHandler<CapturedJob>? JobCaptured;
 
+    /// <summary>
+    /// Raised for every incoming HTTP/IPP request with a short diagnostic line
+    /// (method, path, byte count, parsed operation or parse error). Useful for
+    /// seeing exactly what the OS sends while wiring up printer registration.
+    /// </summary>
+    public event EventHandler<string>? RequestLog;
+
     public IppPrinterOptions Options => _options;
 
     public void Start()
@@ -109,16 +116,25 @@ public sealed class IppPrinterServer : IDisposable
                 body = ms.ToArray();
             }
 
+            string method = context.Request.HttpMethod;
+            string rawUrl = context.Request.RawUrl ?? "/";
+
             IppMessage response;
+            string outcome;
             try
             {
                 var request = IppReader.Parse(body);
+                outcome = $"IPP {request.Operation} (v{request.VersionMajor}.{request.VersionMinor}, req#{request.RequestId})";
                 response = Dispatch(request);
+                outcome += $" -> {response.Status}";
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                outcome = $"not IPP / unparseable ({ex.GetType().Name})";
                 response = NewResponse(0, IppStatus.ClientErrorBadRequest);
             }
+
+            RequestLog?.Invoke(this, $"{method} {rawUrl} [{body.Length} bytes] {outcome}");
 
             byte[] responseBytes = IppWriter.Serialize(response);
             context.Response.StatusCode = 200;
