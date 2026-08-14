@@ -37,6 +37,18 @@ param(
 $ErrorActionPreference = "Stop"
 $url = "http://localhost:$Port/$ResourcePath"
 
+# Add-Printer / Add-PrinterDriver require elevation (PrintNightmare hardening).
+$isAdmin = ([Security.Principal.WindowsPrincipal] `
+    [Security.Principal.WindowsIdentity]::GetCurrent()
+    ).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+if (-not $isAdmin) {
+    Write-Warning "This script must run in an ELEVATED PowerShell."
+    Write-Host   "Close this window, right-click Windows Terminal / PowerShell ->"
+    Write-Host   "'Run as administrator', cd into the repo folder, then re-run:"
+    Write-Host   "    .\scripts\Register-Printer.ps1 -Port $Port"
+    return
+}
+
 Write-Host "Registering printer '$Name' -> $url"
 Write-Host "(Make sure the capture host is running on port $Port first.)"
 Write-Host ""
