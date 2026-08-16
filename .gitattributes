@@ -1,0 +1,15 @@
+# Normalise line endings so Windows checkouts don't show phantom modifications.
+* text=auto
+
+# Scripts that must keep CRLF on Windows.
+*.ps1 text eol=crlf
+*.cmd text eol=crlf
+*.bat text eol=crlf
+
+# Keep these LF everywhere.
+*.cs   text eol=lf
+*.csproj text eol=lf
+*.sln  text eol=crlf
+*.md   text eol=lf
+*.yml  text eol=lf
+*.json text eol=lf
