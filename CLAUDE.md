@@ -53,10 +53,7 @@ Roughly in priority order — confirm with the user which they want:
 2. **Look at the printed sheet** — a 4-up test page went to the Brother on
    2026-08-17 and the spooler completed it, but the paper itself has not been
    checked. Confirming margins/scale on paper closes M3's last exit criterion.
-3. **`watch` command** (sketched in [`docs/M3-PRINT.md`](docs/M3-PRINT.md)):
-   `FileSystemWatcher` on `captured/`, impose each new job with a preset and
-   print it. That is a usable "print → auto 4-up → printer" workflow *before*
-   the GUI exists.
+3. **Duplex hint and per-job presets** for printing.
 
 ## Build, test, run
 
@@ -70,6 +67,7 @@ dotnet run --project src/OpenLeanPrint.Cli -- impose in.pdf out.pdf --nup 2x2 --
 dotnet run --project src/OpenLeanPrint.Cli -- sample sample.pdf --pages 8
 dotnet run --project src/OpenLeanPrint.Cli -- list-printers
 dotnet run --project src/OpenLeanPrint.Cli -- print out.pdf --printer "Microsoft Print to PDF" --out proof.pdf
+dotnet run --project src/OpenLeanPrint.Cli -- watch captured --nup 2x2 --paper A4   # hands-free
 ```
 
 End-to-end capture test on Windows (see `docs/M1-CAPTURE.md`):
@@ -94,7 +92,7 @@ dotnet run --project src/OpenLeanPrint.Cli -- impose "captured\job-0001.pdf" out
 | `src/OpenLeanPrint.Capture.Host` | Runnable console host (logs + saves captured jobs). |
 | `src/OpenLeanPrint.Compose` | ImpositionResult → output PDF (PdfSharpCore). |
 | `src/OpenLeanPrint.Print` | Imposed PDF → Windows printer (PDFium raster + spooler). |
-| `src/OpenLeanPrint.Cli` | `openleanprint` CLI: `impose` / `sample` / `print` / `list-printers`. |
+| `src/OpenLeanPrint.Cli` | `openleanprint` CLI: `impose` / `sample` / `print` / `list-printers` / `watch`. |
 | `tests/**` | xUnit tests (Core, Capture, Compose, Print) — run on any OS. |
 | `scripts/*.ps1` | Windows printer register/unregister. |
 | `docs/` | ARCHITECTURE, ROADMAP, M1-CAPTURE, M2-IMPOSE, M3-PRINT. |

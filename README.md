@@ -63,7 +63,7 @@ Full detail, alternatives and trade-offs: [docs/ARCHITECTURE.md](docs/ARCHITECTU
 | `src/OpenLeanPrint.Capture.Host` | Runnable console host: logs and saves captured jobs. |
 | `src/OpenLeanPrint.Compose` | Imposes an `ImpositionResult` into an output PDF (PdfSharpCore, net8.0). |
 | `src/OpenLeanPrint.Print` | Prints an imposed PDF to a Windows printer (PDFium raster + spooler). |
-| `src/OpenLeanPrint.Cli` | `openleanprint` CLI: `impose` / `sample` / `print` / `list-printers`. |
+| `src/OpenLeanPrint.Cli` | `openleanprint` CLI: `impose` / `sample` / `print` / `list-printers` / `watch`. |
 | `tests/OpenLeanPrint.Core.Tests` | xUnit tests for the engine; run on any OS. |
 | `tests/OpenLeanPrint.Capture.Tests` | Codec, loopback-server and PDF tests; run on any OS. |
 | `tests/OpenLeanPrint.Compose.Tests` | Imposition-to-PDF composition tests; run on any OS. |

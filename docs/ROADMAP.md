@@ -62,7 +62,9 @@ render it live.
 - ◑ A 4-up sheet was also printed to the **physical Brother** queue and the
   spooler reported it complete (1/1 page, A4) — but the paper has not been
   looked at yet, so the printed layout is unconfirmed.
-- ▶ Duplex hint; optional `captured/` folder watcher for a GUI-free workflow.
+- ✅ `watch <folder>`: imposes (and optionally prints) every new PDF dropped into
+  a folder — the first hands-free workflow, no GUI required.
+- ▶ Duplex hint and per-job presets.
 
 Exit criteria: the paper-free PDF-driver test matches the imposed layout (met);
 4-up output comes out of a real printer correctly (job accepted and completed;

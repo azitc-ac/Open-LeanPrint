@@ -78,6 +78,36 @@ Options for `print`:
 to PDF*. The spooler writes that file asynchronously, so the CLI waits for it and
 reports its final size.
 
+## Hands-free: `watch`
+
+`watch` turns the pieces into an actual workflow — point it at the capture
+host's `captured/` folder and every job you print gets imposed (and optionally
+printed) by itself, no GUI needed:
+
+```powershell
+dotnet run --project src/OpenLeanPrint.Cli -- watch captured --nup 2x2 --paper A4 --margin 8 `
+    --printer "Brother MFC-9332CDW Printer"
+```
+
+| Option | Meaning | Default |
+|---|---|---|
+| `--printer NAME` | also print each imposed result | off — only write files |
+| `--out-dir DIR` | where imposed PDFs are written | `<folder>/imposed` |
+| `--existing` | also process PDFs already in the folder | off — only new ones |
+| `--dpi N` | rasterisation resolution when printing | `200` |
+
+It takes the same layout options as `impose` (`--nup`, `--booklet`, `--paper`,
+`--margin`, `--gutter`). Ctrl+C stops it cleanly.
+
+Two details matter in practice: a file-creation event fires long before the
+writer is finished, so each job is only picked up once it has stopped growing
+*and* can be opened exclusively; and the output folder is skipped when it sits
+inside the watched folder, so the watcher cannot feed on its own results. A job
+that fails to impose is logged and skipped — it does not take the watcher down.
+
+Defaults are deliberately conservative: only *new* files are processed, so
+pointing it at a folder of existing documents does not print them all at once.
+
 ## Verified
 
 On **Windows 11 ARM64** (dotnet `win-arm64`), against *Microsoft Print to PDF* —
@@ -116,8 +146,5 @@ margins, scale and colour are the last thing to eyeball.
 ## Next
 
 - Look at the printed sheet from the Brother and confirm the layout on paper.
-- Optional `watch <captured-folder> --nup 2x2 --printer "…"`: impose and print
-  every new `job-*.pdf` automatically — a usable workflow before the GUI exists
-  (`FileSystemWatcher`, debounced until the file is fully written).
 - Duplex hint and per-job presets.
 - Later: send PDF straight to IPP printers to keep vectors instead of rasterising.

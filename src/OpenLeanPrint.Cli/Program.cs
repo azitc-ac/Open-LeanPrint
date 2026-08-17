@@ -18,6 +18,7 @@ try
         case "sample": return Sample(args[1..]);
         case "print": return PrintPdf(args[1..]);
         case "list-printers" or "printers": return ListPrinters();
+        case "watch": return Watch(args[1..]);
         case "-h" or "--help" or "help": PrintUsage(); return 0;
         default:
             Console.Error.WriteLine($"Unknown command '{args[0]}'.");
@@ -41,35 +42,12 @@ static int Impose(string[] a)
 
     string input = a[0];
     string output = a[1];
-    var opts = ArgMap.Parse(a[2..]);
+    var settings = ImposeRunner.Parse(ArgMap.Parse(a[2..]));
 
-    var paper = PaperSizes.ByName(opts.Get("paper", "A4")) ?? PaperSizes.A4;
-    double marginMm = opts.GetDouble("margin", 0);
-    double gutter = opts.GetDouble("gutter", 0);
-    byte[] src = File.ReadAllBytes(input);
-    var imposer = new PdfImposer();
-
-    byte[] outPdf;
-    if (opts.Has("booklet"))
-    {
-        outPdf = imposer.ImposeBookletToPdf(src, paper, PtMargins.UniformMm(marginMm), gutter);
-        Console.WriteLine($"Booklet: {input} -> {output} (sheet {opts.Get("paper", "A4")})");
-    }
-    else
-    {
-        var (rows, cols) = ParseNUp(opts.Get("nup", "2x2"));
-        var settings = ImpositionSettings.NUp(rows, cols) with
-        {
-            SheetSize = paper,
-            Margins = PtMargins.UniformMm(marginMm),
-            GutterX = gutter,
-            GutterY = gutter,
-        };
-        outPdf = imposer.ImposeToPdf(src, settings);
-        Console.WriteLine($"{rows}x{cols}-up: {input} -> {output} (sheet {opts.Get("paper", "A4")})");
-    }
-
+    byte[] outPdf = ImposeRunner.Run(File.ReadAllBytes(input), settings);
     File.WriteAllBytes(output, outPdf);
+
+    Console.WriteLine($"{settings.Describe()}: {input} -> {output}");
     Console.WriteLine($"Wrote {outPdf.Length:N0} bytes.");
     return 0;
 }
@@ -191,15 +169,51 @@ static int ListPrinters()
     return 0;
 }
 
-static (int Rows, int Cols) ParseNUp(string s)
+static int Watch(string[] a)
 {
-    var parts = s.ToLowerInvariant().Split('x', 'X');
-    if (parts.Length == 2 && int.TryParse(parts[0], out int r) && int.TryParse(parts[1], out int c) && r > 0 && c > 0)
-        return (r, c);
-    // Allow a single number: 4 -> 2x2, 2 -> 1x2, 9 -> 3x3, 6 -> 2x3.
-    if (int.TryParse(s, out int n) && n > 0)
-        return n switch { 1 => (1, 1), 2 => (1, 2), 4 => (2, 2), 6 => (2, 3), 9 => (3, 3), 16 => (4, 4), _ => (1, n) };
-    throw new ArgumentException($"Invalid --nup value '{s}'. Use RxC (e.g. 2x2) or a count (e.g. 4).");
+    if (a.Length < 1)
+    {
+        Console.Error.WriteLine("Usage: openleanprint watch <folder> [--nup RxC] [--booklet] [--paper A4] " +
+                                "[--margin MM] [--gutter PT] [--printer NAME] [--out-dir DIR] [--existing]");
+        return 1;
+    }
+
+    string folder = a[0];
+    if (!Directory.Exists(folder))
+    {
+        Console.Error.WriteLine($"Folder not found: {folder}");
+        return 1;
+    }
+
+    var opts = ArgMap.Parse(a[1..]);
+    var impose = ImposeRunner.Parse(opts);
+    string? printer = opts.Has("printer") ? opts.Get("printer", string.Empty) : null;
+    if (printer is not null && !OperatingSystem.IsWindows())
+    {
+        Console.Error.WriteLine("--printer needs Windows; without it the watcher only writes imposed PDFs.");
+        return 1;
+    }
+
+    string outDir = opts.Get("out-dir", Path.Combine(folder, "imposed"));
+    int dpi = (int)opts.GetDouble("dpi", 200);
+
+    using var watcher = new JobWatcher(folder, outDir, impose, printer, dpi);
+    using var cancellation = new CancellationTokenSource();
+    Console.CancelKeyPress += (_, e) =>
+    {
+        e.Cancel = true; // stop cleanly instead of killing the process
+        cancellation.Cancel();
+    };
+
+    Console.WriteLine($"Watching {Path.GetFullPath(folder)} for new PDFs");
+    Console.WriteLine($"  layout: {impose.Describe()}");
+    Console.WriteLine($"  output: {Path.GetFullPath(outDir)}");
+    if (printer is not null) Console.WriteLine($"  printing to: \"{printer}\" at {dpi} dpi");
+    Console.WriteLine("Press Ctrl+C to stop.");
+
+    watcher.Run(opts.Has("existing"), cancellation.Token);
+    Console.WriteLine("Stopped.");
+    return 0;
 }
 
 static void PrintUsage()
@@ -223,9 +237,16 @@ static void PrintUsage()
     Console.WriteLine();
     Console.WriteLine("  list-printers                          List installed printers (Windows only)");
     Console.WriteLine();
+    Console.WriteLine("  watch <folder> [options]               Impose (and optionally print) every new PDF in a folder");
+    Console.WriteLine("     --printer NAME  also print each imposed result      default: only write files");
+    Console.WriteLine("     --out-dir DIR   where imposed PDFs go               default <folder>/imposed");
+    Console.WriteLine("     --existing      also process PDFs already in there  default: only new ones");
+    Console.WriteLine("     plus the layout options of 'impose' (--nup, --booklet, --paper, --margin, --gutter)");
+    Console.WriteLine();
     Console.WriteLine("Examples:");
     Console.WriteLine("  openleanprint sample sample.pdf --pages 8");
     Console.WriteLine("  openleanprint impose captured/job-0002.pdf out-4up.pdf --nup 2x2 --paper A4 --margin 8 --gutter 6");
     Console.WriteLine("  openleanprint impose report.pdf booklet.pdf --booklet --paper A4");
     Console.WriteLine("  openleanprint print out-4up.pdf --printer \"Microsoft Print to PDF\" --out proof.pdf");
+    Console.WriteLine("  openleanprint watch captured --nup 2x2 --paper A4 --margin 8 --printer \"Brother MFC-9332CDW Printer\"");
 }
