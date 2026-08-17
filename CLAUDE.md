@@ -40,9 +40,11 @@ script is blocked, say so rather than working around security.
 
 - **M4 — desktop app** ◑ (`OpenLeanPrint.App`, **WPF**): job pool (several PDFs
   combined onto shared sheets), presets, live WYSIWYG preview, print, save PDF,
-  settings that survive a restart, and "Collect captured jobs" (new jobs from
-  the capture host drop into the pool). Verified by driving the real window.
-  Tray/installer still open — see [`docs/M4-APP.md`](docs/M4-APP.md).
+  settings that survive a restart, "Collect captured jobs" (new jobs from the
+  capture host drop into the pool), drag & drop, and a tray icon that keeps
+  collecting with the window closed. Verified by driving the real window.
+  `scripts/Publish-App.ps1` produces one self-contained exe; only MSIX is left —
+  see [`docs/M4-APP.md`](docs/M4-APP.md).
 - **`watch`** ✅: imposes (and optionally prints) every new PDF in a folder — the
   hands-free workflow. Arrival detection is `CapturedFolderWatcher` in
   `OpenLeanPrint.Capture`, shared with the app and unit-tested.
@@ -58,9 +60,10 @@ and tests — **do not add the WPF app to it**, WPF cannot build on Linux.
 
 Roughly in priority order — confirm with the user which they want:
 
-1. **App polish.** Settings persistence and collecting captured jobs are done;
-   what is left is a tray icon (collect while the window is closed), drag & drop
-   onto the pool, and an MSIX installer.
+1. **MSIX installer** — the only piece of M4 still open, and it is *blocked*:
+   the machine has no Windows SDK (`makeappx`/`signtool`) and there is no
+   code-signing certificate. `scripts/Publish-App.ps1` is the working
+   alternative (one self-contained exe per runtime).
 2. **Look at the printed sheet** — a 4-up test page went to the Brother on
    2026-08-17 and the spooler completed it, but the paper itself has not been
    checked. Confirming margins/scale on paper closes M3's last exit criterion.
@@ -111,7 +114,7 @@ dotnet run --project src/OpenLeanPrint.Cli -- impose "captured\job-0001.pdf" out
 | `src/OpenLeanPrint.App` | WPF desktop app: pool, live preview, print. Not in OpenLeanPrint.sln. |
 | `src/OpenLeanPrint.Cli` | `openleanprint` CLI: `impose` / `sample` / `print` / `list-printers` / `watch`. |
 | `tests/**` | xUnit tests (Core, Capture, Compose, Print) — run on any OS. |
-| `scripts/*.ps1` | Windows printer register/unregister. |
+| `scripts/*.ps1` | Windows printer register/unregister; `Publish-App.ps1` for a distributable build. |
 | `docs/` | ARCHITECTURE, ROADMAP, M1-CAPTURE, M2-IMPOSE, M3-PRINT. |
 
 ## Conventions & guardrails
@@ -136,6 +139,12 @@ dotnet run --project src/OpenLeanPrint.Cli -- impose "captured\job-0001.pdf" out
   resource dictionary) so a window can be hosted or rendered without booting
   `App`. WPF implicitly imports `System.Windows.Shapes`, so files that touch the
   file system need `using Path = System.IO.Path;`.
+- **The app also enables WinForms** — only for the tray `NotifyIcon`. Its
+  implicit usings are removed in the csproj (`<Using Remove="System.Windows.Forms" />`
+  and `System.Drawing`), otherwise `Application`, `MessageBox`, `Point` and
+  `Size` become ambiguous with WPF's. Keep WinForms types behind `TrayPresence`.
+- **`ShutdownMode` is `OnExplicitShutdown`** so hiding to the tray cannot end
+  the app; `MainWindow.OnClosed` is the single place that shuts it down.
 - **Keep `OpenLeanPrint.Core` free of Windows/native dependencies** so the
   geometric core stays unit-testable on any OS. New platform-neutral logic
   should stay testable too.

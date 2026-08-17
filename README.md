@@ -101,8 +101,15 @@ dotnet build OpenLeanPrint.Windows.sln
 # The desktop app: pool PDFs, preview the imposed sheets, print
 dotnet run --project src/OpenLeanPrint.App
 
-# Or headless: impose every new PDF in a folder and print it
-dotnet run --project src/OpenLeanPrint.Cli -- watch captured --nup 2x2 --paper A4
+# Or headless: impose every new PDF the capture host writes, and print it
+dotnet run --project src/OpenLeanPrint.Cli -- watch --nup 2x2 --paper A4
+```
+
+To get a copyable build — one self-contained executable, no .NET needed on the
+target machine:
+
+```powershell
+.\scripts\Publish-App.ps1               # or -Runtime win-x64
 ```
 
 ## Using the engine

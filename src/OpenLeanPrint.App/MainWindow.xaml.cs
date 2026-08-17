@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Globalization;
 using System.IO;
 using System.Windows;
@@ -43,6 +44,8 @@ public partial class MainWindow : Window
     private int _sheetCount;
     private CancellationTokenSource? _work;
     private CapturedFolderWatcher? _capture;
+    private readonly TrayPresence _tray;
+    private bool _exiting;
 
     private int _rows = 2;
     private int _columns = 2;
@@ -66,6 +69,11 @@ public partial class MainWindow : Window
             _debounce.Stop();
             _ = RefreshAsync();
         };
+
+        _tray = new TrayPresence();
+        _tray.ShowRequested += (_, _) => Dispatcher.Invoke(RestoreFromTray);
+        _tray.ExitRequested += (_, _) => Dispatcher.Invoke(ExitForGood);
+        _tray.CollectingChanged += (_, collecting) => Dispatcher.Invoke(() => SetCollecting(collecting));
 
         ApplySettings(AppSettings.Load());
         UpdateControls();
@@ -94,11 +102,7 @@ public partial class MainWindow : Window
         CheckMatchingPreset();
 
         // Restoring this means the app picks up where it left off: still collecting.
-        if (settings.CollectCapturedJobs)
-        {
-            CollectToggle.IsChecked = true;
-            StartCollecting();
-        }
+        if (settings.CollectCapturedJobs) SetCollecting(true);
     }
 
     private AppSettings CurrentSettings() => new()
@@ -113,11 +117,47 @@ public partial class MainWindow : Window
         CollectCapturedJobs = CollectToggle.IsChecked == true,
     };
 
+    /// <summary>
+    /// Closing the window while collecting only hides it — the whole point of
+    /// collecting is that jobs keep arriving. "Exit" in the tray menu is how you
+    /// really quit.
+    /// </summary>
+    protected override void OnClosing(CancelEventArgs e)
+    {
+        if (!_exiting && _capture is not null)
+        {
+            e.Cancel = true;
+            Hide();
+            _tray.Notify("Still collecting",
+                         "OpenLeanPrint keeps collecting captured jobs. Double-click the tray icon to bring it back.");
+            return;
+        }
+        base.OnClosing(e);
+    }
+
     protected override void OnClosed(EventArgs e)
     {
         CurrentSettings().Save();
         StopCollecting();
+        _tray.Dispose();
         base.OnClosed(e);
+
+        // ShutdownMode is OnExplicitShutdown so hiding to the tray cannot end the
+        // app; that makes this the one place that ends it.
+        Application.Current?.Shutdown();
+    }
+
+    private void RestoreFromTray()
+    {
+        Show();
+        if (WindowState == WindowState.Minimized) WindowState = WindowState.Normal;
+        Activate();
+    }
+
+    private void ExitForGood()
+    {
+        _exiting = true;
+        Close();
     }
 
     /// <summary>Lights up the preset button that matches the current layout, if any.</summary>
@@ -132,10 +172,17 @@ public partial class MainWindow : Window
 
     // ---------- collecting captured jobs ----------
 
-    private void Collect_Click(object sender, RoutedEventArgs e)
+    private void Collect_Click(object sender, RoutedEventArgs e) => SetCollecting(CollectToggle.IsChecked == true);
+
+    /// <summary>Single entry point, so the toolbar toggle and the tray menu cannot drift apart.</summary>
+    private void SetCollecting(bool collecting)
     {
-        if (CollectToggle.IsChecked == true) StartCollecting();
+        if (collecting) StartCollecting();
         else StopCollecting();
+
+        bool actuallyCollecting = _capture is not null;
+        CollectToggle.IsChecked = actuallyCollecting;
+        _tray.SetCollecting(actuallyCollecting);
     }
 
     private void StartCollecting()
@@ -147,23 +194,55 @@ public partial class MainWindow : Window
             // Only jobs that arrive from now on - the folder may hold older jobs
             // the user has no interest in reprinting.
             _capture = new CapturedFolderWatcher(CaptureLocations.DefaultFolder);
-            _capture.JobArrived += (_, path) => Dispatcher.Invoke(() => LoadFiles(new[] { path }));
+            _capture.JobArrived += (_, path) => Dispatcher.Invoke(() => CollectJob(path));
             _capture.Start();
             StatusText.Text = $"Collecting jobs from {CaptureLocations.DefaultFolder}";
         }
         catch (Exception ex)
         {
             _capture = null;
-            CollectToggle.IsChecked = false;
             MessageBox.Show(this, ex.Message, "Could not watch the capture folder",
                             MessageBoxButton.OK, MessageBoxImage.Warning);
         }
+    }
+
+    private void CollectJob(string path)
+    {
+        LoadFiles(new[] { path });
+        // With the window hidden the pool grows unseen, so say something.
+        if (!IsVisible) _tray.Notify("Job collected", Path.GetFileName(path));
     }
 
     private void StopCollecting()
     {
         _capture?.Dispose();
         _capture = null;
+    }
+
+    // ---------- drag & drop ----------
+
+    private void Window_DragOver(object sender, DragEventArgs e)
+    {
+        e.Effects = DroppedPdfs(e.Data).Count > 0 ? DragDropEffects.Copy : DragDropEffects.None;
+        e.Handled = true;
+    }
+
+    private void Window_Drop(object sender, DragEventArgs e)
+    {
+        var paths = DroppedPdfs(e.Data);
+        if (paths.Count > 0) LoadFiles(paths);
+        e.Handled = true;
+    }
+
+    private static List<string> DroppedPdfs(IDataObject data)
+    {
+        if (!data.GetDataPresent(DataFormats.FileDrop) || data.GetData(DataFormats.FileDrop) is not string[] files)
+            return new List<string>();
+
+        return files
+            .Where(file => File.Exists(file) &&
+                           Path.GetExtension(file).Equals(".pdf", StringComparison.OrdinalIgnoreCase))
+            .ToList();
     }
 
     // ---------- job pool ----------

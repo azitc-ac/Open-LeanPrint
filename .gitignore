@@ -14,6 +14,9 @@ coverage/
 # Captured print jobs (real documents — never commit)
 captured/
 
+# Published builds (scripts/Publish-App.ps1) — hundreds of MB
+dist/
+
 # IDE
 .vs/
 .idea/

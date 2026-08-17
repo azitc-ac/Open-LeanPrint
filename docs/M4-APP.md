@@ -28,6 +28,12 @@ Job pool (several PDFs)  ─►  OpenLeanPrint.Core imposition
   drops into the pool as it arrives, so printing from any application lands in
   the app. Only jobs arriving *from now on* are taken; the folder may hold older
   jobs nobody wants reprinted.
+- **Drag & drop** — drop PDFs anywhere on the window; anything that is not an
+  existing `.pdf` is ignored.
+- **Tray icon** — while collecting, closing the window only hides it, because
+  the point of collecting is that jobs keep arriving. The tray menu shows the
+  window again, toggles collecting, and quits for real; a balloon announces
+  jobs that arrive while the window is hidden.
 - **Remembers itself** — layout, paper, margin, gutter, printer and whether it
   was collecting are saved to `%APPDATA%\OpenLeanPrint\settings.json` on exit.
   Unreadable settings fall back to defaults rather than blocking startup.
@@ -78,11 +84,41 @@ Settings persistence and job collecting were verified the same way:
   the pool from `1 job · 8 pages → 4 sheets` to `2 jobs · 12 pages → 6 sheets`
   by itself, preview included.
 
+Tray and drag & drop, same way:
+
+- With collecting on, closing the window left it alive but hidden
+  (`visible=False loaded=True`) instead of ending the app.
+- The drop filter accepted 1 of 3 offered paths — the real PDF, not the `.txt`
+  and not the missing file.
+
 Not verified by hand yet: printing from the app to a physical printer (it calls
-the same `PdfPrinter.Print` that M3 verified), and the file dialogs.
+the same `PdfPrinter.Print` that M3 verified), the file dialogs, and the tray
+menu's own mouse interactions.
+
+## Shipping it
+
+```powershell
+.\scripts\Publish-App.ps1                 # this machine's architecture
+.\scripts\Publish-App.ps1 -Runtime win-x64
+```
+
+That produces **one self-contained executable** (`dist\<runtime>\OpenLeanPrint.exe`,
+~187 MB) that runs on a machine with no .NET installed — copy it anywhere and
+start it. Verified: the published win-arm64 build starts and opens its window
+standalone. `-SelfContained:$false` makes it far smaller but requires the .NET 8
+Desktop Runtime on the target.
+
+Because PDFium and SkiaSharp are native, the runtime identifier must match the
+target machine — there is no architecture-neutral build.
+
+**MSIX is not built here.** It needs `makeappx.exe` and `signtool.exe` from the
+Windows SDK (not installed on the development machine) plus a code-signing
+certificate; without a trusted signature Windows will not install the package
+anyway. The single-file publish above is the distribution path until that
+tooling and a certificate exist.
 
 ## Not in this slice
 
-- Tray icon and background "keep collecting while closed" — collecting today
-  needs the window open.
-- MSIX installer and signing; per-page rotation overrides; drag & drop.
+- MSIX packaging and signing (see above).
+- Per-page rotation overrides and per-job layout settings.
+- Auto-start with Windows.

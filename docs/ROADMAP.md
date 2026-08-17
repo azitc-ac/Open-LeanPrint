@@ -79,8 +79,13 @@ visual check on paper still open).
   toggle survive a restart.
 - ✅ Fill the pool from the capture host as jobs arrive ("Collect captured
   jobs"), sharing `CapturedFolderWatcher` with `openleanprint watch`.
-- ▶ Tray/quick-launch; collecting while the window is closed.
-- ▶ Installer (MSIX), signed. **ARM64 + x64** builds.
+- ✅ Tray icon: closing the window while collecting only hides it, so jobs keep
+  arriving; the tray menu restores, toggles collecting and quits.
+- ✅ Drag & drop onto the pool; an app icon.
+- ✅ Distributable build: `scripts/Publish-App.ps1` produces one self-contained
+  executable per runtime (**ARM64 + x64**).
+- ▶ Installer (MSIX), signed — blocked on Windows SDK tooling (`makeappx`,
+  `signtool`) and a code-signing certificate.
 
 ## ▶ M5 — Polish & parity
 

@@ -12,11 +12,25 @@
     <OutputType>WinExe</OutputType>
     <TargetFramework>net8.0-windows</TargetFramework>
     <UseWPF>true</UseWPF>
+    <!-- Only for the tray icon: WPF has no NotifyIcon of its own. -->
+    <UseWindowsForms>true</UseWindowsForms>
     <RootNamespace>OpenLeanPrint.App</RootNamespace>
     <AssemblyName>OpenLeanPrint</AssemblyName>
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
     <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
+    <ApplicationIcon>Assets\OpenLeanPrint.ico</ApplicationIcon>
   </PropertyGroup>
+
+  <ItemGroup>
+    <!-- WinForms' implicit usings would make Application, MessageBox, Point and
+         Size ambiguous with WPF's. The tray code qualifies what it needs. -->
+    <Using Remove="System.Windows.Forms" />
+    <Using Remove="System.Drawing" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\OpenLeanPrint.ico" />
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\OpenLeanPrint.Core\OpenLeanPrint.Core.csproj" />
