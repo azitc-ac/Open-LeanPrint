@@ -11,6 +11,9 @@ obj/
 *.coverage
 coverage/
 
+# Captured print jobs (real documents — never commit)
+captured/
+
 # IDE
 .vs/
 .idea/
