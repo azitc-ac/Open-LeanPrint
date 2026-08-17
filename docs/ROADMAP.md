@@ -32,14 +32,20 @@ third-party driver**. See [M1-CAPTURE.md](M1-CAPTURE.md) for details.
 Exit criteria met: a captured PDF on disk and a populated `PrintDocument`,
 both automated on Linux and confirmed end-to-end on Windows.
 
-## ▶ M2 — Render & WYSIWYG preview
+## ◑ M2 — Render & compose (compose core done; on-screen preview next)
 
-- `OpenLeanPrint.Render`: **PDFium** binding; render a source PDF page to a bitmap.
-- Preview control: draw a `Sheet` — media, then each `PlacedPage` in its
-  `DestRect` with `Rotation`.
-- Live re-impose when settings change (N-up, margins, order, scale).
+- ✅ `OpenLeanPrint.Compose`: imposes an `ImpositionResult` into an output PDF —
+  each source page placed with the computed position, scale and rotation
+  (PdfSharpCore, vector, no rasterisation). N-up and booklet.
+- ✅ `OpenLeanPrint.Cli` (`impose` / `sample`) to run it on a captured PDF.
+- ✅ Verified by tests + visual raster check (4-up row order, booklet order,
+  90° rotation for stacked layouts). See [M2-IMPOSE.md](M2-IMPOSE.md).
+- ▶ On-screen **raster preview** (PDFium) for a live WYSIWYG dialog.
+- ▶ Live re-impose when settings change (N-up, margins, order, scale).
 
 Exit criteria: captured job shown 2-up/4-up on screen, matching the engine.
+The compose core already produces the exact imposed output; the preview will
+render it live.
 
 ## ▶ M3 — Forward to a physical printer
 

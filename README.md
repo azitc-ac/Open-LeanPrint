@@ -60,15 +60,18 @@ Full detail, alternatives and trade-offs: [docs/ARCHITECTURE.md](docs/ARCHITECTU
 | `src/OpenLeanPrint.Core` | Platform-neutral domain model + imposition engine (net8.0, no Windows deps). |
 | `src/OpenLeanPrint.Capture` | Loopback IPP capture service + IPP codec + PDF page extraction (net8.0). |
 | `src/OpenLeanPrint.Capture.Host` | Runnable console host: logs and saves captured jobs. |
+| `src/OpenLeanPrint.Compose` | Imposes an `ImpositionResult` into an output PDF (PdfSharpCore, net8.0). |
+| `src/OpenLeanPrint.Cli` | `openleanprint` CLI: `impose` / `sample` commands. |
 | `tests/OpenLeanPrint.Core.Tests` | xUnit tests for the engine; run on any OS. |
 | `tests/OpenLeanPrint.Capture.Tests` | Codec, loopback-server and PDF tests; run on any OS. |
+| `tests/OpenLeanPrint.Compose.Tests` | Imposition-to-PDF composition tests; run on any OS. |
 | `scripts/` | Windows printer register/unregister PowerShell scripts. |
 | `docs/ARCHITECTURE.md` | How capture, rendering and forwarding fit together, and why. |
 | `docs/M1-CAPTURE.md` | The capture prototype: how to run and test it. |
+| `docs/M2-IMPOSE.md` | Imposing a captured PDF N-up / booklet from the CLI. |
 | `docs/ROADMAP.md` | Milestones from here to a usable app. |
 
-Planned (see roadmap): `src/OpenLeanPrint.Render` (PDFium),
-`src/OpenLeanPrint.App` (WinUI 3 GUI).
+Planned (see roadmap): on-screen raster preview + `src/OpenLeanPrint.App` (WinUI 3 GUI).
 
 ## Building & testing
 
