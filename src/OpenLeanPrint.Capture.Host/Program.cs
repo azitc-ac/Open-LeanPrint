@@ -5,7 +5,10 @@ using OpenLeanPrint.Capture.Server;
 // Simple argument parsing: --port N, --name NAME, --out DIR.
 string printerName = "OpenLeanPrint";
 int port = 6310;
-string outDir = Path.Combine(Directory.GetCurrentDirectory(), "captured");
+// Captured jobs are real documents, so they default to a per-user data folder
+// rather than the working directory (which is often a source tree, and may be
+// cloud-synced). --out overrides it.
+string outDir = CaptureLocations.DefaultFolder;
 
 for (int i = 0; i < args.Length - 1; i++)
 {

@@ -39,14 +39,16 @@ script is blocked, say so rather than working around security.
   Brother queue and completed (1/1 page); nobody has inspected the paper yet.
 
 - **M4 — desktop app** ◑ (`OpenLeanPrint.App`, **WPF**): job pool (several PDFs
-  combined onto shared sheets), presets, live WYSIWYG preview, print, save PDF.
-  Verified by driving the real window. Polish is open — see
-  [`docs/M4-APP.md`](docs/M4-APP.md).
+  combined onto shared sheets), presets, live WYSIWYG preview, print, save PDF,
+  settings that survive a restart, and "Collect captured jobs" (new jobs from
+  the capture host drop into the pool). Verified by driving the real window.
+  Tray/installer still open — see [`docs/M4-APP.md`](docs/M4-APP.md).
 - **`watch`** ✅: imposes (and optionally prints) every new PDF in a folder — the
-  hands-free workflow.
+  hands-free workflow. Arrival detection is `CapturedFolderWatcher` in
+  `OpenLeanPrint.Capture`, shared with the app and unit-tested.
 
-Everything is pushed to `main`. 59 tests pass (Windows-only ones self-skip
-elsewhere, so Linux/CI stays green).
+Everything is pushed to `main`. 65 tests pass (Windows-only ones self-skip on
+Linux; CI runs both a Linux and a Windows job).
 
 **Two solutions:** `OpenLeanPrint.sln` is the cross-platform one that CI builds
 and tests — **do not add the WPF app to it**, WPF cannot build on Linux.
@@ -56,9 +58,9 @@ and tests — **do not add the WPF app to it**, WPF cannot build on Linux.
 
 Roughly in priority order — confirm with the user which they want:
 
-1. **App polish.** Settings persistence (it starts at 4-up/A4 every time), then
-   filling the pool straight from the capture host as jobs arrive, then tray /
-   "keep collecting jobs" and an MSIX installer.
+1. **App polish.** Settings persistence and collecting captured jobs are done;
+   what is left is a tray icon (collect while the window is closed), drag & drop
+   onto the pool, and an MSIX installer.
 2. **Look at the printed sheet** — a 4-up test page went to the Brother on
    2026-08-17 and the spooler completed it, but the paper itself has not been
    checked. Confirming margins/scale on paper closes M3's last exit criterion.
@@ -86,7 +88,10 @@ End-to-end capture test on Windows (see `docs/M1-CAPTURE.md`):
 2. **Elevated** PowerShell: `.\scripts\Register-Printer.ps1 -Port 6310`
    (or `Add-Printer -IppURL http://localhost:6310/leanprint`).
 3. Print to "OpenLeanPrint Virtual Printer" from any app.
-4. The host logs the job and saves the PDF to `captured/`.
+4. The host logs the job and saves the PDF to
+   `%LOCALAPPDATA%\OpenLeanPrint\captured` (`CaptureLocations.DefaultFolder`;
+   `--out DIR` overrides). Deliberately not the working directory: captured jobs
+   are the user's real documents and the repo lives in a synced OneDrive folder.
 5. `.\scripts\Unregister-Printer.ps1 -Port 6310` to clean up.
 
 Impose a captured job (see `docs/M2-IMPOSE.md`):

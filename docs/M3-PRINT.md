@@ -80,13 +80,16 @@ reports its final size.
 
 ## Hands-free: `watch`
 
-`watch` turns the pieces into an actual workflow — point it at the capture
-host's `captured/` folder and every job you print gets imposed (and optionally
-printed) by itself, no GUI needed:
+`watch` turns the pieces into an actual workflow — every job you print gets
+imposed (and optionally printed) by itself, no GUI needed. With no folder given
+it watches wherever the capture host writes:
 
 ```powershell
-dotnet run --project src/OpenLeanPrint.Cli -- watch captured --nup 2x2 --paper A4 --margin 8 `
+dotnet run --project src/OpenLeanPrint.Cli -- watch --nup 2x2 --paper A4 --margin 8 `
     --printer "Brother MFC-9332CDW Printer"
+
+# …or any other folder:
+dotnet run --project src/OpenLeanPrint.Cli -- watch C:\scans --nup 2x2
 ```
 
 | Option | Meaning | Default |
@@ -99,11 +102,13 @@ dotnet run --project src/OpenLeanPrint.Cli -- watch captured --nup 2x2 --paper A
 It takes the same layout options as `impose` (`--nup`, `--booklet`, `--paper`,
 `--margin`, `--gutter`). Ctrl+C stops it cleanly.
 
-Two details matter in practice: a file-creation event fires long before the
-writer is finished, so each job is only picked up once it has stopped growing
-*and* can be opened exclusively; and the output folder is skipped when it sits
-inside the watched folder, so the watcher cannot feed on its own results. A job
-that fails to impose is logged and skipped — it does not take the watcher down.
+Arrival detection lives in `CapturedFolderWatcher` (in `OpenLeanPrint.Capture`),
+shared with the desktop app and covered by tests. Two details matter in
+practice: a file-creation event fires long before the writer is finished, so
+each job is only picked up once it has stopped growing *and* can be opened
+exclusively; and the output folder is skipped when it sits inside the watched
+folder, so the watcher cannot feed on its own results. A job that fails to
+impose is logged and skipped — it does not take the watcher down.
 
 Defaults are deliberately conservative: only *new* files are processed, so
 pointing it at a folder of existing documents does not print them all at once.

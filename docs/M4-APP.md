@@ -24,6 +24,13 @@ Job pool (several PDFs)  ─►  OpenLeanPrint.Core imposition
   and print at 200 dpi.
 - **Save PDF…** — write the imposed PDF out instead of printing it.
 - **Open with** — `OpenLeanPrint a.pdf b.pdf` starts with a filled pool.
+- **Collect captured jobs** — with this on, every job the capture host writes
+  drops into the pool as it arrives, so printing from any application lands in
+  the app. Only jobs arriving *from now on* are taken; the folder may hold older
+  jobs nobody wants reprinted.
+- **Remembers itself** — layout, paper, margin, gutter, printer and whether it
+  was collecting are saved to `%APPDATA%\OpenLeanPrint\settings.json` on exit.
+  Unreadable settings fall back to defaults rather than blocking startup.
 
 ## Why WPF, and why a second solution
 
@@ -62,12 +69,20 @@ PDFs (8 pages + 4 pages):
 - Print and Save enable only once there is something to print, and the printer
   box preselects the Windows default.
 
+Settings persistence and job collecting were verified the same way:
+
+- Clicking **2-up** turned the 8-page job from 2 sheets into 4, and after
+  closing, `settings.json` held `Rows: 1, Columns: 2`. A fresh start came back
+  up at 1×2-up with the 2-up preset lit and 4 sheets — restored, not defaulted.
+- With **Collect captured jobs** on, dropping a PDF into the capture folder took
+  the pool from `1 job · 8 pages → 4 sheets` to `2 jobs · 12 pages → 6 sheets`
+  by itself, preview included.
+
 Not verified by hand yet: printing from the app to a physical printer (it calls
 the same `PdfPrinter.Print` that M3 verified), and the file dialogs.
 
 ## Not in this slice
 
-- Settings persistence (the app starts at 4-up/A4/8 mm/6 pt every time).
-- Live capture integration: the pool is filled from files, not yet from the
-  capture host as jobs arrive. `openleanprint watch` covers that headlessly.
-- Tray icon / "keep collecting jobs", MSIX installer, per-page overrides.
+- Tray icon and background "keep collecting while closed" — collecting today
+  needs the window open.
+- MSIX installer and signing; per-page rotation overrides; drag & drop.

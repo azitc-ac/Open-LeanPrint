@@ -1,7 +1,10 @@
 name: CI
 
-# Builds and tests the platform-neutral OpenLeanPrint core (imposition engine).
-# Runs on Linux since the core has no Windows dependencies.
+# Two jobs on purpose:
+#   linux   - proves the portable half really is portable (it is what most
+#             contributors will build) and runs the cross-platform tests.
+#   windows - runs the Windows-only tests, which self-skip on Linux, and builds
+#             the WPF app, which cannot build on Linux at all.
 
 on:
   push:
@@ -9,13 +12,14 @@ on:
   pull_request:
 
 jobs:
-  build-test:
+  linux:
+    name: Linux (portable core)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v6
         with:
           dotnet-version: '8.0.x'
 
@@ -27,3 +31,23 @@ jobs:
 
       - name: Test
         run: dotnet test OpenLeanPrint.sln --configuration Release --no-build
+
+  windows:
+    name: Windows (printing + app)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '8.0.x'
+
+      # The Windows solution adds the WPF app to everything the Linux job builds.
+      - name: Build everything (incl. the WPF app)
+        run: dotnet build OpenLeanPrint.Windows.sln --configuration Release
+
+      # Same test suite as Linux, but here the GDI+/spooler tests actually run
+      # instead of skipping.
+      - name: Test
+        run: dotnet test OpenLeanPrint.sln --configuration Release

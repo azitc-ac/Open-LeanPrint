@@ -1,88 +1,58 @@
-using System.Collections.Concurrent;
+using OpenLeanPrint.Capture;
 using OpenLeanPrint.Print;
 
 namespace OpenLeanPrint.Cli;
 
 /// <summary>
-/// Watches a folder for new PDFs — typically the capture host's <c>captured/</c>
-/// folder — imposes each one and optionally prints it. That makes
-/// "print → auto 4-up → printer" usable before the GUI exists.
+/// Imposes — and optionally prints — every PDF that lands in a folder, typically
+/// the capture host's output folder. That makes "print → auto 4-up → printer"
+/// usable before the GUI exists.
+/// <para>
+/// Arrival detection lives in <see cref="CapturedFolderWatcher"/>; this class is
+/// just what happens to a job once it is there.
+/// </para>
 /// </summary>
 internal sealed class JobWatcher : IDisposable
 {
-    private readonly string _folder;
     private readonly string _outputFolder;
     private readonly ImposeOptions _impose;
     private readonly string? _printer;
     private readonly int _dpi;
-
-    private readonly FileSystemWatcher _watcher;
-    private readonly BlockingCollection<string> _queue = new();
-    private readonly HashSet<string> _handled = new(StringComparer.OrdinalIgnoreCase);
+    private readonly CapturedFolderWatcher _watcher;
 
     public JobWatcher(string folder, string outputFolder, ImposeOptions impose, string? printer, int dpi)
     {
-        _folder = Path.GetFullPath(folder);
         _outputFolder = Path.GetFullPath(outputFolder);
         _impose = impose;
         _printer = printer;
         _dpi = dpi;
 
-        _watcher = new FileSystemWatcher(_folder, "*.pdf")
+        _watcher = new CapturedFolderWatcher(folder)
         {
-            NotifyFilter = NotifyFilters.FileName | NotifyFilters.Size,
-            IncludeSubdirectories = false,
+            // Never pick up our own output (possible when --out-dir is the watched folder).
+            Accept = path => !string.Equals(Path.GetFullPath(Path.GetDirectoryName(path) ?? string.Empty),
+                                            _outputFolder, StringComparison.OrdinalIgnoreCase),
         };
-        _watcher.Created += (_, e) => Enqueue(e.FullPath);
-        // Some writers create a temp file and rename it into place.
-        _watcher.Renamed += (_, e) => Enqueue(e.FullPath);
+        _watcher.JobArrived += (_, path) => Process(path);
+        _watcher.JobTimedOut += (_, path) =>
+            Console.Error.WriteLine($"  ! {Path.GetFileName(path)}: still being written - skipped.");
     }
 
-    /// <summary>Processes queued jobs until <paramref name="token"/> is cancelled.</summary>
+    /// <summary>Watches until <paramref name="token"/> is cancelled.</summary>
     public void Run(bool includeExisting, CancellationToken token)
     {
         Directory.CreateDirectory(_outputFolder);
-        _watcher.EnableRaisingEvents = true;
-
-        if (includeExisting)
-            foreach (string path in Directory.EnumerateFiles(_folder, "*.pdf")) Enqueue(path);
-
-        try
-        {
-            foreach (string path in _queue.GetConsumingEnumerable(token)) Process(path);
-        }
-        catch (OperationCanceledException)
-        {
-            // Ctrl+C: a clean stop, not a failure.
-        }
-    }
-
-    private void Enqueue(string path)
-    {
-        // Never pick up our own output (possible when --out-dir is the watched folder).
-        if (string.Equals(Path.GetFullPath(Path.GetDirectoryName(path) ?? _folder), _outputFolder,
-                          StringComparison.OrdinalIgnoreCase)) return;
-
-        lock (_handled)
-        {
-            if (!_handled.Add(path)) return; // one file can raise several events
-        }
-        _queue.Add(path);
+        _watcher.Start(includeExisting);
+        token.WaitHandle.WaitOne(); // jobs are handled on the watcher's thread
+        _watcher.Stop();
     }
 
     private void Process(string path)
     {
         string name = Path.GetFileName(path);
-        if (!WaitUntilComplete(path, TimeSpan.FromSeconds(30)))
-        {
-            Console.Error.WriteLine($"  ! {name}: still being written after 30 s - skipped.");
-            return;
-        }
-
         try
         {
-            byte[] source = File.ReadAllBytes(path);
-            byte[] imposed = ImposeRunner.Run(source, _impose);
+            byte[] imposed = ImposeRunner.Run(File.ReadAllBytes(path), _impose);
 
             string output = Path.Combine(_outputFolder,
                 $"{Path.GetFileNameWithoutExtension(name)}-{_impose.FileTag()}.pdf");
@@ -106,42 +76,5 @@ internal sealed class JobWatcher : IDisposable
         }
     }
 
-    /// <summary>
-    /// Waits until a file has stopped growing and is no longer locked. The
-    /// creation event fires as soon as the file exists, long before the writer
-    /// is done with it.
-    /// </summary>
-    private static bool WaitUntilComplete(string path, TimeSpan timeout)
-    {
-        DateTime deadline = DateTime.UtcNow + timeout;
-        long lastLength = -1;
-        while (DateTime.UtcNow < deadline)
-        {
-            try
-            {
-                var info = new FileInfo(path);
-                if (!info.Exists) return false;
-                if (info.Length > 0 && info.Length == lastLength)
-                {
-                    // Opening exclusively proves the writer has let go.
-                    using var stream = File.Open(path, FileMode.Open, FileAccess.Read, FileShare.None);
-                    return true;
-                }
-                lastLength = info.Length;
-            }
-            catch (IOException)
-            {
-                // Still locked by the writer - keep waiting.
-            }
-            Thread.Sleep(300);
-        }
-        return false;
-    }
-
-    public void Dispose()
-    {
-        _watcher.EnableRaisingEvents = false;
-        _watcher.Dispose();
-        _queue.Dispose();
-    }
+    public void Dispose() => _watcher.Dispose();
 }

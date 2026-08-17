@@ -7,6 +7,7 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using Microsoft.Win32;
+using OpenLeanPrint.Capture;
 using OpenLeanPrint.Compose;
 using OpenLeanPrint.Core;
 using OpenLeanPrint.Core.Imposition;
@@ -41,6 +42,7 @@ public partial class MainWindow : Window
     private int _sheetIndex;
     private int _sheetCount;
     private CancellationTokenSource? _work;
+    private CapturedFolderWatcher? _capture;
 
     private int _rows = 2;
     private int _columns = 2;
@@ -65,12 +67,103 @@ public partial class MainWindow : Window
             _ = RefreshAsync();
         };
 
+        ApplySettings(AppSettings.Load());
         UpdateControls();
 
         // "OpenLeanPrint a.pdf b.pdf" (or "Open with…") starts with a filled pool.
         var startupFiles = Environment.GetCommandLineArgs().Skip(1)
             .Where(path => File.Exists(path)).ToList();
         if (startupFiles.Count > 0) Loaded += (_, _) => LoadFiles(startupFiles);
+    }
+
+    // ---------- settings ----------
+
+    private void ApplySettings(AppSettings settings)
+    {
+        _booklet = settings.Booklet;
+        _rows = Math.Max(1, settings.Rows);
+        _columns = Math.Max(1, settings.Columns);
+
+        if (Papers.Contains(settings.Paper)) PaperBox.SelectedItem = settings.Paper;
+        MarginBox.Text = settings.MarginMm.ToString(CultureInfo.CurrentCulture);
+        GutterBox.Text = settings.Gutter.ToString(CultureInfo.CurrentCulture);
+
+        if (settings.Printer is not null && PrinterBox.Items.Contains(settings.Printer))
+            PrinterBox.SelectedItem = settings.Printer;
+
+        CheckMatchingPreset();
+
+        // Restoring this means the app picks up where it left off: still collecting.
+        if (settings.CollectCapturedJobs)
+        {
+            CollectToggle.IsChecked = true;
+            StartCollecting();
+        }
+    }
+
+    private AppSettings CurrentSettings() => new()
+    {
+        Rows = _rows,
+        Columns = _columns,
+        Booklet = _booklet,
+        Paper = (string)PaperBox.SelectedItem,
+        MarginMm = ParseNumber(MarginBox.Text, 0),
+        Gutter = ParseNumber(GutterBox.Text, 0),
+        Printer = PrinterBox.SelectedItem as string,
+        CollectCapturedJobs = CollectToggle.IsChecked == true,
+    };
+
+    protected override void OnClosed(EventArgs e)
+    {
+        CurrentSettings().Save();
+        StopCollecting();
+        base.OnClosed(e);
+    }
+
+    /// <summary>Lights up the preset button that matches the current layout, if any.</summary>
+    private void CheckMatchingPreset()
+    {
+        string tag = _booklet ? "booklet" : $"{_rows}x{_columns}";
+        foreach (var preset in Presets)
+            preset.IsChecked = (string)preset.Tag == tag;
+    }
+
+    private ToggleButton[] Presets => new[] { Preset1Up, Preset2Up, Preset4Up, Preset9Up, PresetBooklet };
+
+    // ---------- collecting captured jobs ----------
+
+    private void Collect_Click(object sender, RoutedEventArgs e)
+    {
+        if (CollectToggle.IsChecked == true) StartCollecting();
+        else StopCollecting();
+    }
+
+    private void StartCollecting()
+    {
+        if (_capture is not null) return;
+
+        try
+        {
+            // Only jobs that arrive from now on - the folder may hold older jobs
+            // the user has no interest in reprinting.
+            _capture = new CapturedFolderWatcher(CaptureLocations.DefaultFolder);
+            _capture.JobArrived += (_, path) => Dispatcher.Invoke(() => LoadFiles(new[] { path }));
+            _capture.Start();
+            StatusText.Text = $"Collecting jobs from {CaptureLocations.DefaultFolder}";
+        }
+        catch (Exception ex)
+        {
+            _capture = null;
+            CollectToggle.IsChecked = false;
+            MessageBox.Show(this, ex.Message, "Could not watch the capture folder",
+                            MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+    }
+
+    private void StopCollecting()
+    {
+        _capture?.Dispose();
+        _capture = null;
     }
 
     // ---------- job pool ----------
@@ -162,7 +255,7 @@ public partial class MainWindow : Window
     {
         if (sender is not ToggleButton clicked || clicked.Tag is not string tag) return;
 
-        foreach (var preset in new[] { Preset1Up, Preset2Up, Preset4Up, Preset9Up, PresetBooklet })
+        foreach (var preset in Presets)
             preset.IsChecked = ReferenceEquals(preset, clicked);
 
         if (tag == "booklet")

@@ -78,7 +78,11 @@ is silently not created.
    confirms Windows is talking to the service.
 
 3. **Print** to the *OpenLeanPrint* printer from any app. The host logs the job
-   (name, user, page count and sizes) and saves the PDF to `./captured/`.
+   (name, user, page count and sizes) and saves the PDF to
+   `%LOCALAPPDATA%\OpenLeanPrint\captured` — captured jobs are your real
+   documents, so they deliberately do not land in the working directory (which
+   is often a source tree, and may be cloud-synced). `--out DIR` overrides it;
+   the host prints the folder it uses on startup.
 
 4. **Remove** the printer when done:
    ```powershell

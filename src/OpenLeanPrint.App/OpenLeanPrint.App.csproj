@@ -20,6 +20,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\OpenLeanPrint.Core\OpenLeanPrint.Core.csproj" />
+    <ProjectReference Include="..\OpenLeanPrint.Capture\OpenLeanPrint.Capture.csproj" />
     <ProjectReference Include="..\OpenLeanPrint.Compose\OpenLeanPrint.Compose.csproj" />
     <ProjectReference Include="..\OpenLeanPrint.Print\OpenLeanPrint.Print.csproj" />
   </ItemGroup>

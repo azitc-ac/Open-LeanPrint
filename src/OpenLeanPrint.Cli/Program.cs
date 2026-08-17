@@ -1,3 +1,4 @@
+using OpenLeanPrint.Capture;
 using OpenLeanPrint.Cli;
 using OpenLeanPrint.Compose;
 using OpenLeanPrint.Core;
@@ -171,21 +172,20 @@ static int ListPrinters()
 
 static int Watch(string[] a)
 {
-    if (a.Length < 1)
-    {
-        Console.Error.WriteLine("Usage: openleanprint watch <folder> [--nup RxC] [--booklet] [--paper A4] " +
-                                "[--margin MM] [--gutter PT] [--printer NAME] [--out-dir DIR] [--existing]");
-        return 1;
-    }
-
-    string folder = a[0];
+    // With no folder given, watch where the capture host writes by default.
+    bool hasFolder = a.Length > 0 && !a[0].StartsWith("--", StringComparison.Ordinal);
+    string folder = hasFolder ? a[0] : CaptureLocations.DefaultFolder;
     if (!Directory.Exists(folder))
     {
-        Console.Error.WriteLine($"Folder not found: {folder}");
-        return 1;
+        if (hasFolder)
+        {
+            Console.Error.WriteLine($"Folder not found: {folder}");
+            return 1;
+        }
+        Directory.CreateDirectory(folder); // the host would create it too
     }
 
-    var opts = ArgMap.Parse(a[1..]);
+    var opts = ArgMap.Parse(hasFolder ? a[1..] : a);
     var impose = ImposeRunner.Parse(opts);
     string? printer = opts.Has("printer") ? opts.Get("printer", string.Empty) : null;
     if (printer is not null && !OperatingSystem.IsWindows())
@@ -237,7 +237,8 @@ static void PrintUsage()
     Console.WriteLine();
     Console.WriteLine("  list-printers                          List installed printers (Windows only)");
     Console.WriteLine();
-    Console.WriteLine("  watch <folder> [options]               Impose (and optionally print) every new PDF in a folder");
+    Console.WriteLine("  watch [folder] [options]               Impose (and optionally print) every new PDF in a folder");
+    Console.WriteLine("                                         default folder: where the capture host writes");
     Console.WriteLine("     --printer NAME  also print each imposed result      default: only write files");
     Console.WriteLine("     --out-dir DIR   where imposed PDFs go               default <folder>/imposed");
     Console.WriteLine("     --existing      also process PDFs already in there  default: only new ones");

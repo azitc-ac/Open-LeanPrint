@@ -75,10 +75,11 @@ visual check on paper still open).
   ARM64-native out of the box): pool list, reorder/remove, jobs combined onto
   shared sheets, presets (1/2/4/9-up, booklet), live preview, print, save PDF.
   See [M4-APP.md](M4-APP.md).
-- ▶ Settings persistence — the app starts at 4-up/A4 every time.
-- ▶ Fill the pool from the capture host as jobs arrive (today: files, or
-  `openleanprint watch` headlessly).
-- ▶ Tray/quick-launch; "keep collecting jobs" workflow.
+- ✅ Settings persistence — layout, paper, margins, printer and the collecting
+  toggle survive a restart.
+- ✅ Fill the pool from the capture host as jobs arrive ("Collect captured
+  jobs"), sharing `CapturedFolderWatcher` with `openleanprint watch`.
+- ▶ Tray/quick-launch; collecting while the window is closed.
 - ▶ Installer (MSIX), signed. **ARM64 + x64** builds.
 
 ## ▶ M5 — Polish & parity
@@ -90,6 +91,7 @@ visual check on paper still open).
 
 ## Cross-cutting
 
-- CI: build + test `OpenLeanPrint.Core` on every push (OS-agnostic); Windows job for
-  ARM64/x64 app builds once M1+ exist.
+- ✅ CI on every push: a **Linux** job (portable core, cross-platform tests) and
+  a **Windows** job that builds the WPF app and actually runs the Windows-only
+  tests instead of skipping them.
 - Keep `OpenLeanPrint.Core` platform-neutral and well-tested.
