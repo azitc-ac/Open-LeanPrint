@@ -11,7 +11,7 @@ milestone is meant to be independently reviewable.
 - Geometry types in points, top-left origin.
 - xUnit test suite, green on any OS.
 
-## ◑ M1 — Capture prototype (core done; Windows validation pending)
+## ✅ M1 — Capture prototype (done, verified end-to-end on Windows)
 
 Goal: print from a real app and receive the PDF in OpenLeanPrint, with **no
 third-party driver**. See [M1-CAPTURE.md](M1-CAPTURE.md) for details.
@@ -19,15 +19,18 @@ third-party driver**. See [M1-CAPTURE.md](M1-CAPTURE.md) for details.
 - ✅ `OpenLeanPrint.Capture`: loopback **IPP service** (`localhost:PORT`) —
   handles Get-Printer-Attributes, Validate-Job, Print-Job, Create-Job/Send-Document.
 - ✅ IPP wire-format codec (`IppReader`/`IppWriter`), unit-tested.
-- ✅ Accept an IPP `Print-Job`, store the incoming `application/pdf`.
+- ✅ Full IPP Everywhere printer-attribute set (the in-box IPP class driver
+  requires it before it will create the queue).
+- ✅ Accept a job, store the incoming `application/pdf`.
 - ✅ Extract page count and page sizes → build a `PrintDocument`.
 - ✅ Runnable `OpenLeanPrint.Capture.Host` + loopback integration tests (green on CI).
-- ⚠️ Register a local printer bound to the **in-box IPP class driver** →
-  best-effort PowerShell script provided; **needs validation on Windows (ARM64/x64)**.
-- ⚠️ Manual test: "Print → OpenLeanPrint" from Notepad/Edge — to be run on Windows.
+- ✅ **Verified on Windows 11**: `Add-Printer -IppURL` attaches the **Microsoft
+  IPP Class Driver** to the loopback URL; printing from a real app is captured
+  via Create-Job/Send-Document as **application/pdf** and parsed (e.g. a 4-page
+  A4 document → four 595×842 pt pages).
 
-Exit criteria: a captured PDF on disk and a populated `PrintDocument`
-(automated on Linux; end-to-end on Windows still to confirm).
+Exit criteria met: a captured PDF on disk and a populated `PrintDocument`,
+both automated on Linux and confirmed end-to-end on Windows.
 
 ## ▶ M2 — Render & WYSIWYG preview
 

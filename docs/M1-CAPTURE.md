@@ -33,15 +33,22 @@ App prints ─► Microsoft in-box IPP class driver ─► OpenLeanPrint loopbac
 | `scripts/Register-Printer.ps1` | Registers the Windows printer (best-effort). |
 | `tests/OpenLeanPrint.Capture.Tests` | Codec, server (loopback) and PDF tests. |
 
-## What is verified, and what is not
+## What is verified
 
-- ✅ **Verified on Linux/CI** by automated tests: the IPP codec round-trips, the
-  loopback server accepts a real HTTP/IPP `Print-Job` (and `Create-Job` +
-  `Send-Document`) and captures the PDF, and page sizes are parsed correctly.
-- ⚠️ **Not yet verified on Windows**: registering the printer with the in-box
-  IPP class driver and printing to it end-to-end. The IPP attribute set the
-  server advertises is a sensible starting point but may need tuning for the
-  Windows IPP client. This must be tried on real Windows (ARM64/x64) hardware.
+- ✅ **Linux/CI** (automated tests): the IPP codec round-trips, the loopback
+  server accepts a real HTTP/IPP `Print-Job` and `Create-Job` + `Send-Document`
+  and captures the PDF, page sizes are parsed correctly, and the advertised
+  attribute set contains the IPP Everywhere required attributes.
+- ✅ **Windows 11** (manual, real hardware): `Add-Printer -IppURL
+  http://localhost:6310/leanprint` attaches the **Microsoft IPP Class Driver**
+  to the loopback service (no third-party driver). Printing from a real
+  application is captured end-to-end via Create-Job/Send-Document as
+  **application/pdf**, and the pages are parsed (a 4-page A4 document produced
+  four 595×842 pt pages in the host log and a valid PDF in `captured/`).
+
+Note: the full IPP Everywhere printer-attribute set is what makes the class
+driver create the queue — a minimal set is queried successfully but the printer
+is silently not created.
 
 ## Try it on Windows
 

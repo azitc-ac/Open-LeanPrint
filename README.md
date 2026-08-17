@@ -8,10 +8,12 @@ Designed from day one to run on **Windows on ARM (ARM64)** as well as x64, by
 avoiding the one thing that makes classic virtual-printer tools ARM-hostile:
 a third-party kernel/print driver.
 
-> Status: **early foundation.** The portable imposition engine and the
-> driverless IPP **capture** layer (loopback IPP service + PDF extraction) are
-> implemented and unit-tested on any OS. Registering the printer on Windows and
-> the rendering/UI layers are next — see the roadmap below.
+> Status: **capture works end-to-end.** The portable imposition engine and the
+> driverless IPP **capture** layer are implemented and unit-tested on any OS —
+> and the capture path is **verified on Windows 11**: `Add-Printer -IppURL`
+> attaches the in-box Microsoft IPP Class Driver to the loopback service, and
+> printing from a real app is captured as PDF (no third-party driver). The
+> rendering + WYSIWYG preview and the app UI are next — see the roadmap.
 
 ## Why another print tool?
 
