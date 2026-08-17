@@ -8,12 +8,13 @@ Designed from day one to run on **Windows on ARM (ARM64)** as well as x64, by
 avoiding the one thing that makes classic virtual-printer tools ARM-hostile:
 a third-party kernel/print driver.
 
-> Status: **capture works end-to-end.** The portable imposition engine and the
-> driverless IPP **capture** layer are implemented and unit-tested on any OS —
-> and the capture path is **verified on Windows 11**: `Add-Printer -IppURL`
-> attaches the in-box Microsoft IPP Class Driver to the loopback service, and
-> printing from a real app is captured as PDF (no third-party driver). The
-> rendering + WYSIWYG preview and the app UI are next — see the roadmap.
+> Status: **the whole chain works from the command line.** Printing from a real
+> app is captured over driverless IPP, imposed N-up or as a booklet, and sent
+> back out to a printer — verified on **Windows 11 ARM64**: `Add-Printer -IppURL`
+> attaches the in-box Microsoft IPP Class Driver to the loopback service, and an
+> imposed 4-up sheet printed through "Microsoft Print to PDF" comes back exactly
+> as laid out. What is missing is the face of it: the on-screen WYSIWYG preview
+> and the app UI — see the roadmap.
 
 ## Why another print tool?
 
@@ -61,14 +62,17 @@ Full detail, alternatives and trade-offs: [docs/ARCHITECTURE.md](docs/ARCHITECTU
 | `src/OpenLeanPrint.Capture` | Loopback IPP capture service + IPP codec + PDF page extraction (net8.0). |
 | `src/OpenLeanPrint.Capture.Host` | Runnable console host: logs and saves captured jobs. |
 | `src/OpenLeanPrint.Compose` | Imposes an `ImpositionResult` into an output PDF (PdfSharpCore, net8.0). |
-| `src/OpenLeanPrint.Cli` | `openleanprint` CLI: `impose` / `sample` commands. |
+| `src/OpenLeanPrint.Print` | Prints an imposed PDF to a Windows printer (PDFium raster + spooler). |
+| `src/OpenLeanPrint.Cli` | `openleanprint` CLI: `impose` / `sample` / `print` / `list-printers`. |
 | `tests/OpenLeanPrint.Core.Tests` | xUnit tests for the engine; run on any OS. |
 | `tests/OpenLeanPrint.Capture.Tests` | Codec, loopback-server and PDF tests; run on any OS. |
 | `tests/OpenLeanPrint.Compose.Tests` | Imposition-to-PDF composition tests; run on any OS. |
+| `tests/OpenLeanPrint.Print.Tests` | Placement/paper-matching (any OS) + GDI+ tests (Windows). |
 | `scripts/` | Windows printer register/unregister PowerShell scripts. |
 | `docs/ARCHITECTURE.md` | How capture, rendering and forwarding fit together, and why. |
 | `docs/M1-CAPTURE.md` | The capture prototype: how to run and test it. |
 | `docs/M2-IMPOSE.md` | Imposing a captured PDF N-up / booklet from the CLI. |
+| `docs/M3-PRINT.md` | Printing an imposed PDF to a real printer. |
 | `docs/ROADMAP.md` | Milestones from here to a usable app. |
 
 Planned (see roadmap): on-screen raster preview + `src/OpenLeanPrint.App` (WinUI 3 GUI).
@@ -111,9 +115,9 @@ foreach (var sheet in result.Sheets)
 
 ## Contributing
 
-Contributions are welcome. The imposition engine is the stable, well-tested
-foundation; the highest-value next steps are the IPP capture prototype and the
-PDFium-based renderer (see the roadmap). Please keep `OpenLeanPrint.Core`
+Contributions are welcome. Capture, imposition and printing are in place and
+tested; the highest-value next steps are the on-screen WYSIWYG preview and the
+WinUI 3 app shell (see the roadmap). Please keep `OpenLeanPrint.Core`
 platform-neutral so it stays testable on any OS.
 
 ## License
@@ -122,7 +126,13 @@ platform-neutral so it stays testable on any OS.
 
 ## Notes / caveats
 
-- **Windows-specific layers are not yet implemented** — this repo currently
-  proves out the portable core. Nothing here talks to a printer yet.
-- PDF rendering will use **PDFium** (BSD-licensed). Ghostscript and MuPDF are
-  AGPL and are intentionally avoided so OpenLeanPrint can stay permissively licensed.
+- **There is no GUI yet** — everything runs from the CLI. The capture host, the
+  imposition engine and printing all work; the WYSIWYG preview and app shell are
+  the next milestones.
+- Printing is **Windows-only** (it goes through the Windows spooler) and is
+  guarded as such; capture and imposition run on any OS.
+- Printing has been verified through the *Microsoft Print to PDF* driver, not yet
+  on physical paper.
+- PDF rendering uses **PDFium** (BSD-licensed, via PDFtoImage/MIT). Ghostscript
+  and MuPDF are AGPL and are intentionally avoided so OpenLeanPrint can stay
+  permissively licensed.

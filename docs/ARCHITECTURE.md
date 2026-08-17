@@ -101,15 +101,19 @@ Why this is the right call:
 
 ## 5. Output: forwarding to a physical printer
 
-Two viable paths, to be decided during implementation:
+Implemented in two steps, which keeps the portable part portable:
 
-1. **Build an output PDF** from the imposed sheets (using a PDF composition
-   library) and send it to the chosen printer via the standard Windows print
-   API / IPP. Cleanest and most portable.
-2. **GDI/Direct2D draw** each sheet directly to the printer DC. More control
-   over device features, more Windows-specific code.
+1. **Build an output PDF** from the imposed sheets (`OpenLeanPrint.Compose`,
+   PdfSharpCore). Pure vector, platform-neutral, and it doubles as the artefact
+   the preview shows and the user can save.
+2. **Print that PDF** (`OpenLeanPrint.Print`): the Windows spooler cannot render
+   PDF, so each sheet is rasterised with PDFium and drawn onto the printer's
+   `Graphics` — matching the driver's paper size to the sheet and mapping it 1:1
+   onto the page. Works with any installed driver.
 
-Path 1 is preferred for portability and to reuse the same PDFium/PDF stack.
+Sending PDF straight to IPP printers would keep the vectors end to end and is a
+later optimisation; rasterising is the baseline that works everywhere.
+Details and the WYSIWYG pitfalls: [M3-PRINT.md](M3-PRINT.md).
 
 ## 6. Coordinate system & units
 
@@ -122,8 +126,10 @@ the renderer/output layer converts. See `Geometry.cs`.
 | Project | State | Responsibility |
 |---|---|---|
 | `OpenLeanPrint.Core` | **Implemented, tested** | Domain model (`PrintDocument`, `PrintJobPool`, `SourcePage`) and imposition engine (`NUpImposer`, `BookletImposer`). Platform-neutral. |
-| `OpenLeanPrint.Capture` | Planned | Loopback IPP service + printer registration; PDF page extraction. Windows. |
-| `OpenLeanPrint.Render` | Planned | PDFium binding; render sheets/pages to bitmaps and to an output PDF. |
+| `OpenLeanPrint.Capture` (+ `.Host`) | **Implemented, verified on Windows** | Loopback IPP service + printer registration; PDF page extraction. |
+| `OpenLeanPrint.Compose` | **Implemented, tested** | Imposed sheets → output PDF (PdfSharpCore). Platform-neutral. |
+| `OpenLeanPrint.Print` | **Implemented, verified via the PDF driver** | PDF → printer: PDFium raster + `System.Drawing.Printing`. Windows-only at runtime. |
+| `OpenLeanPrint.Cli` | **Implemented** | `impose`, `sample`, `print`, `list-printers`. |
 | `OpenLeanPrint.App` | Planned | WinUI 3 desktop app: pool list, WYSIWYG preview, settings, print. Windows, ARM64 + x64. |
 
 Keeping `OpenLeanPrint.Core` free of Windows dependencies is a deliberate rule: it

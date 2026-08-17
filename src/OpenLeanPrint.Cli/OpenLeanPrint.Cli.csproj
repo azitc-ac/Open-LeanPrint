@@ -1,8 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <!--
-    Command-line front-end for the imposition pipeline (impose / sample commands).
-    Runs on any OS; handy for applying N-up to a captured PDF from the command line.
+    Command-line front-end for the imposition pipeline (impose / sample / print /
+    list-printers). Builds and runs on any OS - the printing commands are guarded
+    with OperatingSystem.IsWindows() and refuse to run elsewhere.
     See Program.cs usage text for options.
   -->
   <PropertyGroup>
@@ -19,6 +20,7 @@
   <ItemGroup>
     <ProjectReference Include="..\OpenLeanPrint.Core\OpenLeanPrint.Core.csproj" />
     <ProjectReference Include="..\OpenLeanPrint.Compose\OpenLeanPrint.Compose.csproj" />
+    <ProjectReference Include="..\OpenLeanPrint.Print\OpenLeanPrint.Print.csproj" />
   </ItemGroup>
 
 </Project>

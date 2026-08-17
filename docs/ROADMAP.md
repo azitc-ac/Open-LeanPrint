@@ -47,18 +47,23 @@ Exit criteria: captured job shown 2-up/4-up on screen, matching the engine.
 The compose core already produces the exact imposed output; the preview will
 render it live.
 
-## ▶ M3 — Forward to a physical printer
+## ◑ M3 — Forward to a printer (implemented; physical print still to confirm)
 
 - ✅ Compose an **output PDF** from the imposed sheets (done in M2).
-- Print that PDF to a user-chosen printer: rasterise sheets (PDFium) and print
-  via `System.Drawing.Printing` from a `net8.0-windows` project. Add `print` /
-  `list-printers` to the CLI (and optionally a `captured/` watcher).
-- Copies, printer/paper selection, duplex hint.
-- **Full implementation plan: [M3-PRINT.md](M3-PRINT.md)** — includes a
-  paper-free test via "Microsoft Print to PDF".
+- ✅ `OpenLeanPrint.Print`: rasterises each sheet with PDFium and prints it via
+  `System.Drawing.Printing`, picking the driver paper size that matches the
+  sheet and mapping it 1:1 onto the page.
+- ✅ CLI `print` and `list-printers`, with `--printer`, `--out`, `--copies`,
+  `--dpi`.
+- ✅ Verified paper-free on Windows 11 ARM64: an imposed 4-up sheet printed to
+  "Microsoft Print to PDF" comes back pixel-for-pixel like the imposed input,
+  A4 stays A4, and multi-sheet jobs advance correctly. Full round trip
+  capture → impose → print confirmed. See [M3-PRINT.md](M3-PRINT.md).
+- ⚠️ Printing to **physical paper** not yet confirmed (only the PDF driver).
+- ▶ Duplex hint; optional `captured/` folder watcher for a GUI-free workflow.
 
-Exit criteria: 4-up output comes out of a real printer correctly (and the
-paper-free PDF-driver test matches the imposed layout).
+Exit criteria: the paper-free PDF-driver test matches the imposed layout (met);
+4-up output comes out of a real printer correctly (open).
 
 ## ▶ M4 — App shell & UX
 

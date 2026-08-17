@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    OpenLeanPrint.Print sends an imposed PDF (from OpenLeanPrint.Compose) to a
+    real Windows printer. The Windows spooler cannot render PDF itself, so each
+    sheet is rasterised (PDFtoImage/PDFium, MIT) and drawn onto the printer's
+    Graphics via System.Drawing.Printing.
+
+    Printing is Windows-only, but the target framework stays plain net8.0: the
+    Windows-only surface is marked [SupportedOSPlatform("windows")] instead, so
+    - the platform-compatibility analyser enforces the guards for us,
+    - callers (CLI) stay single-TFM and cross-platform, and
+    - the whole solution keeps building and testing on Linux/CI.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>OpenLeanPrint.Print</RootNamespace>
+    <AssemblyName>OpenLeanPrint.Print</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="PDFtoImage" Version="4.1.1" />
+    <PackageReference Include="System.Drawing.Common" Version="8.0.8" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\OpenLeanPrint.Core\OpenLeanPrint.Core.csproj" />
+  </ItemGroup>
+
+</Project>
