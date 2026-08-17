@@ -39,10 +39,14 @@ Everything is pushed to `main`. 35 tests pass on Linux/CI.
 Two tracks, roughly in priority order — confirm with the user which they want:
 
 1. **M3 — forward to a physical printer.** Take an imposed output PDF and send
-   it to a user-chosen Windows printer (e.g. via the print spooler / a silent
-   PDF print, or GDI/Direct2D). Optionally a watcher that auto-imposes new files
-   dropped in `captured/` and prints them. Acceptance: a captured job comes out
-   of a real printer 4-up. **You can test this on Windows — do it.**
+   it to a user-chosen Windows printer. **A full implementation plan with
+   approach, project structure, API sketch and paper-free test steps is in
+   [`docs/M3-PRINT.md`](docs/M3-PRINT.md) — start there.** Short version:
+   rasterise sheets (PDFium) and print via `System.Drawing.Printing` from a
+   `net8.0-windows` project; add `print` / `list-printers` (and optionally a
+   `captured/` watcher) to the CLI without breaking the cross-platform build.
+   Verify by printing to **"Microsoft Print to PDF"** (no paper needed), then a
+   real printer. **You can test this on Windows — do it.**
 2. **M2 preview + GUI.** On-screen raster preview (PDFium) + a WinUI 3 desktop
    app: job pool list, preset buttons (2-up/4-up/booklet), live WYSIWYG preview,
    print. Keep rendering logic in a platform-neutral project where possible so

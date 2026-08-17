@@ -49,12 +49,16 @@ render it live.
 
 ## ▶ M3 — Forward to a physical printer
 
-- Compose an **output PDF** from the imposed sheets (place each source page per
-  `PlacedPage`).
-- Send to a user-chosen physical printer via the Windows print API / IPP.
+- ✅ Compose an **output PDF** from the imposed sheets (done in M2).
+- Print that PDF to a user-chosen printer: rasterise sheets (PDFium) and print
+  via `System.Drawing.Printing` from a `net8.0-windows` project. Add `print` /
+  `list-printers` to the CLI (and optionally a `captured/` watcher).
 - Copies, printer/paper selection, duplex hint.
+- **Full implementation plan: [M3-PRINT.md](M3-PRINT.md)** — includes a
+  paper-free test via "Microsoft Print to PDF".
 
-Exit criteria: 4-up output comes out of a real printer correctly.
+Exit criteria: 4-up output comes out of a real printer correctly (and the
+paper-free PDF-driver test matches the imposed layout).
 
 ## ▶ M4 — App shell & UX
 
