@@ -15,20 +15,47 @@ namespace OpenLeanPrint.Compose;
 public sealed class PdfImposer
 {
     /// <summary>Imposes a single source PDF N-up according to <paramref name="settings"/>.</summary>
-    public byte[] ImposeToPdf(byte[] sourcePdf, ImpositionSettings settings)
+    public byte[] ImposeToPdf(byte[] sourcePdf, ImpositionSettings settings) =>
+        ImposeToPdf(new[] { sourcePdf }, settings);
+
+    /// <summary>
+    /// Imposes several source PDFs as one continuous sequence — the pooled
+    /// "combine several print jobs onto shared sheets" case.
+    /// </summary>
+    public byte[] ImposeToPdf(IReadOnlyList<byte[]> sourcePdfs, ImpositionSettings settings)
     {
-        var pages = ReadPageSizes(sourcePdf);
+        var pages = ReadPageSizes(sourcePdfs);
         var result = new NUpImposer().Impose(pages, settings);
-        return Compose(new[] { sourcePdf }, result);
+        return Compose(sourcePdfs, result);
     }
 
     /// <summary>Imposes a single source PDF as a saddle-stitch booklet.</summary>
     public byte[] ImposeBookletToPdf(byte[] sourcePdf, PtSize sheetSize,
+                                     PtMargins margins = default, double gutter = 0) =>
+        ImposeBookletToPdf(new[] { sourcePdf }, sheetSize, margins, gutter);
+
+    /// <summary>Imposes several source PDFs as one saddle-stitch booklet.</summary>
+    public byte[] ImposeBookletToPdf(IReadOnlyList<byte[]> sourcePdfs, PtSize sheetSize,
                                      PtMargins margins = default, double gutter = 0)
     {
-        var pages = ReadPageSizes(sourcePdf);
+        var pages = ReadPageSizes(sourcePdfs);
         var result = new BookletImposer().Impose(pages, sheetSize, margins, gutter);
-        return Compose(new[] { sourcePdf }, result);
+        return Compose(sourcePdfs, result);
+    }
+
+    /// <summary>
+    /// Reads page sizes from several PDFs, tagging each page with the index of
+    /// the document it came from so <see cref="Compose"/> can find it again.
+    /// </summary>
+    public static IReadOnlyList<SourcePage> ReadPageSizes(IReadOnlyList<byte[]> pdfs)
+    {
+        ArgumentNullException.ThrowIfNull(pdfs);
+
+        var pages = new List<SourcePage>();
+        for (int document = 0; document < pdfs.Count; document++)
+            foreach (var page in ReadPageSizes(pdfs[document]))
+                pages.Add(page with { DocumentIndex = document });
+        return pages;
     }
 
     /// <summary>Reads page sizes (points) from a PDF into the Core page model.</summary>

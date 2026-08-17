@@ -32,7 +32,7 @@ third-party driver**. See [M1-CAPTURE.md](M1-CAPTURE.md) for details.
 Exit criteria met: a captured PDF on disk and a populated `PrintDocument`,
 both automated on Linux and confirmed end-to-end on Windows.
 
-## ◑ M2 — Render & compose (compose core done; on-screen preview next)
+## ✅ M2 — Render & compose (done)
 
 - ✅ `OpenLeanPrint.Compose`: imposes an `ImpositionResult` into an output PDF —
   each source page placed with the computed position, scale and rotation
@@ -40,12 +40,11 @@ both automated on Linux and confirmed end-to-end on Windows.
 - ✅ `OpenLeanPrint.Cli` (`impose` / `sample`) to run it on a captured PDF.
 - ✅ Verified by tests + visual raster check (4-up row order, booklet order,
   90° rotation for stacked layouts). See [M2-IMPOSE.md](M2-IMPOSE.md).
-- ▶ On-screen **raster preview** (PDFium) for a live WYSIWYG dialog.
-- ▶ Live re-impose when settings change (N-up, margins, order, scale).
+- ✅ On-screen **raster preview** (PDFium via `PdfRasterizer.RenderPagePng`).
+- ✅ Live re-impose when settings change (N-up, paper, margins, gutter).
 
-Exit criteria: captured job shown 2-up/4-up on screen, matching the engine.
-The compose core already produces the exact imposed output; the preview will
-render it live.
+Exit criteria met: a job is shown 2-up/4-up on screen, matching the engine —
+in the desktop app (see [M4-APP.md](M4-APP.md)).
 
 ## ◑ M3 — Forward to a printer (implemented; physical print still to confirm)
 
@@ -70,12 +69,17 @@ Exit criteria: the paper-free PDF-driver test matches the imposed layout (met);
 4-up output comes out of a real printer correctly (job accepted and completed;
 visual check on paper still open).
 
-## ▶ M4 — App shell & UX
+## ◑ M4 — App shell & UX (usable app; polish outstanding)
 
-- `OpenLeanPrint.App` (WinUI 3): pool list, reorder/remove jobs, combine, presets
-  (2-up, 4-up, booklet), settings persistence.
-- Tray/quick-launch; "keep collecting jobs" workflow.
-- Installer (MSIX), signed. **ARM64 + x64** builds.
+- ✅ `OpenLeanPrint.App` (**WPF**, not WinUI 3 — it needs no extra runtime and is
+  ARM64-native out of the box): pool list, reorder/remove, jobs combined onto
+  shared sheets, presets (1/2/4/9-up, booklet), live preview, print, save PDF.
+  See [M4-APP.md](M4-APP.md).
+- ▶ Settings persistence — the app starts at 4-up/A4 every time.
+- ▶ Fill the pool from the capture host as jobs arrive (today: files, or
+  `openleanprint watch` headlessly).
+- ▶ Tray/quick-launch; "keep collecting jobs" workflow.
+- ▶ Installer (MSIX), signed. **ARM64 + x64** builds.
 
 ## ▶ M5 — Polish & parity
 

@@ -38,18 +38,27 @@ script is blocked, say so rather than working around security.
   round trip capture → impose → print. A sheet was also sent to the physical
   Brother queue and completed (1/1 page); nobody has inspected the paper yet.
 
-Everything is pushed to `main`. 56 tests pass (Windows-only ones self-skip
+- **M4 — desktop app** ◑ (`OpenLeanPrint.App`, **WPF**): job pool (several PDFs
+  combined onto shared sheets), presets, live WYSIWYG preview, print, save PDF.
+  Verified by driving the real window. Polish is open — see
+  [`docs/M4-APP.md`](docs/M4-APP.md).
+- **`watch`** ✅: imposes (and optionally prints) every new PDF in a folder — the
+  hands-free workflow.
+
+Everything is pushed to `main`. 59 tests pass (Windows-only ones self-skip
 elsewhere, so Linux/CI stays green).
+
+**Two solutions:** `OpenLeanPrint.sln` is the cross-platform one that CI builds
+and tests — **do not add the WPF app to it**, WPF cannot build on Linux.
+`OpenLeanPrint.Windows.sln` contains everything including the app.
 
 ## What is next (pick up here)
 
 Roughly in priority order — confirm with the user which they want:
 
-1. **M2 preview + GUI.** On-screen raster preview (PDFium — `PdfRasterizer` in
-   `OpenLeanPrint.Print` already renders a page to a bitmap) + a WinUI 3 desktop
-   app: job pool list, preset buttons (2-up/4-up/booklet), live WYSIWYG preview,
-   print. Keep rendering logic in a platform-neutral project where possible so
-   it stays testable.
+1. **App polish.** Settings persistence (it starts at 4-up/A4 every time), then
+   filling the pool straight from the capture host as jobs arrive, then tray /
+   "keep collecting jobs" and an MSIX installer.
 2. **Look at the printed sheet** — a 4-up test page went to the Brother on
    2026-08-17 and the spooler completed it, but the paper itself has not been
    checked. Confirming margins/scale on paper closes M3's last exit criterion.
@@ -68,6 +77,8 @@ dotnet run --project src/OpenLeanPrint.Cli -- sample sample.pdf --pages 8
 dotnet run --project src/OpenLeanPrint.Cli -- list-printers
 dotnet run --project src/OpenLeanPrint.Cli -- print out.pdf --printer "Microsoft Print to PDF" --out proof.pdf
 dotnet run --project src/OpenLeanPrint.Cli -- watch captured --nup 2x2 --paper A4   # hands-free
+dotnet run --project src/OpenLeanPrint.App                    # the desktop app
+dotnet build OpenLeanPrint.Windows.sln                        # everything incl. the app
 ```
 
 End-to-end capture test on Windows (see `docs/M1-CAPTURE.md`):
@@ -92,6 +103,7 @@ dotnet run --project src/OpenLeanPrint.Cli -- impose "captured\job-0001.pdf" out
 | `src/OpenLeanPrint.Capture.Host` | Runnable console host (logs + saves captured jobs). |
 | `src/OpenLeanPrint.Compose` | ImpositionResult → output PDF (PdfSharpCore). |
 | `src/OpenLeanPrint.Print` | Imposed PDF → Windows printer (PDFium raster + spooler). |
+| `src/OpenLeanPrint.App` | WPF desktop app: pool, live preview, print. Not in OpenLeanPrint.sln. |
 | `src/OpenLeanPrint.Cli` | `openleanprint` CLI: `impose` / `sample` / `print` / `list-printers` / `watch`. |
 | `tests/**` | xUnit tests (Core, Capture, Compose, Print) — run on any OS. |
 | `scripts/*.ps1` | Windows printer register/unregister. |
@@ -113,6 +125,12 @@ dotnet run --project src/OpenLeanPrint.Cli -- impose "captured\job-0001.pdf" out
   make every `dotnet run` need `-f`), and Linux/CI still builds everything.
 - **Native dependencies must ship win-arm64.** PDFium (via PDFtoImage) and
   SkiaSharp do; `Docnet.Core` does *not* — that is why it was not used.
+- **The GUI is WPF, deliberately.** It ships with the .NET SDK, is ARM64-native
+  and needs no runtime install or MSIX to start; WinUI 3 would have required the
+  Windows App SDK runtime first. Keep app styles in `Theme.xaml` (a plain
+  resource dictionary) so a window can be hosted or rendered without booting
+  `App`. WPF implicitly imports `System.Windows.Shapes`, so files that touch the
+  file system need `using Path = System.IO.Path;`.
 - **Keep `OpenLeanPrint.Core` free of Windows/native dependencies** so the
   geometric core stays unit-testable on any OS. New platform-neutral logic
   should stay testable too.

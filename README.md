@@ -8,13 +8,12 @@ Designed from day one to run on **Windows on ARM (ARM64)** as well as x64, by
 avoiding the one thing that makes classic virtual-printer tools ARM-hostile:
 a third-party kernel/print driver.
 
-> Status: **the whole chain works from the command line.** Printing from a real
-> app is captured over driverless IPP, imposed N-up or as a booklet, and sent
-> back out to a printer — verified on **Windows 11 ARM64**: `Add-Printer -IppURL`
-> attaches the in-box Microsoft IPP Class Driver to the loopback service, and an
-> imposed 4-up sheet printed through "Microsoft Print to PDF" comes back exactly
-> as laid out. What is missing is the face of it: the on-screen WYSIWYG preview
-> and the app UI — see the roadmap.
+> Status: **the whole chain works, and there is a desktop app.** Printing from a
+> real application is captured over driverless IPP, pooled, imposed N-up or as a
+> booklet, previewed on screen and sent back out to a printer — verified on
+> **Windows 11 ARM64**. What is left is polish: settings persistence, feeding the
+> app's pool straight from the capture host, and a signed installer — see the
+> roadmap.
 
 ## Why another print tool?
 
@@ -63,6 +62,7 @@ Full detail, alternatives and trade-offs: [docs/ARCHITECTURE.md](docs/ARCHITECTU
 | `src/OpenLeanPrint.Capture.Host` | Runnable console host: logs and saves captured jobs. |
 | `src/OpenLeanPrint.Compose` | Imposes an `ImpositionResult` into an output PDF (PdfSharpCore, net8.0). |
 | `src/OpenLeanPrint.Print` | Prints an imposed PDF to a Windows printer (PDFium raster + spooler). |
+| `src/OpenLeanPrint.App` | WPF desktop app: job pool, live preview, print (Windows). |
 | `src/OpenLeanPrint.Cli` | `openleanprint` CLI: `impose` / `sample` / `print` / `list-printers` / `watch`. |
 | `tests/OpenLeanPrint.Core.Tests` | xUnit tests for the engine; run on any OS. |
 | `tests/OpenLeanPrint.Capture.Tests` | Codec, loopback-server and PDF tests; run on any OS. |
@@ -73,17 +73,36 @@ Full detail, alternatives and trade-offs: [docs/ARCHITECTURE.md](docs/ARCHITECTU
 | `docs/M1-CAPTURE.md` | The capture prototype: how to run and test it. |
 | `docs/M2-IMPOSE.md` | Imposing a captured PDF N-up / booklet from the CLI. |
 | `docs/M3-PRINT.md` | Printing an imposed PDF to a real printer. |
+| `docs/M4-APP.md` | The desktop app: pool, preview, print. |
 | `docs/ROADMAP.md` | Milestones from here to a usable app. |
 
-Planned (see roadmap): on-screen raster preview + `src/OpenLeanPrint.App` (WinUI 3 GUI).
+Planned (see roadmap): settings persistence, capture-to-pool integration, MSIX installer.
 
 ## Building & testing
 
-Requires the [.NET 8 SDK](https://dotnet.microsoft.com/download). The core and
-its tests are cross-platform — you can build them on Linux, macOS or Windows:
+Requires the [.NET 8 SDK](https://dotnet.microsoft.com/download). Everything
+except the desktop app is cross-platform — you can build and test it on Linux,
+macOS or Windows:
 
 ```bash
 dotnet test
+```
+
+The WPF app needs the Windows Desktop SDK, so it lives in a second solution that
+also contains everything else:
+
+```bash
+dotnet build OpenLeanPrint.Windows.sln
+```
+
+## Running it
+
+```powershell
+# The desktop app: pool PDFs, preview the imposed sheets, print
+dotnet run --project src/OpenLeanPrint.App
+
+# Or headless: impose every new PDF in a folder and print it
+dotnet run --project src/OpenLeanPrint.Cli -- watch captured --nup 2x2 --paper A4
 ```
 
 ## Using the engine

@@ -30,11 +30,14 @@ public static class PdfRasterizer
     }
 
     /// <summary>
-    /// Renders one page at <paramref name="dpi"/> into a GDI+ bitmap the caller
-    /// owns (and must dispose).
+    /// Renders one page at <paramref name="dpi"/> to PNG bytes. This is the
+    /// toolkit-neutral form — a WPF preview can load it directly, with no GDI+
+    /// involved.
     /// </summary>
     [SupportedOSPlatform("windows")]
-    public static Bitmap RenderPage(byte[] pdf, int pageIndex, int dpi)
+    [SupportedOSPlatform("linux")]
+    [SupportedOSPlatform("macos")]
+    public static byte[] RenderPagePng(byte[] pdf, int pageIndex, int dpi)
     {
         ArgumentNullException.ThrowIfNull(pdf);
         ArgumentOutOfRangeException.ThrowIfNegative(pageIndex);
@@ -50,16 +53,23 @@ public static class PdfRasterizer
         };
 
         using var rendered = Conversion.ToImage(pdf, page: (Index)pageIndex, options: options);
-
-        // Hand the pixels to GDI+ via PNG: it is the one path whose colour
-        // handling is unambiguous (Skia's buffer is premultiplied BGRA).
-        // A Bitmap decoded from a stream keeps referencing that stream, so copy
-        // into a bitmap that owns its pixels and can outlive the stream.
         using var encoded = rendered.Encode(SKEncodedImageFormat.Png, 100)
             ?? throw new InvalidOperationException($"Could not encode page {pageIndex + 1} of the PDF.");
-        using var ms = new MemoryStream();
-        encoded.SaveTo(ms);
-        ms.Position = 0;
+        return encoded.ToArray();
+    }
+
+    /// <summary>
+    /// Renders one page at <paramref name="dpi"/> into a GDI+ bitmap the caller
+    /// owns (and must dispose) — what the printing path needs.
+    /// </summary>
+    [SupportedOSPlatform("windows")]
+    public static Bitmap RenderPage(byte[] pdf, int pageIndex, int dpi)
+    {
+        // Going through PNG is the one path whose colour handling is
+        // unambiguous (Skia's own buffer is premultiplied BGRA). A Bitmap
+        // decoded from a stream keeps referencing that stream, so copy into a
+        // bitmap that owns its pixels and can outlive it.
+        using var ms = new MemoryStream(RenderPagePng(pdf, pageIndex, dpi));
         using var decoded = new Bitmap(ms);
         return new Bitmap(decoded);
     }

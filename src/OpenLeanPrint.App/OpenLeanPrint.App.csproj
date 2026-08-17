@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The desktop app: job pool, live WYSIWYG preview, print.
+
+    WPF needs the Windows Desktop SDK, which does not exist on Linux, so this
+    project is deliberately NOT part of OpenLeanPrint.sln - that solution stays
+    buildable and testable on Linux/CI. Use OpenLeanPrint.Windows.sln (or build
+    this project directly) on Windows.
+  -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <RootNamespace>OpenLeanPrint.App</RootNamespace>
+    <AssemblyName>OpenLeanPrint</AssemblyName>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\OpenLeanPrint.Core\OpenLeanPrint.Core.csproj" />
+    <ProjectReference Include="..\OpenLeanPrint.Compose\OpenLeanPrint.Compose.csproj" />
+    <ProjectReference Include="..\OpenLeanPrint.Print\OpenLeanPrint.Print.csproj" />
+  </ItemGroup>
+
+</Project>

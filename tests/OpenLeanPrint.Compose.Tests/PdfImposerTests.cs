@@ -68,6 +68,48 @@ public class PdfImposerTests
     }
 
     [Fact]
+    public void ReadPageSizes_AcrossDocuments_TagsEachPageWithItsDocument()
+    {
+        var pages = PdfImposer.ReadPageSizes(new[] { TestPdfs.Colored(2), TestPdfs.Colored(3) });
+
+        Assert.Equal(5, pages.Count);
+        Assert.Equal(new[] { 0, 0, 1, 1, 1 }, pages.Select(p => p.DocumentIndex));
+        Assert.Equal(new[] { 0, 1, 0, 1, 2 }, pages.Select(p => p.PageIndex));
+    }
+
+    [Fact]
+    public void FourUp_PoolingTwoDocuments_CombinesThemOntoSharedSheets()
+    {
+        // Two 2-page jobs pooled together fill one 4-up sheet - the "combine
+        // several print jobs" case the job pool exists for.
+        var documents = new[] { TestPdfs.Colored(2), TestPdfs.Colored(2) };
+        var settings = ImpositionSettings.NUp(2, 2) with { SheetSize = PaperSizes.A4 };
+
+        var outPdf = new PdfImposer().ImposeToPdf(documents, settings);
+
+        var (count, w, h) = Inspect(outPdf);
+        Assert.Equal(1, count);
+        Assert.Equal(PaperSizes.A4.Width, w, 1);
+        Assert.Equal(PaperSizes.A4.Height, h, 1);
+        // Content from both documents made it in: a single 2-page document
+        // imposed the same way is measurably smaller.
+        var single = new PdfImposer().ImposeToPdf(TestPdfs.Colored(2), settings);
+        Assert.True(outPdf.Length > single.Length);
+    }
+
+    [Fact]
+    public void Booklet_PoolingTwoDocuments_OrdersAcrossBoth()
+    {
+        var documents = new[] { TestPdfs.Colored(4), TestPdfs.Colored(4) };
+
+        var outPdf = new PdfImposer().ImposeBookletToPdf(documents, PaperSizes.A4);
+
+        var (count, w, h) = Inspect(outPdf);
+        Assert.Equal(4, count); // 8 pooled pages, 2-up, double-sided
+        Assert.True(w > h);
+    }
+
+    [Fact]
     public void OneUp_KeepsPageCount()
     {
         var pdf = TestPdfs.Colored(5);

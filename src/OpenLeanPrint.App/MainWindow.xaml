@@ -1,0 +1,126 @@
+<Window x:Class="OpenLeanPrint.App.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="OpenLeanPrint" Height="800" Width="1220" MinHeight="560" MinWidth="900"
+        WindowStartupLocation="CenterScreen" Background="{StaticResource Chrome}">
+
+    <DockPanel>
+
+        <!-- Toolbar: everything that changes the layout -->
+        <Border DockPanel.Dock="Top" Background="{StaticResource Panel}"
+                BorderBrush="{StaticResource Line}" BorderThickness="0,0,0,1" Padding="12,10">
+            <WrapPanel>
+                <Button x:Name="AddButton" Content="Add PDFs…" Click="AddJobs_Click"/>
+                <Button x:Name="RemoveButton" Content="Remove" Click="RemoveJob_Click"/>
+
+                <Border Width="1" Background="{StaticResource Line}" Margin="8,2,14,2"/>
+
+                <TextBlock Text="Layout" Style="{StaticResource Label}" Margin="0,0,8,0"/>
+                <ToggleButton x:Name="Preset1Up" Content="1-up" Click="Preset_Click" Tag="1x1"/>
+                <ToggleButton x:Name="Preset2Up" Content="2-up" Click="Preset_Click" Tag="1x2"/>
+                <ToggleButton x:Name="Preset4Up" Content="4-up" Click="Preset_Click" Tag="2x2" IsChecked="True"/>
+                <ToggleButton x:Name="Preset9Up" Content="9-up" Click="Preset_Click" Tag="3x3"/>
+                <ToggleButton x:Name="PresetBooklet" Content="Booklet" Click="Preset_Click" Tag="booklet"/>
+
+                <TextBlock Text="Paper" Style="{StaticResource Label}"/>
+                <ComboBox x:Name="PaperBox" Width="92" SelectionChanged="Paper_Changed"/>
+
+                <TextBlock Text="Margin" Style="{StaticResource Label}"/>
+                <TextBox x:Name="MarginBox" Text="8" TextChanged="Number_Changed"/>
+                <TextBlock Text="mm" Style="{StaticResource Label}" Margin="4,0,0,0"/>
+
+                <TextBlock Text="Gutter" Style="{StaticResource Label}"/>
+                <TextBox x:Name="GutterBox" Text="6" TextChanged="Number_Changed"/>
+                <TextBlock Text="pt" Style="{StaticResource Label}" Margin="4,0,0,0"/>
+            </WrapPanel>
+        </Border>
+
+        <!-- Action bar: what leaves the app -->
+        <Border DockPanel.Dock="Bottom" Background="{StaticResource Panel}"
+                BorderBrush="{StaticResource Line}" BorderThickness="0,1,0,0" Padding="12,10">
+            <DockPanel>
+                <Button x:Name="PrintButton" DockPanel.Dock="Right" Style="{StaticResource PrimaryButton}"
+                        Content="Print" Click="Print_Click" Margin="6,0,0,0" MinWidth="90"/>
+                <ComboBox x:Name="PrinterBox" DockPanel.Dock="Right" Width="240"/>
+                <TextBlock DockPanel.Dock="Right" Text="Printer" Style="{StaticResource Label}"/>
+                <Button x:Name="SaveButton" DockPanel.Dock="Right" Content="Save PDF…" Click="Save_Click"/>
+                <TextBlock x:Name="StatusText" Foreground="{StaticResource InkMuted}" Text="No jobs yet."/>
+            </DockPanel>
+        </Border>
+
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="290"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Job pool -->
+            <Border Background="{StaticResource Panel}" BorderBrush="{StaticResource Line}" BorderThickness="0,0,1,0">
+                <DockPanel>
+                    <Border DockPanel.Dock="Top" Padding="14,12,14,8">
+                        <TextBlock Text="Job pool" FontWeight="SemiBold"/>
+                    </Border>
+
+                    <Border DockPanel.Dock="Bottom" Padding="10,8">
+                        <StackPanel Orientation="Horizontal">
+                            <Button x:Name="UpButton" Content="↑" Click="MoveUp_Click" ToolTip="Move job up"/>
+                            <Button x:Name="DownButton" Content="↓" Click="MoveDown_Click" ToolTip="Move job down"/>
+                            <Button x:Name="ClearButton" Content="Clear" Click="Clear_Click"/>
+                        </StackPanel>
+                    </Border>
+
+                    <Grid>
+                        <ListBox x:Name="JobList" BorderThickness="0" Margin="6,0"
+                                 SelectionChanged="JobList_SelectionChanged"
+                                 HorizontalContentAlignment="Stretch">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel Margin="6,7">
+                                        <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis"/>
+                                        <TextBlock Text="{Binding Summary}" FontSize="11"
+                                                   Foreground="{StaticResource InkMuted}"/>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+
+                        <TextBlock x:Name="EmptyPoolHint" Margin="18" TextWrapping="Wrap"
+                                   Foreground="{StaticResource InkMuted}" VerticalAlignment="Top"
+                                   Text="Add PDFs — or point the capture host at this machine and print from any app. Several jobs are combined onto shared sheets, in this order."/>
+                    </Grid>
+                </DockPanel>
+            </Border>
+
+            <!-- Preview -->
+            <Grid Grid.Column="1">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <Border Background="{StaticResource Mat}" Padding="28">
+                    <Grid>
+                        <Border x:Name="SheetShadow" Background="White" HorizontalAlignment="Center"
+                                VerticalAlignment="Center" Visibility="Collapsed">
+                            <Border.Effect>
+                                <DropShadowEffect BlurRadius="18" ShadowDepth="3" Opacity="0.45" Color="Black"/>
+                            </Border.Effect>
+                            <Image x:Name="PreviewImage" Stretch="Uniform"
+                                   RenderOptions.BitmapScalingMode="HighQuality"/>
+                        </Border>
+
+                        <TextBlock x:Name="PreviewHint" Foreground="#FFD8D8DE" FontSize="14"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                                   Text="The imposed sheet appears here."/>
+                    </Grid>
+                </Border>
+
+                <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,10,0,10">
+                    <Button x:Name="PrevSheet" Content="◀" Click="PrevSheet_Click"/>
+                    <TextBlock x:Name="SheetLabel" Text="—" MinWidth="140" TextAlignment="Center"/>
+                    <Button x:Name="NextSheet" Content="▶" Click="NextSheet_Click"/>
+                </StackPanel>
+            </Grid>
+        </Grid>
+    </DockPanel>
+</Window>
