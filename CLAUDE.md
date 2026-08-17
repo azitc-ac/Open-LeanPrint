@@ -35,7 +35,8 @@ script is blocked, say so rather than working around security.
   rasterises each imposed sheet with PDFium and prints it through the Windows
   spooler, on the matching paper size at 1:1 scale. **Verified on Windows 11
   ARM64** against *Microsoft Print to PDF* (paper-free), including the full
-  round trip capture → impose → print. Physical paper not yet tried.
+  round trip capture → impose → print. A sheet was also sent to the physical
+  Brother queue and completed (1/1 page); nobody has inspected the paper yet.
 
 Everything is pushed to `main`. 56 tests pass (Windows-only ones self-skip
 elsewhere, so Linux/CI stays green).
@@ -49,8 +50,9 @@ Roughly in priority order — confirm with the user which they want:
    app: job pool list, preset buttons (2-up/4-up/booklet), live WYSIWYG preview,
    print. Keep rendering logic in a platform-neutral project where possible so
    it stays testable.
-2. **Confirm a physical print** — everything so far went through the PDF driver.
-   One real print on the Brother queue closes M3's last exit criterion.
+2. **Look at the printed sheet** — a 4-up test page went to the Brother on
+   2026-08-17 and the spooler completed it, but the paper itself has not been
+   checked. Confirming margins/scale on paper closes M3's last exit criterion.
 3. **`watch` command** (sketched in [`docs/M3-PRINT.md`](docs/M3-PRINT.md)):
    `FileSystemWatcher` on `captured/`, impose each new job with a preset and
    print it. That is a usable "print → auto 4-up → printer" workflow *before*

@@ -131,8 +131,9 @@ platform-neutral so it stays testable on any OS.
   the next milestones.
 - Printing is **Windows-only** (it goes through the Windows spooler) and is
   guarded as such; capture and imposition run on any OS.
-- Printing has been verified through the *Microsoft Print to PDF* driver, not yet
-  on physical paper.
+- Printing has been verified through the *Microsoft Print to PDF* driver; a job
+  to a physical printer was accepted and completed by the spooler, but the
+  printed sheet has not been inspected yet.
 - PDF rendering uses **PDFium** (BSD-licensed, via PDFtoImage/MIT). Ghostscript
   and MuPDF are AGPL and are intentionally avoided so OpenLeanPrint can stay
   permissively licensed.

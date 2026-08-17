@@ -59,11 +59,14 @@ render it live.
   "Microsoft Print to PDF" comes back pixel-for-pixel like the imposed input,
   A4 stays A4, and multi-sheet jobs advance correctly. Full round trip
   capture → impose → print confirmed. See [M3-PRINT.md](M3-PRINT.md).
-- ⚠️ Printing to **physical paper** not yet confirmed (only the PDF driver).
+- ◑ A 4-up sheet was also printed to the **physical Brother** queue and the
+  spooler reported it complete (1/1 page, A4) — but the paper has not been
+  looked at yet, so the printed layout is unconfirmed.
 - ▶ Duplex hint; optional `captured/` folder watcher for a GUI-free workflow.
 
 Exit criteria: the paper-free PDF-driver test matches the imposed layout (met);
-4-up output comes out of a real printer correctly (open).
+4-up output comes out of a real printer correctly (job accepted and completed;
+visual check on paper still open).
 
 ## ▶ M4 — App shell & UX
 

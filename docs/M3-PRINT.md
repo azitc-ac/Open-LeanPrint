@@ -97,6 +97,11 @@ no paper used:
 5. Full round trip on a **real captured job** (`captured/job-0001.pdf` from M1):
    imposed 4-up and printed through the PDF driver — one A4 sheet with the four
    source pages correctly placed.
+6. **On physical paper** (Brother MFC-9332CDW, in-box IPP class driver): a 4-up
+   A4 sheet was accepted and completed by the spooler — `PagesPrinted 1 / 1`,
+   147 KB delivered to the device, paper resolved to A4. The sheet itself has
+   not been looked at yet (nobody was at the printer), so hardware margins and
+   colour on paper are still unconfirmed.
 
 Automated: 21 tests in `OpenLeanPrint.Print.Tests` (56 in the solution). The
 geometry and paper-matching tests run on any OS; the GDI+/PDFium ones are
@@ -104,13 +109,13 @@ geometry and paper-matching tests run on any OS; the GDI+/PDFium ones are
 spool a real job — that stays a manual check, so `dotnet test` has no side
 effects.
 
-**Not yet confirmed:** printing to physical paper. Everything above went through
-the PDF driver, which exercises the same code path but not the physical printer's
-hardware margins and colour handling.
+**Not yet confirmed:** how the physical sheet actually looks. The spooler path to
+a real printer works (point 6), but nobody has inspected the paper — the printed
+margins, scale and colour are the last thing to eyeball.
 
 ## Next
 
-- Print to a real printer once, to confirm physical output.
+- Look at the printed sheet from the Brother and confirm the layout on paper.
 - Optional `watch <captured-folder> --nup 2x2 --printer "…"`: impose and print
   every new `job-*.pdf` automatically — a usable workflow before the GUI exists
   (`FileSystemWatcher`, debounced until the file is fully written).
