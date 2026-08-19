@@ -141,9 +141,7 @@ Import-Certificate -FilePath certs\Alexander-Zarenko.cer -CertStoreLocation Cert
 Add-AppxPackage <path>\OpenLeanPrint-win-arm64.msix
 ```
 
-`-Output` puts the package where you want it. Worth checking that the default
-is not inside a synced folder: 72 MB uploading to OneDrive on every build is a
-poor trade.
+`-Output` puts the package wherever you want it.
 
 Verified: the package builds, signs, and carries the expected identity
 (`AlexanderZarenko.OpenLeanPrint`, 1.0.0.0, arm64, 494 files). Its signature
