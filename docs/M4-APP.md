@@ -121,12 +121,16 @@ and it needs no administrator rights.
 
 ```powershell
 # once: a signing certificate (self-signed is fine for your own machines)
-.\scripts\New-SigningCertificate.ps1 -Password "<your password>"
+.\scripts\New-SigningCertificate.ps1
 
 # then, per architecture:
-.\scripts\Build-Msix.ps1 -CertificatePath certs\Alexander-Zarenko.pfx `
-    -CertificatePassword "<your password>" -Version 1.0.0.0
+.\scripts\Build-Msix.ps1 -CertificateSubject "CN=Alexander Zarenko" -Version 0.1.0.0
 ```
+
+Without `-Password` the certificate's private key stays in
+`Cert:\CurrentUser\My` and signing happens from there, so no key file and no
+password exist anywhere to leak. `-Password` still exports a `.pfx` when a build
+server needs one; `Build-Msix.ps1` then takes `-CertificatePath`.
 
 The result is `dist\OpenLeanPrint-win-arm64.msix` — 72.7 MB for a
 self-contained build. Installing it takes two steps, the first of which needs an
@@ -134,8 +138,12 @@ elevated PowerShell **once per machine**:
 
 ```powershell
 Import-Certificate -FilePath certs\Alexander-Zarenko.cer -CertStoreLocation Cert:\LocalMachine\TrustedPeople
-Add-AppxPackage dist\OpenLeanPrint-win-arm64.msix
+Add-AppxPackage <path>\OpenLeanPrint-win-arm64.msix
 ```
+
+`-Output` puts the package where you want it. Worth checking that the default
+is not inside a synced folder: 72 MB uploading to OneDrive on every build is a
+poor trade.
 
 Verified: the package builds, signs, and carries the expected identity
 (`AlexanderZarenko.OpenLeanPrint`, 1.0.0.0, arm64, 494 files). Its signature

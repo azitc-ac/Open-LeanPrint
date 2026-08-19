@@ -26,7 +26,10 @@
     packaging/AppxManifest.xml.
 
 .PARAMETER Password
-    Password protecting the exported .pfx.
+    Password protecting the exported .pfx. Omit it to skip the .pfx entirely:
+    the private key then stays in your certificate store and Build-Msix.ps1 can
+    sign from there with -CertificateSubject, so no key file and no password
+    exist to leak.
 
 .PARAMETER OutputDirectory
     Where to write the .pfx/.cer. Default: certs\ in the repository root
@@ -41,7 +44,7 @@
 [CmdletBinding()]
 param(
     [string]$Subject = "CN=Alexander Zarenko",
-    [Parameter(Mandatory = $true)][string]$Password,
+    [string]$Password,
     [string]$OutputDirectory,
     [int]$YearsValid = 3
 )
@@ -67,19 +70,23 @@ $certificate = New-SelfSignedCertificate `
     -TextExtension @("2.5.29.37={text}1.3.6.1.5.5.7.3.3", "2.5.29.19={text}")
 
 $name = ($Subject -replace '^CN=', '') -replace '[^\w\-]', '-'
-$pfx = Join-Path $OutputDirectory "$name.pfx"
 $cer = Join-Path $OutputDirectory "$name.cer"
-
-$secure = ConvertTo-SecureString -String $Password -Force -AsPlainText
-Export-PfxCertificate -Cert $certificate -FilePath $pfx -Password $secure | Out-Null
 Export-Certificate -Cert $certificate -FilePath $cer | Out-Null
 
 Write-Host ""
 Write-Host "Thumbprint : $($certificate.Thumbprint)"
-Write-Host "Private key: $pfx" -ForegroundColor Green
 Write-Host "Public cert: $cer" -ForegroundColor Green
+
+if ($Password) {
+    $pfx = Join-Path $OutputDirectory "$name.pfx"
+    $secure = ConvertTo-SecureString -String $Password -Force -AsPlainText
+    Export-PfxCertificate -Cert $certificate -FilePath $pfx -Password $secure | Out-Null
+    Write-Host "Private key: $pfx" -ForegroundColor Green
+    Write-Host "Keep the .pfx private - it can sign software as you."
+} else {
+    Write-Host "The private key stays in Cert:\CurrentUser\My - sign with:"
+    Write-Host "  .\scripts\Build-Msix.ps1 -CertificateSubject `"$Subject`""
+}
 Write-Host ""
 Write-Host "Trust it once per machine (needs an elevated PowerShell):"
 Write-Host "  Import-Certificate -FilePath `"$cer`" -CertStoreLocation Cert:\LocalMachine\TrustedPeople"
-Write-Host ""
-Write-Host "Keep the .pfx private - it can sign software as you."

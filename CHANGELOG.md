@@ -16,7 +16,9 @@ All notable changes to OpenLeanPrint. The format follows
   drawn across every finished sheet, auto-sized to the paper.
 - **MSIX packaging** (`scripts/Build-Msix.ps1`) using makeappx/signtool from a
   NuGet package: no Windows SDK installation and no administrator rights.
-  `scripts/New-SigningCertificate.ps1` creates the sideloading certificate.
+  `scripts/New-SigningCertificate.ps1` creates the sideloading certificate;
+  signing can happen straight from the certificate store, so no key file and no
+  password need to exist.
 - **Desktop app** (`OpenLeanPrint.App`, WPF): job pool, live WYSIWYG preview,
   layout presets, print, save PDF, drag & drop, tray icon that keeps collecting
   captured jobs with the window closed, and settings that survive a restart.

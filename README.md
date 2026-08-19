@@ -98,7 +98,8 @@ something copyable — one self-contained executable, or an installable MSIX:
 
 ```powershell
 .\scripts\Publish-App.ps1
-.\scripts\Build-Msix.ps1 -CertificatePath certs\your.pfx -CertificatePassword "…"
+.\scripts\New-SigningCertificate.ps1
+.\scripts\Build-Msix.ps1 -CertificateSubject "CN=Your Name"
 ```
 
 ## Project layout

@@ -25,9 +25,14 @@
     whatever packaging/AppxManifest.xml already says.
 
 .PARAMETER CertificatePath
-    .pfx to sign with (see New-SigningCertificate.ps1). Without it the package
-    is built unsigned, which Windows will not install - useful only to inspect
-    the layout.
+    .pfx to sign with (see New-SigningCertificate.ps1). Without a certificate of
+    some kind the package is built unsigned, which Windows will not install -
+    useful only to inspect the layout.
+
+.PARAMETER CertificateSubject
+    Sign using a certificate already in your store, by subject (e.g.
+    "CN=Alexander Zarenko"). Preferred over -CertificatePath: the private key
+    never leaves the store and no password has to exist anywhere.
 
 .PARAMETER CertificatePassword
     Password for the .pfx.
@@ -47,6 +52,7 @@ param(
     [string]$Version = "1.0.0.0",
     [string]$Publisher,
     [string]$CertificatePath,
+    [string]$CertificateSubject,
     [string]$CertificatePassword,
     [bool]$SelfContained = $true,
     [string]$Output
@@ -117,16 +123,24 @@ Write-Host "Packing..." -ForegroundColor Cyan
 if ($LASTEXITCODE -ne 0) { throw "makeappx failed with exit code $LASTEXITCODE." }
 
 # --- 5. sign ----------------------------------------------------------------
-if ($CertificatePath) {
+if ($CertificatePath -or $CertificateSubject) {
     if (-not $signtool) { throw "signtool.exe for $packageArchitecture not found." }
     Write-Host "Signing..." -ForegroundColor Cyan
-    $arguments = @("sign", "/fd", "SHA256", "/f", $CertificatePath)
-    if ($CertificatePassword) { $arguments += @("/p", $CertificatePassword) }
+
+    $arguments = @("sign", "/fd", "SHA256")
+    if ($CertificateSubject) {
+        # From the certificate store: the private key never leaves it.
+        $arguments += @("/n", ($CertificateSubject -replace '^CN=', ''))
+    } else {
+        $arguments += @("/f", $CertificatePath)
+        if ($CertificatePassword) { $arguments += @("/p", $CertificatePassword) }
+    }
     $arguments += $Output
+
     & $signtool.FullName @arguments | ForEach-Object { "  $_" }
     if ($LASTEXITCODE -ne 0) { throw "signtool failed with exit code $LASTEXITCODE." }
 } else {
-    Write-Warning "No -CertificatePath given: the package is unsigned and Windows will refuse to install it."
+    Write-Warning "No certificate given: the package is unsigned and Windows will refuse to install it."
 }
 
 $size = [math]::Round((Get-Item $Output).Length / 1MB, 1)
