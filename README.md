@@ -1,172 +1,137 @@
+<div align="center">
+
+<img src="docs/images/icon.png" width="88" alt="">
+
 # OpenLeanPrint
 
-A modern, lightweight, open-source alternative to **FinePrint** — pool print
-jobs, preview them with a WYSIWYG dialog, arrange them **N-up** (2-on-1,
-4-on-1, booklet …), and forward the result to a real printer.
+**A modern, open-source alternative to FinePrint.** Pool your print jobs, put
+several pages on one sheet, preview the result exactly as it will print, and
+send it to any printer.
 
-Designed from day one to run on **Windows on ARM (ARM64)** as well as x64, by
-avoiding the one thing that makes classic virtual-printer tools ARM-hostile:
-a third-party kernel/print driver.
+[![CI](https://github.com/azitc-ac/OpenLeanPrint/actions/workflows/ci.yml/badge.svg)](https://github.com/azitc-ac/OpenLeanPrint/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-> Status: **usable.** Printing from a real application is captured over
-> driverless IPP, pooled, imposed N-up or as a booklet, previewed on screen and
-> sent back out to a printer — verified on **Windows 11 ARM64**. There is a
-> desktop app with a live preview and a tray icon, a headless `watch` mode, and
-> an MSIX package. What is missing for wider use is a publicly trusted signing
-> certificate — see the roadmap.
+</div>
+
+Built to run natively on **Windows on ARM** as well as x64 — by avoiding the one
+thing that makes classic virtual-printer tools ARM-hostile: a third-party print
+driver.
 
 ## Why another print tool?
 
-Microsoft is phasing out third-party v3/v4 printer drivers and moving to
-**Windows Protected Print (WPP)**, which only permits the in-box IPP class
-driver. On **Windows on ARM**, x64 print drivers are not emulated at all. A
-FinePrint-style tool built as a signed virtual **driver** is therefore both a
-signing/ARM headache and a shrinking runway.
+FinePrint and its kind install a **virtual printer driver**. Microsoft is
+phasing that whole category out: Windows Protected Print only permits the in-box
+IPP class driver, and on Windows on ARM, x64 print drivers are not emulated at
+all. So OpenLeanPrint ships no driver. It registers a local printer that
+Windows drives with its **own** IPP class driver, pointed at a loopback service —
+driverless, ARM64-native, and future-proof by construction. The reasoning in
+full: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
-OpenLeanPrint takes the driverless route instead — see
-[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+## What it does
 
-## What it does (target feature set)
-
-- **Pool print jobs** — print from any app; jobs collect in one place to be
-  reviewed and combined ("summarise print jobs").
-- **N-up imposition** — 1/2/4/n pages per sheet, rows × columns, margins,
-  gutters, cell order, auto-rotate to maximise size.
-- **Booklet** — saddle-stitch page reordering for fold-and-staple booklets.
-- **WYSIWYG preview** — see the exact sheet layout before printing.
-- **Forward to any printer** — send the imposed result to a physical printer.
-
-## Architecture at a glance
-
-```
-App prints ─► Microsoft in-box IPP class driver
-                     │  (PDF over IPP, driverless, ARM64-native)
-                     ▼
-        OpenLeanPrint local loopback IPP service  ──►  Job pool
-                     │
-                     ▼
-        Imposition engine (this repo, tested)  ──►  WYSIWYG preview
-                     │
-                     ▼
-              Forward to the chosen physical printer
-```
-
-Full detail, alternatives and trade-offs: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
-
-## Repository layout
-
-| Path | Description |
+| | |
 |---|---|
-| `src/OpenLeanPrint.Core` | Platform-neutral domain model + imposition engine (net8.0, no Windows deps). |
-| `src/OpenLeanPrint.Capture` | Loopback IPP capture service + IPP codec + PDF page extraction (net8.0). |
-| `src/OpenLeanPrint.Capture.Host` | Runnable console host: logs and saves captured jobs. |
-| `src/OpenLeanPrint.Compose` | Imposes an `ImpositionResult` into an output PDF (PdfSharpCore, net8.0). |
-| `src/OpenLeanPrint.Print` | Prints an imposed PDF to a Windows printer (PDFium raster + spooler). |
-| `src/OpenLeanPrint.App` | WPF desktop app: job pool, live preview, print (Windows). |
-| `src/OpenLeanPrint.Cli` | `openleanprint` CLI: `impose` / `sample` / `print` / `list-printers` / `watch`. |
-| `tests/OpenLeanPrint.Core.Tests` | xUnit tests for the engine; run on any OS. |
-| `tests/OpenLeanPrint.Capture.Tests` | Codec, loopback-server and PDF tests; run on any OS. |
-| `tests/OpenLeanPrint.Compose.Tests` | Imposition-to-PDF composition tests; run on any OS. |
-| `tests/OpenLeanPrint.Print.Tests` | Placement/paper-matching (any OS) + GDI+ tests (Windows). |
-| `scripts/` | Printer register/unregister, publishing, MSIX packaging and signing. |
-| `packaging/` | MSIX manifest, tile assets, pinned SDK packaging tools. |
-| `docs/ARCHITECTURE.md` | How capture, rendering and forwarding fit together, and why. |
-| `docs/M1-CAPTURE.md` | The capture prototype: how to run and test it. |
-| `docs/M2-IMPOSE.md` | Imposing a captured PDF N-up / booklet from the CLI. |
-| `docs/M3-PRINT.md` | Printing an imposed PDF to a real printer. |
-| `docs/M4-APP.md` | The desktop app: pool, preview, print, packaging. |
-| `docs/ROADMAP.md` | Milestones from here to a usable app. |
+| <img src="docs/images/example-4up.png" width="240" alt="Four pages imposed on one A4 sheet"> | **N-up imposition.** 1, 2, 4, 9 … pages per sheet, any rows × columns, with margins, gutters and automatic rotation. Four pages here on one A4 sheet. |
+| <img src="docs/images/example-booklet.png" width="240" alt="A booklet sheet showing pages 8 and 1"> | **Booklets.** Saddle-stitch ordering for fold-and-staple booklets — sheet one carries pages 8 and 1, as it must. Pair it with short-edge duplex and the printer does the rest. |
+| <img src="docs/images/example-watermark.png" width="240" alt="Two pages on a sheet with a CONFIDENTIAL watermark"> | **Watermarks.** Text across every sheet, sized to the paper, in the colour and opacity you choose. |
 
-Planned (see roadmap): duplex, watermarks, page deletion — see M5.
+Plus:
 
-## Building & testing
+- **Pool several jobs** onto shared sheets — three short memos become one 4-up
+  sheet, not three.
+- **Drop pages** before printing (`1-4,7`), per job.
+- **Duplex**, including the short-edge flip that booklets need.
+- **Live WYSIWYG preview** that re-imposes as you change anything.
+- **Print or save** — send it to a printer, or keep the imposed PDF.
+- **Hands-free mode** — every job you print gets imposed and printed
+  automatically, no window needed.
 
-Requires the [.NET 8 SDK](https://dotnet.microsoft.com/download). Everything
-except the desktop app is cross-platform — you can build and test it on Linux,
-macOS or Windows:
+## Getting started
 
-```bash
-dotnet test
-```
-
-The WPF app needs the Windows Desktop SDK, so it lives in a second solution that
-also contains everything else:
-
-```bash
-dotnet build OpenLeanPrint.Windows.sln
-```
-
-## Running it
+Download or build the app, then run it:
 
 ```powershell
-# The desktop app: pool PDFs, preview the imposed sheets, print
 dotnet run --project src/OpenLeanPrint.App
-
-# Or headless: impose every new PDF the capture host writes, and print it
-dotnet run --project src/OpenLeanPrint.Cli -- watch --nup 2x2 --paper A4
 ```
 
-To get a copyable build — one self-contained executable, no .NET needed on the
-target machine — or an installable MSIX:
+Drop PDFs on the window, pick a layout, hit Print. That already works without
+any setup.
+
+To capture print jobs **from other applications**, register the virtual printer
+once (in an elevated PowerShell) and leave the capture host running:
 
 ```powershell
-.\scripts\Publish-App.ps1                # or -Runtime win-x64
-.\scripts\New-SigningCertificate.ps1 -Password "<your password>"
-.\scripts\Build-Msix.ps1 -CertificatePath certs\Alexander-Zarenko.pfx -CertificatePassword "<your password>"
+dotnet run --project src/OpenLeanPrint.Capture.Host      # leave running
+.\scripts\Register-Printer.ps1 -Port 6310                # elevated, once
 ```
 
-MSIX needs no Windows SDK installation: the packaging tools come from a NuGet
-package. See [docs/M4-APP.md](docs/M4-APP.md).
+Then print to "OpenLeanPrint Virtual Printer" from anywhere, switch on
+**Collect captured jobs** in the app, and your jobs land in the pool as they
+arrive. Full walkthrough: [docs/USER-GUIDE.md](docs/USER-GUIDE.md).
 
-## Using the engine
+## Command line
 
-```csharp
-using OpenLeanPrint.Core;
-using OpenLeanPrint.Core.Imposition;
+Everything the app does is scriptable:
 
-var pool = new PrintJobPool();
-var doc = new PrintDocument("Report.pdf", "Acrobat");
-for (int i = 0; i < 6; i++) doc.AddPage(PaperSizes.A4);
-pool.Add(doc);
-
-// 4-up on A4:
-var settings = ImpositionSettings.NUp(2, 2) with
-{
-    SheetSize = PaperSizes.A4,
-    Margins = PtMargins.UniformMm(8),
-    GutterX = 6,
-    GutterY = 6,
-};
-
-ImpositionResult result = new NUpImposer().Impose(pool.Flatten(), settings);
-
-foreach (var sheet in result.Sheets)
-    foreach (var p in sheet.Pages)
-        Console.WriteLine($"page {p.Source.PageIndex} -> {p.DestRect} rot {p.Rotation}");
+```powershell
+openleanprint impose report.pdf out.pdf --nup 2x2 --paper A4 --margin 8 --gutter 6
+openleanprint impose report.pdf book.pdf --booklet --pages 1-16
+openleanprint print out.pdf --printer "Brother MFC-9332CDW Printer" --duplex short
+openleanprint watch --nup 2x2 --printer "Brother MFC-9332CDW Printer"   # hands-free
 ```
+
+`watch` is the one that changes your day: print from any application, and a
+4-up sheet comes out of the printer.
+
+## Building
+
+Requires only the [.NET 8 SDK](https://dotnet.microsoft.com/download).
+
+```bash
+dotnet test                              # engine, capture, composition, printing
+dotnet build OpenLeanPrint.Windows.sln   # everything, including the desktop app
+```
+
+The imposition engine and the capture service build and run on Linux and macOS
+too; printing and the app are Windows-only and marked as such. To produce
+something copyable — one self-contained executable, or an installable MSIX:
+
+```powershell
+.\scripts\Publish-App.ps1
+.\scripts\Build-Msix.ps1 -CertificatePath certs\your.pfx -CertificatePassword "…"
+```
+
+## Project layout
+
+| Path | What |
+|---|---|
+| `src/OpenLeanPrint.Core` | Domain model and imposition engine. Platform-neutral, heavily tested. |
+| `src/OpenLeanPrint.Capture` | Loopback IPP service, IPP codec, captured-folder watching. |
+| `src/OpenLeanPrint.Capture.Host` | Console host that receives and stores print jobs. |
+| `src/OpenLeanPrint.Compose` | Imposed sheets → output PDF, including watermarks. |
+| `src/OpenLeanPrint.Print` | Output PDF → Windows printer (PDFium raster + spooler). |
+| `src/OpenLeanPrint.App` | The WPF desktop app. |
+| `src/OpenLeanPrint.Cli` | `openleanprint`: impose, print, watch, list-printers, sample. |
+| `docs/` | Architecture, user guide, and a record of how each part was verified. |
+
+## Status
+
+Capture, imposition, printing, the desktop app and packaging all work and are
+verified on Windows 11 ARM64 — see [docs/ROADMAP.md](docs/ROADMAP.md) for what
+each milestone delivered and what is still open.
 
 ## Contributing
 
-Contributions are welcome. Capture, imposition, printing and the desktop app are
-in place and tested; the highest-value next steps are toward FinePrint parity —
-duplex-aware booklets, watermarks, page deletion (see the roadmap). Please keep
-`OpenLeanPrint.Core` platform-neutral so it stays testable on any OS.
+Contributions are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md). The
+imposition engine is the stable, well-tested core; printer compatibility reports
+are especially useful, since every driver has its own opinions.
 
-## License
+## Licence
 
 [MIT](LICENSE) © Alexander Zarenko.
 
-## Notes / caveats
-
-- The desktop app is **Windows-only** (WPF); the imposition engine and the
-  capture service build and run anywhere.
-- Printing is **Windows-only** (it goes through the Windows spooler) and is
-  guarded as such; capture and imposition run on any OS.
-- Printing has been verified through the *Microsoft Print to PDF* driver; a job
-  to a physical printer was accepted and completed by the spooler, but the
-  printed sheet has not been inspected yet.
-- The MSIX package is signed with a **self-signed** certificate by default, so it
-  installs only where that certificate has been trusted by hand.
-- PDF rendering uses **PDFium** (BSD-licensed, via PDFtoImage/MIT). Ghostscript
-  and MuPDF are AGPL and are intentionally avoided so OpenLeanPrint can stay
-  permissively licensed.
+PDF rendering uses [PDFium](https://pdfium.googlesource.com/pdfium/) (BSD) via
+[PDFtoImage](https://github.com/sungaila/PDFtoImage) (MIT), composition uses
+[PdfSharpCore](https://github.com/ststeiger/PdfSharpCore) (MIT) and parsing uses
+[PdfPig](https://github.com/UglyToad/PdfPig) (Apache-2.0). Ghostscript and MuPDF
+are AGPL and are deliberately avoided so OpenLeanPrint can stay permissive.

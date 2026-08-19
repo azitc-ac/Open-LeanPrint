@@ -89,14 +89,21 @@ visual check on paper still open).
   rights. `scripts/New-SigningCertificate.ps1` makes the self-signed
   certificate for sideloading.
 - ▶ A publicly trusted certificate, so the package installs for people who are
-  not you (see [M4-APP.md](M4-APP.md)).
+  not you (see [M4-APP.md](M4-APP.md)) — SignPath Foundation is the intended
+  route for an open-source project.
 
-## ▶ M5 — Polish & parity
+## ◑ M5 — Polish & parity
 
-- Duplex-aware booklet output; per-page rotation overrides.
-- Edge cases: mixed page sizes, huge jobs, high-DPI/multi-monitor preview.
-- Optional extras toward FinePrint parity: watermarks/stationery, PDF export,
-  page deletion, profiles.
+- ✅ **Duplex**, including the short-edge flip booklets need, asked for only when
+  the printer reports support (`--duplex`, "Sides" in the app).
+- ✅ **Page selection** — drop pages before imposing (`--pages 1-4,7`, per-job in
+  the app). Numbers count within each document, not across the pool.
+- ✅ **Watermarks** — text across every sheet, auto-sized to the paper, with
+  colour, opacity and angle.
+- ✅ PDF export (Save PDF… in the app; `impose` has always written one).
+- ▶ Per-page rotation overrides and named profiles.
+- ▶ Skip-blank-page detection.
+- ▶ Edge cases: mixed page sizes, very large jobs, high-DPI/multi-monitor preview.
 
 ## Cross-cutting
 

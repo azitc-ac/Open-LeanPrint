@@ -1,0 +1,41 @@
+# Changelog
+
+All notable changes to OpenLeanPrint. The format follows
+[Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow
+[Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+### Added
+- **Duplex printing** (`--duplex off|long|short|auto`, "Sides" in the app).
+  Booklets want short-edge flipping; the printer is only asked for duplex when
+  it reports support, and the result says what actually happened.
+- **Page selection** (`--pages 1-4,7`, per-job "Pages" in the app) — drop pages
+  before imposing. Numbers count within each document, not across the pool.
+- **Watermarks** (`--watermark DRAFT`, plus colour, opacity, angle and size) —
+  drawn across every finished sheet, auto-sized to the paper.
+- **MSIX packaging** (`scripts/Build-Msix.ps1`) using makeappx/signtool from a
+  NuGet package: no Windows SDK installation and no administrator rights.
+  `scripts/New-SigningCertificate.ps1` creates the sideloading certificate.
+- **Desktop app** (`OpenLeanPrint.App`, WPF): job pool, live WYSIWYG preview,
+  layout presets, print, save PDF, drag & drop, tray icon that keeps collecting
+  captured jobs with the window closed, and settings that survive a restart.
+- **`watch`** — impose (and optionally print) every new PDF in a folder.
+- **`print` / `list-printers`** in the CLI, printing through the Windows spooler.
+- Single-file distributable build (`scripts/Publish-App.ps1`).
+
+### Changed
+- Captured jobs now default to `%LOCALAPPDATA%\OpenLeanPrint\captured` instead
+  of the working directory: they are real documents, and a working directory is
+  often a source tree.
+- CI runs on Linux **and** Windows, so the Windows-only tests actually execute.
+
+## [0.1.0] — foundation
+
+### Added
+- Imposition engine: N-up grids and saddle-stitch booklets, in points with a
+  top-left origin, unit-tested and platform-neutral.
+- Driverless capture: a loopback IPP service that Windows' in-box IPP class
+  driver attaches to, so printing from any application arrives as PDF without a
+  third-party print driver.
+- Composition of imposed sheets into an output PDF (vector, via PdfSharpCore).

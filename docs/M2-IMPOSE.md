@@ -42,6 +42,11 @@ Options for `impose`:
 | `--booklet` | saddle-stitch booklet (overrides `--nup`) | off |
 | `--margin MM` | outer margin, millimetres | `0` |
 | `--gutter PT` | spacing between cells, points | `0` |
+| `--pages LIST` | which source pages to keep, e.g. `1-4,7` | all |
+| `--watermark TEXT` | text drawn across every sheet | none |
+
+Watermark colour, opacity, angle and size have their own options — the full
+list is in the [user guide](USER-GUIDE.md#impose).
 
 ## How it fits the pipeline
 

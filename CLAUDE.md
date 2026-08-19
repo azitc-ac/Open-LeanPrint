@@ -48,8 +48,12 @@ script is blocked, say so rather than working around security.
 - **`watch`** ✅: imposes (and optionally prints) every new PDF in a folder — the
   hands-free workflow. Arrival detection is `CapturedFolderWatcher` in
   `OpenLeanPrint.Capture`, shared with the app and unit-tested.
+- **M5 — parity features** ◑: duplex (`DuplexMode`, short edge for booklets),
+  page selection (`PageSelection`, "1-4,7", counted per document) and watermarks
+  (`Watermark` on `PdfImposer`) are done in engine, CLI and app. Per-page
+  rotation, profiles and skip-blank-pages are open.
 
-Everything is pushed to `main`. 65 tests pass (Windows-only ones self-skip on
+Everything is pushed to `main`. 110 tests pass (Windows-only ones self-skip on
 Linux; CI runs both a Linux and a Windows job).
 
 **Two solutions:** `OpenLeanPrint.sln` is the cross-platform one that CI builds
@@ -60,9 +64,9 @@ and tests — **do not add the WPF app to it**, WPF cannot build on Linux.
 
 Roughly in priority order — confirm with the user which they want:
 
-1. **A publicly trusted code-signing certificate** — the MSIX builds and signs
-   fine (`scripts/Build-Msix.ps1`), but a self-signed certificate only works on
-   machines where it was trusted by hand. Everything else about M4 is done.
+1. **SignPath Foundation application** — the user intends to apply for a free
+   open-source code-signing certificate. The MSIX builds and signs fine
+   (`scripts/Build-Msix.ps1`); only a publicly trusted certificate is missing.
 2. **Look at the printed sheet** — a 4-up test page went to the Brother on
    2026-08-17 and the spooler completed it, but the paper itself has not been
    checked. Confirming margins/scale on paper closes M3's last exit criterion.
@@ -73,7 +77,7 @@ Roughly in priority order — confirm with the user which they want:
 Requires the **.NET 8 SDK**. Everything except the WPF app is cross-platform.
 
 ```powershell
-dotnet test                                   # build + run all tests (65)
+dotnet test                                   # build + run all tests (110)
 dotnet run --project src/OpenLeanPrint.Capture.Host -- --port 6310
 dotnet run --project src/OpenLeanPrint.Cli -- impose in.pdf out.pdf --nup 2x2 --paper A4
 dotnet run --project src/OpenLeanPrint.Cli -- sample sample.pdf --pages 8
@@ -114,7 +118,7 @@ dotnet run --project src/OpenLeanPrint.Cli -- impose "captured\job-0001.pdf" out
 | `tests/**` | xUnit tests (Core, Capture, Compose, Print) — run on any OS. |
 | `scripts/*.ps1` | Printer register/unregister; `Publish-App.ps1` (single exe), `Build-Msix.ps1` + `New-SigningCertificate.ps1` (MSIX). |
 | `packaging/` | MSIX manifest, tile assets, and the pinned SDK packaging tools. |
-| `docs/` | ARCHITECTURE, ROADMAP, M1-CAPTURE, M2-IMPOSE, M3-PRINT, M4-APP. |
+| `docs/` | ARCHITECTURE, USER-GUIDE, ROADMAP, M1-CAPTURE, M2-IMPOSE, M3-PRINT, M4-APP. |
 
 ## Conventions & guardrails
 

@@ -72,6 +72,7 @@ Options for `print`:
 | `--printer NAME` | target printer | Windows default printer |
 | `--out FILE` | write to a file instead of paper; also suppresses the driver's save dialog | off |
 | `--copies N` | copies requested from the driver | `1` |
+| `--duplex MODE` | `off`, `long`, `short`, `auto`; booklets want `short` | `auto` |
 | `--dpi N` | rasterisation resolution (36–1200) | `200` |
 
 `--out` only does something for "print to file" drivers such as *Microsoft Print
@@ -97,6 +98,7 @@ dotnet run --project src/OpenLeanPrint.Cli -- watch C:\scans --nup 2x2
 | `--printer NAME` | also print each imposed result | off — only write files |
 | `--out-dir DIR` | where imposed PDFs are written | `<folder>/imposed` |
 | `--existing` | also process PDFs already in the folder | off — only new ones |
+| `--duplex MODE` | `off`, `long`, `short`, `auto` | `auto` |
 | `--dpi N` | rasterisation resolution when printing | `200` |
 
 It takes the same layout options as `impose` (`--nup`, `--booklet`, `--paper`,
@@ -138,7 +140,7 @@ no paper used:
    not been looked at yet (nobody was at the printer), so hardware margins and
    colour on paper are still unconfirmed.
 
-Automated: 21 tests in `OpenLeanPrint.Print.Tests` (56 in the solution). The
+Automated: 33 tests in `OpenLeanPrint.Print.Tests` (110 in the solution). The
 geometry and paper-matching tests run on any OS; the GDI+/PDFium ones are
 `[WindowsFact]` and skip themselves elsewhere. The suite deliberately does **not**
 spool a real job — that stays a manual check, so `dotnet test` has no side
@@ -148,8 +150,18 @@ effects.
 a real printer works (point 6), but nobody has inspected the paper — the printed
 margins, scale and colour are the last thing to eyeball.
 
+## Duplex
+
+`--duplex off | long | short | auto` (and "Sides" in the app). Booklets want
+**short**: their sheets are landscape, so flipping the long edge would print
+every second side upside down.
+
+Duplex is only requested when `PrinterSettings.CanDuplex` says the printer
+supports it; otherwise the job prints single-sided and the run reports that,
+rather than failing or quietly pretending. Verified against *Microsoft Print to
+PDF*, which reports no duplex support: the job printed and said so.
+
 ## Next
 
 - Look at the printed sheet from the Brother and confirm the layout on paper.
-- Duplex hint and per-job presets.
 - Later: send PDF straight to IPP printers to keep vectors instead of rasterising.
