@@ -49,19 +49,35 @@ public sealed class NUpImposer
             double cellX = settings.Margins.Left + col * (cellW + settings.GutterX);
             double cellY = settings.Margins.Top + row * (cellH + settings.GutterY);
 
-            var (dest, rotation) = FitPage(page.Size, cellX, cellY, cellW, cellH,
-                                           settings.ScaleMode, settings.AllowRotation);
+            // A page turned by the user is fitted at its new proportions, and
+            // auto-rotation stands down so it cannot undo the request.
+            bool turned = page.Rotation != 0;
+            bool quarterTurn = NormalizeRotation(page.Rotation) is 90 or 270;
+            var fitSize = quarterTurn ? page.Size.Rotated() : page.Size;
+
+            var (dest, rotation) = FitPage(fitSize, cellX, cellY, cellW, cellH,
+                                           settings.ScaleMode,
+                                           settings.AllowRotation && !turned);
 
             current!.Add(new PlacedPage
             {
                 Source = page,
                 DestRect = dest,
-                Rotation = rotation,
+                Rotation = NormalizeRotation(rotation + page.Rotation),
                 CellIndex = cellIndex,
             });
         }
 
         return new ImpositionResult { Sheets = sheets };
+    }
+
+    /// <summary>Brings any angle into the 0/90/180/270 the renderer understands.</summary>
+    internal static int NormalizeRotation(int degrees)
+    {
+        int normalized = degrees % 360;
+        if (normalized < 0) normalized += 360;
+        // Round to the nearest quarter turn: the placement maths only handles those.
+        return ((normalized + 45) / 90 % 4) * 90;
     }
 
     /// <summary>Maps a linear cell index to a (row, column) pair for the given fill order.</summary>

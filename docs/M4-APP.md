@@ -30,9 +30,10 @@ Job pool (several PDFs)  ─►  OpenLeanPrint.Core imposition
   jobs nobody wants reprinted.
 - **Drag & drop** — drop PDFs anywhere on the window; anything that is not an
   existing `.pdf` is ignored.
-- **Remove pages by right-clicking them** in the preview. The click is mapped
-  back through the imposition layout to the exact source page, so what you point
-  at is what goes.
+- **Remove or turn pages by right-clicking them** in the preview. The click is
+  mapped back through the imposition layout to the exact source page, so what you
+  point at is what goes.
+- **Layout profiles** — save a layout under a name and pick it again later.
 - **Tray icon** — while collecting, closing the window only hides it, because
   the point of collecting is that jobs keep arriving. The tray menu shows the
   window again, toggles collecting, and quits for real; a balloon announces

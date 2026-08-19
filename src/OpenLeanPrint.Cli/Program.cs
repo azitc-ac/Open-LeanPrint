@@ -254,6 +254,7 @@ static void PrintUsage()
     Console.WriteLine("     --margin MM   outer margin in millimetres            default 0");
     Console.WriteLine("     --gutter PT   spacing between cells in points        default 0");
     Console.WriteLine("     --pages LIST  which source pages to keep, e.g. 1-4,7  default all");
+    Console.WriteLine("     --rotate DEG  turn every page 90 | 180 | 270          default 0");
     Console.WriteLine("     --watermark TEXT        draw TEXT across every sheet");
     Console.WriteLine("     --watermark-opacity N   0..1                          default 0.18");
     Console.WriteLine("     --watermark-color HEX   e.g. #C00000                  default #808080");

@@ -4,9 +4,23 @@ using Path = System.IO.Path;
 
 namespace OpenLeanPrint.App;
 
+/// <summary>A named layout you can come back to — "4-up draft", "booklet".</summary>
+public sealed record LayoutProfile
+{
+    public string Name { get; init; } = string.Empty;
+    public int Rows { get; init; } = 2;
+    public int Columns { get; init; } = 2;
+    public bool Booklet { get; init; }
+    public string Paper { get; init; } = "A4";
+    public double MarginMm { get; init; } = 8;
+    public double Gutter { get; init; } = 6;
+    public string? Watermark { get; init; }
+    public string Duplex { get; init; } = "Default";
+}
+
 /// <summary>
 /// What the app remembers between runs: the layout you last used, the printer
-/// you picked, and whether it was collecting captured jobs.
+/// you picked, whether it was collecting captured jobs, and your saved layouts.
 /// </summary>
 public sealed record AppSettings
 {
@@ -20,6 +34,7 @@ public sealed record AppSettings
     public string Duplex { get; init; } = "Default";
     public string? Watermark { get; init; }
     public bool CollectCapturedJobs { get; init; }
+    public List<LayoutProfile> Profiles { get; init; } = new();
 
     /// <summary><c>%APPDATA%\OpenLeanPrint\settings.json</c>.</summary>
     public static string FilePath { get; } = Path.Combine(

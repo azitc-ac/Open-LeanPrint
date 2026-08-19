@@ -4,6 +4,16 @@ All notable changes to OpenLeanPrint. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- **Per-page rotation** — turn a single page from the preview's right-click
+  menu, or every page at once with `--rotate 90|180|270`. An explicit turn
+  switches auto-rotation off for that page and the layout refits it at its new
+  proportions.
+- **Layout profiles** — save the current layout under a name and come back to
+  it later. Stored with the app's settings.
+
 ## [0.1.0] — 2026-08-19
 
 First release: the whole chain works, and there is an app for it.

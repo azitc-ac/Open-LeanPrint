@@ -72,12 +72,20 @@ re-imposes in the background and repaints the preview.
 **Preview (middle).** The imposed sheet as it will print. Page through the
 sheets with the arrows below it.
 
-**Right-click a page in the preview to remove it.** The click is traced back
-through the layout to the page it landed on — "Remove page 3 of report.pdf" —
-and the remaining pages flow up to fill the gap. The same menu offers to
-restore all pages of that job. This is the quick way to do what the **Pages**
-box spells out; both edit the same selection, so whichever you use, the other
-shows it.
+**Right-click a page in the preview** to remove it or turn it. The click is
+traced back through the layout to the page it landed on — "Remove page 3 of
+report.pdf", "Turn page 3 by 90°" — and for a removal the remaining pages flow
+up to fill the gap. The menu also offers to restore all pages of that job, or to
+put a turned page back upright.
+
+Removing is the quick way to do what the **Pages** box spells out; both edit the
+same selection, so whichever you use, the other shows it. Turning a page switches
+auto-rotation off for it: once you have said which way up you want it, the engine
+stops rearranging it.
+
+**Profiles.** Configure a layout you use often, type a name in the *Profile* box
+and press **Save**. Picking it later restores the grid, paper, margins, gutter,
+watermark and duplex setting in one go. **✕** deletes the selected profile.
 
 **Output (bottom).** Choose sides (duplex), a printer, then **Print** — or
 **Save PDF…** to keep the imposed document instead.
@@ -127,6 +135,7 @@ It also takes every layout option of `impose`.
 | `--margin MM` | outer margin, millimetres | `0` |
 | `--gutter PT` | space between cells, points | `0` |
 | `--pages LIST` | which source pages to keep, e.g. `1-4,7` | all |
+| `--rotate DEG` | turn every page: `90`, `180` or `270` | `0` |
 | `--watermark TEXT` | text across every sheet | none |
 | `--watermark-opacity N` | `0`–`1` | `0.18` |
 | `--watermark-color HEX` | e.g. `#C00000` | `#808080` |

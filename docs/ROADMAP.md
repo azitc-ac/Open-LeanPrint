@@ -102,8 +102,12 @@ visual check on paper still open).
 - ✅ **Watermarks** — text across every sheet, auto-sized to the paper, with
   colour, opacity and angle.
 - ✅ PDF export (Save PDF… in the app; `impose` has always written one).
-- ▶ Per-page rotation overrides and named profiles.
-- ▶ Skip-blank-page detection.
+- ✅ **Per-page rotation** — from the preview's right-click menu, or `--rotate`
+  for a whole document. An explicit turn stops auto-rotation second-guessing it.
+- ✅ **Named profiles** — save a layout and come back to it.
+- ✗ Skip-blank-page detection — dropped on purpose: the WYSIWYG preview with
+  right-click removal solves the same problem more directly and without guessing
+  what "blank" means.
 - ▶ Edge cases: mixed page sizes, very large jobs, high-DPI/multi-monitor preview.
 
 ## Cross-cutting

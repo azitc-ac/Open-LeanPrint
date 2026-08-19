@@ -49,9 +49,11 @@ script is blocked, say so rather than working around security.
   hands-free workflow. Arrival detection is `CapturedFolderWatcher` in
   `OpenLeanPrint.Capture`, shared with the app and unit-tested.
 - **M5 — parity features** ◑: duplex (`DuplexMode`, short edge for booklets),
-  page selection (`PageSelection`, "1-4,7", counted per document) and watermarks
-  (`Watermark` on `PdfImposer`) are done in engine, CLI and app. Per-page
-  rotation, profiles and skip-blank-pages are open.
+  page selection (`PageSelection`, "1-4,7", counted per document), watermarks
+  (`Watermark` on `PdfImposer`), per-page rotation (`SourcePage.Rotation`, which
+  also disables auto-rotate for that page) and named layout profiles are done in
+  engine, CLI and app. Skip-blank-page detection was dropped on purpose — the
+  preview plus right-click removal covers it without guessing.
 
 Everything is pushed to `main`. 110 tests pass (Windows-only ones self-skip on
 Linux; CI runs both a Linux and a Windows job).

@@ -39,8 +39,9 @@ Plus:
 
 - **Pool several jobs** onto shared sheets — three short memos become one 4-up
   sheet, not three.
-- **Drop pages** before printing — type a range, or right-click a page in the
-  preview and remove it.
+- **Drop or turn pages** before printing — type a range, or right-click a page
+  in the preview to remove or rotate it.
+- **Save layouts as profiles** and pick them again later.
 - **Duplex**, including the short-edge flip that booklets need.
 - **Live WYSIWYG preview** that re-imposes as you change anything.
 - **Print or save** — send it to a printer, or keep the imposed PDF.

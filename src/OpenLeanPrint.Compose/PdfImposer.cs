@@ -201,12 +201,31 @@ public sealed class PdfImposer
             return;
         }
 
-        // 90° clockwise: rotate the coordinate system about the cell's top-right
-        // corner, then draw with width/height swapped so the page fills DestRect.
+        // Rotate the coordinate system about the corner that ends up at the
+        // origin, then draw the page there; width and height swap on a quarter
+        // turn so the page still fills DestRect.
         var state = gfx.Save();
-        gfx.TranslateTransform(r.X + r.Width, r.Y);
-        gfx.RotateTransform(90);
-        gfx.DrawImage(form, 0, 0, r.Height, r.Width);
+        switch (placed.Rotation)
+        {
+            case 90:
+                gfx.TranslateTransform(r.X + r.Width, r.Y);
+                gfx.RotateTransform(90);
+                gfx.DrawImage(form, 0, 0, r.Height, r.Width);
+                break;
+            case 180:
+                gfx.TranslateTransform(r.X + r.Width, r.Y + r.Height);
+                gfx.RotateTransform(180);
+                gfx.DrawImage(form, 0, 0, r.Width, r.Height);
+                break;
+            case 270:
+                gfx.TranslateTransform(r.X, r.Y + r.Height);
+                gfx.RotateTransform(270);
+                gfx.DrawImage(form, 0, 0, r.Height, r.Width);
+                break;
+            default:
+                gfx.DrawImage(form, r.X, r.Y, r.Width, r.Height);
+                break;
+        }
         gfx.Restore(state);
     }
 }

@@ -11,6 +11,9 @@ public sealed class JobItem : INotifyPropertyChanged
 {
     private PageSelection _pages = PageSelection.All;
 
+    /// <summary>Turns the user asked for, by 1-based page number.</summary>
+    public Dictionary<int, int> Rotations { get; } = new();
+
     public required string FilePath { get; init; }
     public required byte[] Pdf { get; init; }
     public required int PageCount { get; init; }
@@ -24,7 +27,7 @@ public sealed class JobItem : INotifyPropertyChanged
             _pages = value;
             // The list shows the selection, so it has to hear about the change.
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Pages)));
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Summary)));
+            NotifySummaryChanged();
         }
     }
 
@@ -35,9 +38,15 @@ public sealed class JobItem : INotifyPropertyChanged
         get
         {
             string pages = PageCount == 1 ? "1 page" : $"{PageCount} pages";
-            return _pages.IsAll ? pages : $"{pages} · printing {_pages}";
+            if (!_pages.IsAll) pages += $" · printing {_pages}";
+            if (Rotations.Count > 0) pages += $" · {Rotations.Count} turned";
+            return pages;
         }
     }
+
+    /// <summary>The list shows the summary, so it has to hear when it changes.</summary>
+    public void NotifySummaryChanged() =>
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Summary)));
 
     public event PropertyChangedEventHandler? PropertyChanged;
 }

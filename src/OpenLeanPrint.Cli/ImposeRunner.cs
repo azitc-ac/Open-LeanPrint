@@ -16,12 +16,14 @@ internal sealed record ImposeOptions
     public double Gutter { get; init; }
     public PageSelection Pages { get; init; } = PageSelection.All;
     public Watermark? Watermark { get; init; }
+    public int Rotate { get; init; }
 
     /// <summary>Short human-readable form, e.g. "2x2-up on A4".</summary>
     public string Describe()
     {
         string layout = Booklet ? $"booklet on {PaperName}" : $"{Rows}x{Cols}-up on {PaperName}";
         if (!Pages.IsAll) layout += $", pages {Pages}";
+        if (Rotate != 0) layout += $", rotated {Rotate}°";
         if (Watermark is { IsEmpty: false } mark) layout += $", watermarked \"{mark.Text}\"";
         return layout;
     }
@@ -39,20 +41,21 @@ internal static class ImposeRunner
         var sources = new[] { source };
         var selections = new[] { options.Pages };
 
-        if (options.Booklet)
-        {
-            return imposer.ImposeBookletToPdf(sources, options.Paper, PtMargins.UniformMm(options.MarginMm),
-                                              options.Gutter, selections);
-        }
+        var pages = PdfImposer.ReadPageSizes(sources, selections);
+        if (options.Rotate != 0)
+            pages = pages.Select(page => page with { Rotation = options.Rotate }).ToList();
 
-        var settings = ImpositionSettings.NUp(options.Rows, options.Cols) with
-        {
-            SheetSize = options.Paper,
-            Margins = PtMargins.UniformMm(options.MarginMm),
-            GutterX = options.Gutter,
-            GutterY = options.Gutter,
-        };
-        return imposer.ImposeToPdf(sources, settings, selections);
+        var result = options.Booklet
+            ? new BookletImposer().Impose(pages, options.Paper, PtMargins.UniformMm(options.MarginMm), options.Gutter)
+            : new NUpImposer().Impose(pages, ImpositionSettings.NUp(options.Rows, options.Cols) with
+            {
+                SheetSize = options.Paper,
+                Margins = PtMargins.UniformMm(options.MarginMm),
+                GutterX = options.Gutter,
+                GutterY = options.Gutter,
+            });
+
+        return imposer.Compose(sources, result);
     }
 
     public static ImposeOptions Parse(ArgMap options)
@@ -73,6 +76,7 @@ internal static class ImposeRunner
             Gutter = options.GetDouble("gutter", 0),
             Pages = pages,
             Watermark = ParseWatermark(options),
+            Rotate = (int)options.GetDouble("rotate", 0),
         };
     }
 

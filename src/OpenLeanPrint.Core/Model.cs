@@ -7,7 +7,15 @@ namespace OpenLeanPrint.Core;
 /// <param name="DocumentIndex">Index of the owning <see cref="PrintDocument"/> within a <see cref="PrintJobPool"/>.</param>
 /// <param name="PageIndex">Zero-based page index within the owning document.</param>
 /// <param name="Size">Media size of the source page in points.</param>
-public sealed record SourcePage(int DocumentIndex, int PageIndex, PtSize Size);
+public sealed record SourcePage(int DocumentIndex, int PageIndex, PtSize Size)
+{
+    /// <summary>
+    /// A turn the user asked for, in degrees clockwise (0, 90, 180 or 270).
+    /// Setting it also switches auto-rotation off for this page: once someone
+    /// has said which way up they want it, the engine should not argue.
+    /// </summary>
+    public int Rotation { get; init; }
+}
 
 /// <summary>
 /// One captured print job: an ordered list of pages plus a little metadata.

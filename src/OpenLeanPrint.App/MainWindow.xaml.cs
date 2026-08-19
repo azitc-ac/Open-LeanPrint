@@ -51,6 +51,7 @@ public partial class MainWindow : Window
     };
 
     private readonly ObservableCollection<JobItem> _jobs = new();
+    private readonly ObservableCollection<LayoutProfile> _profiles = new();
     private readonly DispatcherTimer _debounce;
 
     private byte[]? _imposed;
@@ -81,6 +82,9 @@ public partial class MainWindow : Window
         PrinterBox.SelectedItem = PdfPrinter.DefaultPrinter();
         DuplexBox.ItemsSource = DuplexChoices;
         DuplexBox.SelectedIndex = 0;
+
+        ProfileBox.ItemsSource = _profiles;
+        ProfileBox.DisplayMemberPath = nameof(LayoutProfile.Name);
 
         // Typing in a number box should not re-impose on every keystroke.
         _debounce = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(350) };
@@ -121,6 +125,9 @@ public partial class MainWindow : Window
 
         WatermarkBox.Text = settings.Watermark ?? string.Empty;
 
+        _profiles.Clear();
+        foreach (var profile in settings.Profiles) _profiles.Add(profile);
+
         if (DuplexModes.TryParse(settings.Duplex, out var duplex))
             DuplexBox.SelectedItem = DuplexChoices.FirstOrDefault(choice => choice.Mode == duplex) ?? DuplexChoices[0];
 
@@ -141,6 +148,7 @@ public partial class MainWindow : Window
         Printer = PrinterBox.SelectedItem as string,
         Duplex = SelectedDuplex().ToString(),
         Watermark = string.IsNullOrWhiteSpace(WatermarkBox.Text) ? null : WatermarkBox.Text.Trim(),
+        Profiles = _profiles.ToList(),
         CollectCapturedJobs = CollectToggle.IsChecked == true,
     };
 
@@ -441,6 +449,10 @@ public partial class MainWindow : Window
 
         var documents = _jobs.Select(job => job.Pdf).ToList();
         var selections = _jobs.Select(job => job.Pages).ToList();
+        // Copy the turns out of the jobs: the imposition runs off the UI thread.
+        var rotations = _jobs
+            .Select((job, index) => (index, turns: new Dictionary<int, int>(job.Rotations)))
+            .ToDictionary(entry => entry.index, entry => entry.turns);
         if (documents.Count == 0)
         {
             _imposed = null;
@@ -476,7 +488,12 @@ public partial class MainWindow : Window
             {
                 // Composing in two steps rather than calling ImposeToPdf keeps the
                 // layout, which is what lets a right-click find the page it hit.
-                var sourcePages = PdfImposer.ReadPageSizes(documents, selections);
+                var sourcePages = PdfImposer.ReadPageSizes(documents, selections)
+                    .Select(page => rotations.TryGetValue(page.DocumentIndex, out var turns) &&
+                                    turns.TryGetValue(page.PageIndex + 1, out int degrees)
+                        ? page with { Rotation = degrees }
+                        : page)
+                    .ToList();
                 ImpositionResult result = booklet
                     ? new BookletImposer().Impose(sourcePages, paper, PtMargins.UniformMm(marginMm), gutter)
                     : new NUpImposer().Impose(sourcePages, settings);
@@ -550,6 +567,17 @@ public partial class MainWindow : Window
         remove.Click += (_, _) => RemovePage(job, pageNumber);
         menu.Items.Add(remove);
 
+        var rotate = new MenuItem { Header = $"Turn page {pageNumber} by 90°" };
+        rotate.Click += (_, _) => RotatePage(job, pageNumber, 90);
+        menu.Items.Add(rotate);
+
+        if (job.Rotations.ContainsKey(pageNumber))
+        {
+            var straighten = new MenuItem { Header = $"Put page {pageNumber} back upright" };
+            straighten.Click += (_, _) => RotatePage(job, pageNumber, 0, absolute: true);
+            menu.Items.Add(straighten);
+        }
+
         if (!job.Pages.IsAll)
         {
             var restore = new MenuItem { Header = $"Restore all pages of {job.Name}" };
@@ -599,6 +627,19 @@ public partial class MainWindow : Window
         SetJobPages(job, PageSelection.FromPages(kept));
     }
 
+    /// <summary>Turns one page, either by a further quarter or back to upright.</summary>
+    private void RotatePage(JobItem job, int pageNumber, int degrees, bool absolute = false)
+    {
+        int current = job.Rotations.TryGetValue(pageNumber, out int existing) ? existing : 0;
+        int turned = absolute ? degrees : (current + degrees) % 360;
+
+        if (turned == 0) job.Rotations.Remove(pageNumber);
+        else job.Rotations[pageNumber] = turned;
+
+        job.NotifySummaryChanged();
+        _ = RefreshAsync();
+    }
+
     private void SetJobPages(JobItem job, PageSelection pages)
     {
         job.Pages = pages;
@@ -612,6 +653,71 @@ public partial class MainWindow : Window
 
         _sheetIndex = 0;
         _ = RefreshAsync();
+    }
+
+    // ---------- layout profiles ----------
+
+    /// <summary>Applying a saved layout: one selection instead of five settings.</summary>
+    private void Profile_Selected(object sender, SelectionChangedEventArgs e)
+    {
+        if (!IsLoaded || ProfileBox.SelectedItem is not LayoutProfile profile) return;
+
+        _booklet = profile.Booklet;
+        _rows = Math.Max(1, profile.Rows);
+        _columns = Math.Max(1, profile.Columns);
+        if (Papers.Contains(profile.Paper)) PaperBox.SelectedItem = profile.Paper;
+        MarginBox.Text = profile.MarginMm.ToString(CultureInfo.CurrentCulture);
+        GutterBox.Text = profile.Gutter.ToString(CultureInfo.CurrentCulture);
+        WatermarkBox.Text = profile.Watermark ?? string.Empty;
+        if (DuplexModes.TryParse(profile.Duplex, out var duplex))
+            DuplexBox.SelectedItem = DuplexChoices.FirstOrDefault(choice => choice.Mode == duplex) ?? DuplexChoices[0];
+
+        CheckMatchingPreset();
+        _sheetIndex = 0;
+        _debounce.Stop();
+        _ = RefreshAsync();
+    }
+
+    private void SaveProfile_Click(object sender, RoutedEventArgs e)
+    {
+        string name = ProfileBox.Text.Trim();
+        if (name.Length == 0)
+        {
+            StatusText.Text = "Type a name for the profile first.";
+            return;
+        }
+
+        var profile = new LayoutProfile
+        {
+            Name = name,
+            Rows = _rows,
+            Columns = _columns,
+            Booklet = _booklet,
+            Paper = (string)PaperBox.SelectedItem,
+            MarginMm = ParseNumber(MarginBox.Text, 0),
+            Gutter = ParseNumber(GutterBox.Text, 0),
+            Watermark = string.IsNullOrWhiteSpace(WatermarkBox.Text) ? null : WatermarkBox.Text.Trim(),
+            Duplex = SelectedDuplex().ToString(),
+        };
+
+        // Saving under an existing name replaces it, which is what "Save" means
+        // everywhere else.
+        int existing = _profiles.ToList().FindIndex(p =>
+            string.Equals(p.Name, name, StringComparison.CurrentCultureIgnoreCase));
+        if (existing >= 0) _profiles[existing] = profile;
+        else _profiles.Add(profile);
+
+        ProfileBox.SelectedItem = profile;
+        StatusText.Text = $"Saved the profile “{name}”.";
+    }
+
+    private void DeleteProfile_Click(object sender, RoutedEventArgs e)
+    {
+        if (ProfileBox.SelectedItem is not LayoutProfile profile) return;
+
+        _profiles.Remove(profile);
+        ProfileBox.Text = string.Empty;
+        StatusText.Text = $"Deleted the profile “{profile.Name}”.";
     }
 
     private void PrevSheet_Click(object sender, RoutedEventArgs e) => StepSheet(-1);

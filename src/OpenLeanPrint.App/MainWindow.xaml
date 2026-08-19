@@ -41,6 +41,16 @@
                 <TextBlock Text="Watermark" Style="{StaticResource Label}"/>
                 <TextBox x:Name="WatermarkBox" Width="120" TextChanged="Debounced_Changed"
                          ToolTip="Text drawn diagonally across every sheet, e.g. DRAFT. Empty means none."/>
+
+                <Border Width="1" Background="{StaticResource Line}" Margin="14,2,10,2"/>
+
+                <TextBlock Text="Profile" Style="{StaticResource Label}" Margin="0,0,6,0"/>
+                <ComboBox x:Name="ProfileBox" Width="150" IsEditable="True"
+                          SelectionChanged="Profile_Selected"
+                          ToolTip="Pick a saved layout, or type a name and press Save to keep the current one."/>
+                <Button x:Name="SaveProfileButton" Content="Save" Click="SaveProfile_Click" Margin="6,0,0,0"/>
+                <Button x:Name="DeleteProfileButton" Content="✕" Click="DeleteProfile_Click"
+                        ToolTip="Delete the selected profile"/>
             </WrapPanel>
         </Border>
 
