@@ -50,7 +50,6 @@ public partial class MainWindow : Window
     };
 
     private readonly ObservableCollection<JobItem> _jobs = new();
-    private readonly PdfImposer _imposer = new();
     private readonly DispatcherTimer _debounce;
 
     private byte[]? _imposed;
@@ -116,6 +115,8 @@ public partial class MainWindow : Window
         if (settings.Printer is not null && PrinterBox.Items.Contains(settings.Printer))
             PrinterBox.SelectedItem = settings.Printer;
 
+        WatermarkBox.Text = settings.Watermark ?? string.Empty;
+
         if (DuplexModes.TryParse(settings.Duplex, out var duplex))
             DuplexBox.SelectedItem = DuplexChoices.FirstOrDefault(choice => choice.Mode == duplex) ?? DuplexChoices[0];
 
@@ -135,6 +136,7 @@ public partial class MainWindow : Window
         Gutter = ParseNumber(GutterBox.Text, 0),
         Printer = PrinterBox.SelectedItem as string,
         Duplex = SelectedDuplex().ToString(),
+        Watermark = string.IsNullOrWhiteSpace(WatermarkBox.Text) ? null : WatermarkBox.Text.Trim(),
         CollectCapturedJobs = CollectToggle.IsChecked == true,
     };
 
@@ -408,7 +410,7 @@ public partial class MainWindow : Window
         _ = RefreshAsync();
     }
 
-    private void Number_Changed(object sender, TextChangedEventArgs e)
+    private void Debounced_Changed(object sender, TextChangedEventArgs e)
     {
         if (!IsLoaded) return;
         _debounce.Stop();
@@ -448,6 +450,13 @@ public partial class MainWindow : Window
         double marginMm = ParseNumber(MarginBox.Text, 0);
         double gutter = ParseNumber(GutterBox.Text, 0);
         bool booklet = _booklet;
+        // A new imposer per run: the watermark is part of its configuration.
+        var imposer = new PdfImposer
+        {
+            Watermark = string.IsNullOrWhiteSpace(WatermarkBox.Text)
+                ? null
+                : new Watermark { Text = WatermarkBox.Text.Trim() },
+        };
         var settings = ImpositionSettings.NUp(_rows, _columns) with
         {
             SheetSize = paper,
@@ -462,8 +471,8 @@ public partial class MainWindow : Window
             var (imposed, sheets) = await Task.Run(() =>
             {
                 byte[] pdf = booklet
-                    ? _imposer.ImposeBookletToPdf(documents, paper, PtMargins.UniformMm(marginMm), gutter, selections)
-                    : _imposer.ImposeToPdf(documents, settings, selections);
+                    ? imposer.ImposeBookletToPdf(documents, paper, PtMargins.UniformMm(marginMm), gutter, selections)
+                    : imposer.ImposeToPdf(documents, settings, selections);
                 return (pdf, PdfRasterizer.PageSizes(pdf).Count);
             }, token);
 

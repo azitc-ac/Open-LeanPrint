@@ -31,12 +31,16 @@
                 <ComboBox x:Name="PaperBox" Width="92" SelectionChanged="Paper_Changed"/>
 
                 <TextBlock Text="Margin" Style="{StaticResource Label}"/>
-                <TextBox x:Name="MarginBox" Text="8" TextChanged="Number_Changed"/>
+                <TextBox x:Name="MarginBox" Text="8" TextChanged="Debounced_Changed"/>
                 <TextBlock Text="mm" Style="{StaticResource Label}" Margin="4,0,0,0"/>
 
                 <TextBlock Text="Gutter" Style="{StaticResource Label}"/>
-                <TextBox x:Name="GutterBox" Text="6" TextChanged="Number_Changed"/>
+                <TextBox x:Name="GutterBox" Text="6" TextChanged="Debounced_Changed"/>
                 <TextBlock Text="pt" Style="{StaticResource Label}" Margin="4,0,0,0"/>
+
+                <TextBlock Text="Watermark" Style="{StaticResource Label}"/>
+                <TextBox x:Name="WatermarkBox" Width="120" TextChanged="Debounced_Changed"
+                         ToolTip="Text drawn diagonally across every sheet, e.g. DRAFT. Empty means none."/>
             </WrapPanel>
         </Border>
 

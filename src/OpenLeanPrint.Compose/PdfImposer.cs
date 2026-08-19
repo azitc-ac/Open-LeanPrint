@@ -14,6 +14,9 @@ namespace OpenLeanPrint.Compose;
 /// </summary>
 public sealed class PdfImposer
 {
+    /// <summary>Optional text watermark drawn across every finished sheet.</summary>
+    public Watermark? Watermark { get; init; }
+
     /// <summary>Imposes a single source PDF N-up according to <paramref name="settings"/>.</summary>
     public byte[] ImposeToPdf(byte[] sourcePdf, ImpositionSettings settings) =>
         ImposeToPdf(new[] { sourcePdf }, settings);
@@ -134,6 +137,10 @@ public sealed class PdfImposer
                     var form = FormFor(placed.Source.DocumentIndex, placed.Source.PageIndex);
                     DrawPlaced(gfx, form, placed);
                 }
+
+                // On top of the pages, so it cannot be hidden by their content.
+                if (Watermark is { IsEmpty: false } watermark)
+                    DrawWatermark(gfx, watermark, sheet.Size);
             }
 
             using var outMs = new MemoryStream();
@@ -144,6 +151,44 @@ public sealed class PdfImposer
         {
             foreach (var s in openStreams) s.Dispose();
         }
+    }
+
+    /// <summary>Draws the watermark across the middle of a sheet.</summary>
+    private static void DrawWatermark(XGraphics gfx, Watermark watermark, PtSize sheet)
+    {
+        var (r, g, b) = watermark.Color();
+        var colour = XColor.FromArgb(r, g, b);
+        colour.A = Math.Clamp(watermark.Opacity, 0, 1);
+
+        string text = watermark.Text.Trim();
+        double size = watermark.EffectiveFontSize(sheet.Width, sheet.Height);
+        XFont font;
+        try
+        {
+            font = new XFont(watermark.FontFamily, size, XFontStyle.Bold);
+        }
+        catch (Exception)
+        {
+            // An unavailable family must not cost the whole document.
+            font = new XFont("Arial", size, XFontStyle.Bold);
+        }
+
+        // Measure and rescale so the text really spans the sheet rather than
+        // relying on the estimate.
+        double target = Math.Sqrt(sheet.Width * sheet.Width + sheet.Height * sheet.Height) * 0.8;
+        double measured = gfx.MeasureString(text, font).Width;
+        if (measured > 0 && watermark.FontSize <= 0)
+        {
+            double corrected = Math.Clamp(size * target / measured, 8, 400);
+            if (Math.Abs(corrected - size) > 0.5) font = new XFont(watermark.FontFamily, corrected, XFontStyle.Bold);
+        }
+
+        var state = gfx.Save();
+        gfx.TranslateTransform(sheet.Width / 2, sheet.Height / 2);
+        gfx.RotateTransform(watermark.AngleDegrees);
+        gfx.DrawString(text, font, new XSolidBrush(colour), 0, 0,
+                       new XStringFormat { Alignment = XStringAlignment.Center, LineAlignment = XLineAlignment.Center });
+        gfx.Restore(state);
     }
 
     /// <summary>Draws one placed page into its destination rectangle, honouring rotation.</summary>

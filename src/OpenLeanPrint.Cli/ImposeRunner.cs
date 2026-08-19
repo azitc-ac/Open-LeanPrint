@@ -15,12 +15,15 @@ internal sealed record ImposeOptions
     public double MarginMm { get; init; }
     public double Gutter { get; init; }
     public PageSelection Pages { get; init; } = PageSelection.All;
+    public Watermark? Watermark { get; init; }
 
     /// <summary>Short human-readable form, e.g. "2x2-up on A4".</summary>
     public string Describe()
     {
         string layout = Booklet ? $"booklet on {PaperName}" : $"{Rows}x{Cols}-up on {PaperName}";
-        return Pages.IsAll ? layout : $"{layout}, pages {Pages}";
+        if (!Pages.IsAll) layout += $", pages {Pages}";
+        if (Watermark is { IsEmpty: false } mark) layout += $", watermarked \"{mark.Text}\"";
+        return layout;
     }
 
     /// <summary>File-name tag for imposed output, e.g. "2x2up".</summary>
@@ -32,7 +35,7 @@ internal static class ImposeRunner
 {
     public static byte[] Run(byte[] source, ImposeOptions options)
     {
-        var imposer = new PdfImposer();
+        var imposer = new PdfImposer { Watermark = options.Watermark };
         var sources = new[] { source };
         var selections = new[] { options.Pages };
 
@@ -69,6 +72,22 @@ internal static class ImposeRunner
             MarginMm = options.GetDouble("margin", 0),
             Gutter = options.GetDouble("gutter", 0),
             Pages = pages,
+            Watermark = ParseWatermark(options),
+        };
+    }
+
+    private static Watermark? ParseWatermark(ArgMap options)
+    {
+        string text = options.Get("watermark", string.Empty);
+        if (string.IsNullOrWhiteSpace(text)) return null;
+
+        return new Watermark
+        {
+            Text = text,
+            Opacity = options.GetDouble("watermark-opacity", 0.18),
+            FontSize = options.GetDouble("watermark-size", 0),
+            AngleDegrees = options.GetDouble("watermark-angle", -45),
+            ColorHex = options.Get("watermark-color", "#808080"),
         };
     }
 
