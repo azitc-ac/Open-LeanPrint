@@ -43,8 +43,8 @@ script is blocked, say so rather than working around security.
   settings that survive a restart, "Collect captured jobs" (new jobs from the
   capture host drop into the pool), drag & drop, and a tray icon that keeps
   collecting with the window closed. Verified by driving the real window.
-  `scripts/Publish-App.ps1` produces one self-contained exe; only MSIX is left —
-  see [`docs/M4-APP.md`](docs/M4-APP.md).
+  `scripts/Publish-App.ps1` produces one self-contained exe and
+  `scripts/Build-Msix.ps1` a signed MSIX — see [`docs/M4-APP.md`](docs/M4-APP.md).
 - **`watch`** ✅: imposes (and optionally prints) every new PDF in a folder — the
   hands-free workflow. Arrival detection is `CapturedFolderWatcher` in
   `OpenLeanPrint.Capture`, shared with the app and unit-tested.
@@ -60,10 +60,9 @@ and tests — **do not add the WPF app to it**, WPF cannot build on Linux.
 
 Roughly in priority order — confirm with the user which they want:
 
-1. **MSIX installer** — the only piece of M4 still open, and it is *blocked*:
-   the machine has no Windows SDK (`makeappx`/`signtool`) and there is no
-   code-signing certificate. `scripts/Publish-App.ps1` is the working
-   alternative (one self-contained exe per runtime).
+1. **A publicly trusted code-signing certificate** — the MSIX builds and signs
+   fine (`scripts/Build-Msix.ps1`), but a self-signed certificate only works on
+   machines where it was trusted by hand. Everything else about M4 is done.
 2. **Look at the printed sheet** — a 4-up test page went to the Brother on
    2026-08-17 and the spooler completed it, but the paper itself has not been
    checked. Confirming margins/scale on paper closes M3's last exit criterion.
@@ -71,11 +70,10 @@ Roughly in priority order — confirm with the user which they want:
 
 ## Build, test, run
 
-Requires the **.NET 8 SDK**. Everything except a future WinUI app is
-cross-platform.
+Requires the **.NET 8 SDK**. Everything except the WPF app is cross-platform.
 
 ```powershell
-dotnet test                                   # build + run all tests (56)
+dotnet test                                   # build + run all tests (65)
 dotnet run --project src/OpenLeanPrint.Capture.Host -- --port 6310
 dotnet run --project src/OpenLeanPrint.Cli -- impose in.pdf out.pdf --nup 2x2 --paper A4
 dotnet run --project src/OpenLeanPrint.Cli -- sample sample.pdf --pages 8
@@ -114,8 +112,9 @@ dotnet run --project src/OpenLeanPrint.Cli -- impose "captured\job-0001.pdf" out
 | `src/OpenLeanPrint.App` | WPF desktop app: pool, live preview, print. Not in OpenLeanPrint.sln. |
 | `src/OpenLeanPrint.Cli` | `openleanprint` CLI: `impose` / `sample` / `print` / `list-printers` / `watch`. |
 | `tests/**` | xUnit tests (Core, Capture, Compose, Print) — run on any OS. |
-| `scripts/*.ps1` | Windows printer register/unregister; `Publish-App.ps1` for a distributable build. |
-| `docs/` | ARCHITECTURE, ROADMAP, M1-CAPTURE, M2-IMPOSE, M3-PRINT. |
+| `scripts/*.ps1` | Printer register/unregister; `Publish-App.ps1` (single exe), `Build-Msix.ps1` + `New-SigningCertificate.ps1` (MSIX). |
+| `packaging/` | MSIX manifest, tile assets, and the pinned SDK packaging tools. |
+| `docs/` | ARCHITECTURE, ROADMAP, M1-CAPTURE, M2-IMPOSE, M3-PRINT, M4-APP. |
 
 ## Conventions & guardrails
 
@@ -155,6 +154,10 @@ dotnet run --project src/OpenLeanPrint.Cli -- impose "captured\job-0001.pdf" out
   you have the full nuget.org feed, so use normal current versions.
 - **Honesty:** when you verify something on Windows, say what you actually ran
   and saw. When you can't verify a step, say so — don't claim success.
+- **MSIX needs no Windows SDK install:** `makeappx`/`signtool` come from the
+  `Microsoft.Windows.SDK.BuildTools` NuGet package (arm64 included), pinned in
+  `packaging/SdkTools`. The manifest's `Publisher` must match the signing
+  certificate's subject exactly.
 - CI (`.github/workflows/ci.yml`) builds + tests on push to `main`.
 
 ## Design notes worth knowing

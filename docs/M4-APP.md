@@ -43,7 +43,7 @@ Job pool (several PDFs)  ─►  OpenLeanPrint.Core imposition
 WPF ships with the .NET SDK, runs natively on **ARM64** with no extra runtime to
 install, and needs no MSIX to start — so the app runs the moment it is built.
 (WinUI 3 was the original plan; it would have meant installing the Windows App
-SDK runtime first. MSIX packaging can still be added later.)
+SDK runtime first. MSIX packaging works either way — see below.)
 
 WPF does need the Windows Desktop SDK, which does not exist on Linux, so the app
 is **not** part of `OpenLeanPrint.sln` — that solution stays buildable and
@@ -111,14 +111,65 @@ Desktop Runtime on the target.
 Because PDFium and SkiaSharp are native, the runtime identifier must match the
 target machine — there is no architecture-neutral build.
 
-**MSIX is not built here.** It needs `makeappx.exe` and `signtool.exe` from the
-Windows SDK (not installed on the development machine) plus a code-signing
-certificate; without a trusted signature Windows will not install the package
-anyway. The single-file publish above is the distribution path until that
-tooling and a certificate exist.
+## MSIX package
+
+MSIX is built here too, without anyone installing the Windows SDK:
+`makeappx.exe` and `signtool.exe` come from the **Microsoft.Windows.SDK.BuildTools**
+NuGet package, pinned by `packaging/SdkTools/SdkTools.csproj` and restored on
+demand. That package ships arm64 binaries, so it also works on Windows on ARM,
+and it needs no administrator rights.
+
+```powershell
+# once: a signing certificate (self-signed is fine for your own machines)
+.\scripts\New-SigningCertificate.ps1 -Password "<your password>"
+
+# then, per architecture:
+.\scripts\Build-Msix.ps1 -CertificatePath certs\Alexander-Zarenko.pfx `
+    -CertificatePassword "<your password>" -Version 1.0.0.0
+```
+
+The result is `dist\OpenLeanPrint-win-arm64.msix` — 72.7 MB for a
+self-contained build. Installing it takes two steps, the first of which needs an
+elevated PowerShell **once per machine**:
+
+```powershell
+Import-Certificate -FilePath certs\Alexander-Zarenko.cer -CertStoreLocation Cert:\LocalMachine\TrustedPeople
+Add-AppxPackage dist\OpenLeanPrint-win-arm64.msix
+```
+
+Verified: the package builds, signs, and carries the expected identity
+(`AlexanderZarenko.OpenLeanPrint`, 1.0.0.0, arm64, 494 files). Its signature
+reports `UntrustedRoot` until that certificate is imported — which is the
+correct behaviour for a self-signed certificate, not a packaging fault. The
+package was not installed during verification, since trusting a certificate
+machine-wide is the user's call.
+
+Two things to know about the manifest: `Publisher` must match the signing
+certificate's subject *exactly*, and the architecture is baked in, so one
+package per runtime.
+
+## Signing for other people
+
+Sideloading on machines you control works with the self-signed certificate
+above. Handing the app to strangers does not: they would have to trust your
+certificate manually, and SmartScreen will warn about an unknown publisher.
+That needs a certificate from a public CA, and since June 2023 the private key
+of any publicly trusted code-signing certificate has to live on certified
+hardware (a USB token) or in a cloud HSM, which is what sets the price floor.
+
+For an open-source project the cheapest routes are certificate *sponsorship*
+programmes rather than buying one outright — check current terms, they change:
+
+- **SignPath Foundation** — free code signing for open-source projects,
+  certificate and signing service included.
+- **Certum Open Source Code Signing** — a low-cost certificate for open-source
+  authors; budget for the hardware token on first purchase.
+- **Azure Trusted Signing** — cheap per month, but the identity checks target
+  organisations with a verifiable history.
 
 ## Not in this slice
 
-- MSIX packaging and signing (see above).
+- A publicly trusted signature (see above) — the package is sideload-ready, not
+  stranger-ready.
 - Per-page rotation overrides and per-job layout settings.
 - Auto-start with Windows.

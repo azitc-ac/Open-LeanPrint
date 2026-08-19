@@ -84,8 +84,12 @@ visual check on paper still open).
 - ✅ Drag & drop onto the pool; an app icon.
 - ✅ Distributable build: `scripts/Publish-App.ps1` produces one self-contained
   executable per runtime (**ARM64 + x64**).
-- ▶ Installer (MSIX), signed — blocked on Windows SDK tooling (`makeappx`,
-  `signtool`) and a code-signing certificate.
+- ✅ Installer: `scripts/Build-Msix.ps1` produces a signed MSIX, using
+  makeappx/signtool from a NuGet package — no Windows SDK install, no admin
+  rights. `scripts/New-SigningCertificate.ps1` makes the self-signed
+  certificate for sideloading.
+- ▶ A publicly trusted certificate, so the package installs for people who are
+  not you (see [M4-APP.md](M4-APP.md)).
 
 ## ▶ M5 — Polish & parity
 

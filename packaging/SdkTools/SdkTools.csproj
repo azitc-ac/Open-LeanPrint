@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Not a real project. It exists so `dotnet restore` pulls the Windows SDK
+    packaging tools (makeappx.exe, signtool.exe) into the NuGet cache - which is
+    how Build-Msix.ps1 packages the app without anyone installing the Windows
+    SDK or needing administrator rights. The package ships x64, x86 and arm64
+    binaries, so it works on Windows on ARM too.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <NoBuild>true</NoBuild>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageDownload Include="Microsoft.Windows.SDK.BuildTools" Version="[10.0.28000.2526]" />
+  </ItemGroup>
+
+</Project>

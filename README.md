@@ -8,12 +8,12 @@ Designed from day one to run on **Windows on ARM (ARM64)** as well as x64, by
 avoiding the one thing that makes classic virtual-printer tools ARM-hostile:
 a third-party kernel/print driver.
 
-> Status: **the whole chain works, and there is a desktop app.** Printing from a
-> real application is captured over driverless IPP, pooled, imposed N-up or as a
-> booklet, previewed on screen and sent back out to a printer — verified on
-> **Windows 11 ARM64**. What is left is polish: settings persistence, feeding the
-> app's pool straight from the capture host, and a signed installer — see the
-> roadmap.
+> Status: **usable.** Printing from a real application is captured over
+> driverless IPP, pooled, imposed N-up or as a booklet, previewed on screen and
+> sent back out to a printer — verified on **Windows 11 ARM64**. There is a
+> desktop app with a live preview and a tray icon, a headless `watch` mode, and
+> an MSIX package. What is missing for wider use is a publicly trusted signing
+> certificate — see the roadmap.
 
 ## Why another print tool?
 
@@ -68,15 +68,16 @@ Full detail, alternatives and trade-offs: [docs/ARCHITECTURE.md](docs/ARCHITECTU
 | `tests/OpenLeanPrint.Capture.Tests` | Codec, loopback-server and PDF tests; run on any OS. |
 | `tests/OpenLeanPrint.Compose.Tests` | Imposition-to-PDF composition tests; run on any OS. |
 | `tests/OpenLeanPrint.Print.Tests` | Placement/paper-matching (any OS) + GDI+ tests (Windows). |
-| `scripts/` | Windows printer register/unregister PowerShell scripts. |
+| `scripts/` | Printer register/unregister, publishing, MSIX packaging and signing. |
+| `packaging/` | MSIX manifest, tile assets, pinned SDK packaging tools. |
 | `docs/ARCHITECTURE.md` | How capture, rendering and forwarding fit together, and why. |
 | `docs/M1-CAPTURE.md` | The capture prototype: how to run and test it. |
 | `docs/M2-IMPOSE.md` | Imposing a captured PDF N-up / booklet from the CLI. |
 | `docs/M3-PRINT.md` | Printing an imposed PDF to a real printer. |
-| `docs/M4-APP.md` | The desktop app: pool, preview, print. |
+| `docs/M4-APP.md` | The desktop app: pool, preview, print, packaging. |
 | `docs/ROADMAP.md` | Milestones from here to a usable app. |
 
-Planned (see roadmap): settings persistence, capture-to-pool integration, MSIX installer.
+Planned (see roadmap): duplex, watermarks, page deletion — see M5.
 
 ## Building & testing
 
@@ -106,11 +107,16 @@ dotnet run --project src/OpenLeanPrint.Cli -- watch --nup 2x2 --paper A4
 ```
 
 To get a copyable build — one self-contained executable, no .NET needed on the
-target machine:
+target machine — or an installable MSIX:
 
 ```powershell
-.\scripts\Publish-App.ps1               # or -Runtime win-x64
+.\scripts\Publish-App.ps1                # or -Runtime win-x64
+.\scripts\New-SigningCertificate.ps1 -Password "<your password>"
+.\scripts\Build-Msix.ps1 -CertificatePath certs\Alexander-Zarenko.pfx -CertificatePassword "<your password>"
 ```
+
+MSIX needs no Windows SDK installation: the packaging tools come from a NuGet
+package. See [docs/M4-APP.md](docs/M4-APP.md).
 
 ## Using the engine
 
@@ -141,10 +147,10 @@ foreach (var sheet in result.Sheets)
 
 ## Contributing
 
-Contributions are welcome. Capture, imposition and printing are in place and
-tested; the highest-value next steps are the on-screen WYSIWYG preview and the
-WinUI 3 app shell (see the roadmap). Please keep `OpenLeanPrint.Core`
-platform-neutral so it stays testable on any OS.
+Contributions are welcome. Capture, imposition, printing and the desktop app are
+in place and tested; the highest-value next steps are toward FinePrint parity —
+duplex-aware booklets, watermarks, page deletion (see the roadmap). Please keep
+`OpenLeanPrint.Core` platform-neutral so it stays testable on any OS.
 
 ## License
 
@@ -152,14 +158,15 @@ platform-neutral so it stays testable on any OS.
 
 ## Notes / caveats
 
-- **There is no GUI yet** — everything runs from the CLI. The capture host, the
-  imposition engine and printing all work; the WYSIWYG preview and app shell are
-  the next milestones.
+- The desktop app is **Windows-only** (WPF); the imposition engine and the
+  capture service build and run anywhere.
 - Printing is **Windows-only** (it goes through the Windows spooler) and is
   guarded as such; capture and imposition run on any OS.
 - Printing has been verified through the *Microsoft Print to PDF* driver; a job
   to a physical printer was accepted and completed by the spooler, but the
   printed sheet has not been inspected yet.
+- The MSIX package is signed with a **self-signed** certificate by default, so it
+  installs only where that certificate has been trusted by hand.
 - PDF rendering uses **PDFium** (BSD-licensed, via PDFtoImage/MIT). Ghostscript
   and MuPDF are AGPL and are intentionally avoided so OpenLeanPrint can stay
   permissively licensed.
