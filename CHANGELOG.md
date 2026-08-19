@@ -4,7 +4,10 @@ All notable changes to OpenLeanPrint. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.2.0] — 2026-08-19
+
+Everything a page needs doing to it before it prints: turn it, drop it, or lay
+it out the way you want.
 
 ### Added
 - **Per-page rotation** — turn a single page from the preview's right-click
