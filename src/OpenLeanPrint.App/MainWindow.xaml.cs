@@ -60,6 +60,7 @@ public partial class MainWindow : Window
     private CancellationTokenSource? _work;
     private CapturedFolderWatcher? _capture;
     private bool _suppressPagesEdit;
+    private bool _suppressGridEdit;
 
     /// <summary>The layout behind the picture, so a click can be traced back to a page.</summary>
     private ImpositionResult? _layout;
@@ -198,12 +199,18 @@ public partial class MainWindow : Window
         Close();
     }
 
-    /// <summary>Lights up the preset button that matches the current layout, if any.</summary>
+    /// <summary>
+    /// Lights up the preset button that matches the current layout, if any, and
+    /// keeps the grid box showing the same thing. A grid with no preset - 2x3,
+    /// say - simply leaves them all unlit.
+    /// </summary>
     private void CheckMatchingPreset()
     {
-        string tag = _booklet ? "booklet" : $"{_rows}x{_columns}";
+        string tag = _booklet ? "booklet" : NUpGrid.Format(_rows, _columns);
         foreach (var preset in Presets)
             preset.IsChecked = (string)preset.Tag == tag;
+
+        ShowGrid();
     }
 
     private ToggleButton[] Presets => new[] { Preset1Up, Preset2Up, Preset4Up, Preset9Up, PresetBooklet };
@@ -414,6 +421,38 @@ public partial class MainWindow : Window
 
         _sheetIndex = 0;
         _ = RefreshAsync();
+    }
+
+    /// <summary>
+    /// The grid box is the way to any layout the presets do not cover - 2x3,
+    /// 1x4, 4x4. Presets write into it, so the two never disagree.
+    /// </summary>
+    private void Grid_Changed(object sender, TextChangedEventArgs e)
+    {
+        if (!IsLoaded || _suppressGridEdit) return;
+
+        bool valid = NUpGrid.TryParse(GridBox.Text, out int rows, out int columns);
+        GridBox.Foreground = valid ? SystemColors.ControlTextBrush : System.Windows.Media.Brushes.Firebrick;
+        if (!valid) return;
+
+        _rows = rows;
+        _columns = columns;
+        _booklet = false;
+        CheckMatchingPreset();
+
+        _sheetIndex = 0;
+        _debounce.Stop();
+        _debounce.Start();
+    }
+
+    /// <summary>Writes the grid box without it counting as an edit.</summary>
+    private void ShowGrid()
+    {
+        _suppressGridEdit = true;
+        GridBox.Text = _booklet ? "2-up" : NUpGrid.Format(_rows, _columns);
+        GridBox.IsEnabled = !_booklet;
+        GridBox.Foreground = SystemColors.ControlTextBrush;
+        _suppressGridEdit = false;
     }
 
     private void Paper_Changed(object sender, SelectionChangedEventArgs e)

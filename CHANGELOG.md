@@ -13,6 +13,14 @@ All notable changes to OpenLeanPrint. The format follows
   proportions.
 - **Layout profiles** — save the current layout under a name and come back to
   it later. Stored with the app's settings.
+- **Free grid input in the app** — every layout a profile can store is now
+  reachable from the UI, including grids the presets do not cover (`2x3`,
+  `1x4`). Grid parsing moved to `NUpGrid` in the core so the CLI and the app
+  read it identically.
+
+### Changed
+- New application icon: a dog-eared sheet carrying a 2×3 grid of pages, which
+  says "paper" and "several pages on one sheet" without looking like a window.
 
 ## [0.1.0] — 2026-08-19
 

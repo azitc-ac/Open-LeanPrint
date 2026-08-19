@@ -97,12 +97,7 @@ internal static class ImposeRunner
 
     public static (int Rows, int Cols) ParseNUp(string s)
     {
-        var parts = s.ToLowerInvariant().Split('x', 'X');
-        if (parts.Length == 2 && int.TryParse(parts[0], out int r) && int.TryParse(parts[1], out int c) && r > 0 && c > 0)
-            return (r, c);
-        // Allow a single number: 4 -> 2x2, 2 -> 1x2, 9 -> 3x3, 6 -> 2x3.
-        if (int.TryParse(s, out int n) && n > 0)
-            return n switch { 1 => (1, 1), 2 => (1, 2), 4 => (2, 2), 6 => (2, 3), 9 => (3, 3), 16 => (4, 4), _ => (1, n) };
+        if (NUpGrid.TryParse(s, out int rows, out int columns)) return (rows, columns);
         throw new ArgumentException($"Invalid --nup value '{s}'. Use RxC (e.g. 2x2) or a count (e.g. 4).");
     }
 }

@@ -27,6 +27,10 @@
                 <ToggleButton x:Name="Preset9Up" Content="9-up" Click="Preset_Click" Tag="3x3"/>
                 <ToggleButton x:Name="PresetBooklet" Content="Booklet" Click="Preset_Click" Tag="booklet"/>
 
+                <TextBlock Text="Grid" Style="{StaticResource Label}"/>
+                <TextBox x:Name="GridBox" Width="62" Text="2x2" TextChanged="Grid_Changed"
+                         ToolTip="Rows × columns, e.g. 2x3 — or just a count like 6. The presets are shortcuts for the common ones."/>
+
                 <TextBlock Text="Paper" Style="{StaticResource Label}"/>
                 <ComboBox x:Name="PaperBox" Width="92" SelectionChanged="Paper_Changed"/>
 

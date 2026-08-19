@@ -65,8 +65,11 @@ sheets in list order — reorder with the arrows, remove what you do not want. T
 everything from page three, empty keeps all. The box turns red while what you
 typed is not a valid range, and nothing is applied until it is.
 
-**Layout (top).** Presets for 1-up, 2-up, 4-up, 9-up and booklet, plus paper
-size, margin in millimetres, gutter in points, and a watermark. Every change
+**Layout (top).** Presets for 1-up, 2-up, 4-up, 9-up and booklet — and a **Grid**
+box for anything they do not cover: type `2x3`, `1x4`, `4x4`, or just a count
+like `6`. The presets and the box always show the same thing; a grid with no
+preset simply leaves them all unlit. Then paper size, margin in millimetres,
+gutter in points, and a watermark. Every change
 re-imposes in the background and repaints the preview.
 
 **Preview (middle).** The imposed sheet as it will print. Page through the

@@ -16,8 +16,9 @@ Job pool (several PDFs)  ─►  OpenLeanPrint.Core imposition
 - **Job pool** — add any number of PDFs, reorder them (↑ ↓), remove or clear.
   Several jobs are **combined onto shared sheets** in pool order, which is the
   whole point of pooling: three 2-page memos become one 4-up sheet, not three.
-- **Layout presets** — 1-up, 2-up, 4-up, 9-up and booklet, plus paper size,
-  margin (mm) and gutter (pt).
+- **Layout presets** — 1-up, 2-up, 4-up, 9-up and booklet, plus a free grid box
+  for anything else (`2x3`, `1x4`, or a plain count), paper size, margin (mm)
+  and gutter (pt).
 - **Live WYSIWYG preview** — every change re-imposes in the background and
   repaints; page through the sheets with ◀ ▶.
 - **Print** — pick any installed printer (the Windows default is preselected)
