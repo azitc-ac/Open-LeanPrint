@@ -35,6 +35,20 @@ public partial class MainWindow : Window
 
     private static readonly string[] Papers = { "A4", "A5", "A3", "A6", "Letter", "Legal", "Tabloid" };
 
+    /// <summary>One entry in the "Sides" box; ToString is what the box shows.</summary>
+    private sealed record DuplexChoice(string Label, DuplexMode Mode)
+    {
+        public override string ToString() => Label;
+    }
+
+    private static readonly DuplexChoice[] DuplexChoices =
+    {
+        new("Printer default", DuplexMode.Default),
+        new("Single-sided", DuplexMode.Simplex),
+        new("Two-sided, long edge", DuplexMode.LongEdge),
+        new("Two-sided, short edge", DuplexMode.ShortEdge),
+    };
+
     private readonly ObservableCollection<JobItem> _jobs = new();
     private readonly PdfImposer _imposer = new();
     private readonly DispatcherTimer _debounce;
@@ -61,6 +75,8 @@ public partial class MainWindow : Window
 
         PrinterBox.ItemsSource = PdfPrinter.InstalledPrinters();
         PrinterBox.SelectedItem = PdfPrinter.DefaultPrinter();
+        DuplexBox.ItemsSource = DuplexChoices;
+        DuplexBox.SelectedIndex = 0;
 
         // Typing in a number box should not re-impose on every keystroke.
         _debounce = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(350) };
@@ -99,6 +115,9 @@ public partial class MainWindow : Window
         if (settings.Printer is not null && PrinterBox.Items.Contains(settings.Printer))
             PrinterBox.SelectedItem = settings.Printer;
 
+        if (DuplexModes.TryParse(settings.Duplex, out var duplex))
+            DuplexBox.SelectedItem = DuplexChoices.FirstOrDefault(choice => choice.Mode == duplex) ?? DuplexChoices[0];
+
         CheckMatchingPreset();
 
         // Restoring this means the app picks up where it left off: still collecting.
@@ -114,8 +133,12 @@ public partial class MainWindow : Window
         MarginMm = ParseNumber(MarginBox.Text, 0),
         Gutter = ParseNumber(GutterBox.Text, 0),
         Printer = PrinterBox.SelectedItem as string,
+        Duplex = SelectedDuplex().ToString(),
         CollectCapturedJobs = CollectToggle.IsChecked == true,
     };
+
+    private DuplexMode SelectedDuplex() =>
+        DuplexBox.SelectedItem is DuplexChoice choice ? choice.Mode : DuplexMode.Default;
 
     /// <summary>
     /// Closing the window while collecting only hides it — the whole point of
@@ -493,13 +516,16 @@ public partial class MainWindow : Window
         StatusText.Text = $"Printing to \"{printer}\"…";
         try
         {
+            var duplex = SelectedDuplex();
             var report = await Task.Run(() => PdfPrinter.Print(pdf, printer, new PrintOptions
             {
                 Dpi = PrintDpi,
+                Duplex = duplex,
                 JobName = _jobs.Count == 1 ? $"OpenLeanPrint - {_jobs[0].Name}" : "OpenLeanPrint",
             }));
             StatusText.Text = $"Sent {report.Sheets} sheet(s) to \"{report.PrinterName}\" " +
-                              $"({string.Join("/", report.PaperNames)}).";
+                              $"({string.Join("/", report.PaperNames)})." +
+                              (report.DuplexUnsupported ? " This printer cannot print two-sided." : string.Empty);
         }
         catch (Exception ex)
         {

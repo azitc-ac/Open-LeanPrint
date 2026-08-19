@@ -17,6 +17,7 @@ public sealed record AppSettings
     public double MarginMm { get; init; } = 8;
     public double Gutter { get; init; } = 6;
     public string? Printer { get; init; }
+    public string Duplex { get; init; } = "Default";
     public bool CollectCapturedJobs { get; init; }
 
     /// <summary><c>%APPDATA%\OpenLeanPrint\settings.json</c>.</summary>

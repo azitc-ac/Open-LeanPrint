@@ -18,14 +18,17 @@ internal sealed class JobWatcher : IDisposable
     private readonly ImposeOptions _impose;
     private readonly string? _printer;
     private readonly int _dpi;
+    private readonly DuplexMode _duplex;
     private readonly CapturedFolderWatcher _watcher;
 
-    public JobWatcher(string folder, string outputFolder, ImposeOptions impose, string? printer, int dpi)
+    public JobWatcher(string folder, string outputFolder, ImposeOptions impose, string? printer, int dpi,
+                      DuplexMode duplex = DuplexMode.Default)
     {
         _outputFolder = Path.GetFullPath(outputFolder);
         _impose = impose;
         _printer = printer;
         _dpi = dpi;
+        _duplex = duplex;
 
         _watcher = new CapturedFolderWatcher(folder)
         {
@@ -64,6 +67,7 @@ internal sealed class JobWatcher : IDisposable
                 var report = PdfPrinter.Print(imposed, _printer, new PrintOptions
                 {
                     Dpi = _dpi,
+                    Duplex = _duplex,
                     JobName = $"OpenLeanPrint - {name}",
                 });
                 Console.WriteLine($"    printed {report.Sheets} sheet(s) to \"{report.PrinterName}\".");

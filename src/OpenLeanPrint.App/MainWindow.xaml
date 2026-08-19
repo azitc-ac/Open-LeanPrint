@@ -46,8 +46,11 @@
             <DockPanel>
                 <Button x:Name="PrintButton" DockPanel.Dock="Right" Style="{StaticResource PrimaryButton}"
                         Content="Print" Click="Print_Click" Margin="6,0,0,0" MinWidth="90"/>
-                <ComboBox x:Name="PrinterBox" DockPanel.Dock="Right" Width="240"/>
+                <ComboBox x:Name="PrinterBox" DockPanel.Dock="Right" Width="220"/>
                 <TextBlock DockPanel.Dock="Right" Text="Printer" Style="{StaticResource Label}"/>
+                <ComboBox x:Name="DuplexBox" DockPanel.Dock="Right" Width="180"
+                          ToolTip="Booklets need short-edge flipping: their sheets are landscape, so flipping the long edge prints every second side upside down."/>
+                <TextBlock DockPanel.Dock="Right" Text="Sides" Style="{StaticResource Label}"/>
                 <Button x:Name="SaveButton" DockPanel.Dock="Right" Content="Save PDF…" Click="Save_Click"/>
                 <TextBlock x:Name="StatusText" Foreground="{StaticResource InkMuted}" Text="No jobs yet."/>
             </DockPanel>

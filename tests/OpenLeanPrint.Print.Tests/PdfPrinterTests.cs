@@ -42,6 +42,39 @@ public class PdfPrinterTests
         Assert.Contains("not installed", ex.Message, StringComparison.OrdinalIgnoreCase);
     }
 
+    [Theory]
+    [InlineData(null, DuplexMode.Default)]
+    [InlineData("", DuplexMode.Default)]
+    [InlineData("auto", DuplexMode.Default)]
+    [InlineData("off", DuplexMode.Simplex)]
+    [InlineData("none", DuplexMode.Simplex)]
+    [InlineData("long", DuplexMode.LongEdge)]
+    [InlineData("LONG-EDGE", DuplexMode.LongEdge)]
+    [InlineData("book", DuplexMode.LongEdge)]
+    [InlineData("short", DuplexMode.ShortEdge)]
+    [InlineData(" booklet ", DuplexMode.ShortEdge)]
+    public void DuplexModes_ParsesWhatPeopleType(string? text, DuplexMode expected)
+    {
+        Assert.True(DuplexModes.TryParse(text, out var mode));
+        Assert.Equal(expected, mode);
+    }
+
+    [Fact]
+    public void DuplexModes_RejectsNonsense()
+    {
+        Assert.False(DuplexModes.TryParse("sideways", out var mode));
+        Assert.Equal(DuplexMode.Default, mode);
+    }
+
+    [Fact]
+    public void DuplexModes_BookletsWantTheShortEdge()
+    {
+        // A booklet's sheets are landscape: flipping the long edge would print
+        // every second side upside down.
+        Assert.Equal(DuplexMode.ShortEdge, DuplexModes.PreferredFor(booklet: true));
+        Assert.Equal(DuplexMode.LongEdge, DuplexModes.PreferredFor(booklet: false));
+    }
+
     [SupportedOSPlatform("windows")]
     [WindowsFact]
     public void Print_RejectsInvalidOptions()

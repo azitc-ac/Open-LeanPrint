@@ -62,6 +62,29 @@ public static class PdfPrinter
 
         doc.DocumentName = opts.JobName ?? "OpenLeanPrint";
         doc.PrinterSettings.Copies = (short)opts.Copies;
+
+        // Duplex: ask for it only if the printer admits it can, so a simplex
+        // printer produces a job rather than an error.
+        var duplex = opts.Duplex;
+        bool duplexUnsupported = false;
+        if (duplex != DuplexMode.Default)
+        {
+            if (doc.PrinterSettings.CanDuplex)
+            {
+                doc.PrinterSettings.Duplex = duplex switch
+                {
+                    DuplexMode.Simplex => Duplex.Simplex,
+                    DuplexMode.LongEdge => Duplex.Vertical,
+                    DuplexMode.ShortEdge => Duplex.Horizontal,
+                    _ => Duplex.Default,
+                };
+            }
+            else if (duplex != DuplexMode.Simplex)
+            {
+                duplexUnsupported = true;
+                duplex = DuplexMode.Default;
+            }
+        }
         // StandardPrintController prints without any progress dialog, so this
         // works from a console app or a service.
         doc.PrintController = new StandardPrintController();
@@ -141,6 +164,8 @@ public static class PdfPrinter
             Copies = opts.Copies,
             PaperNames = resolvedPaper.Where(p => !string.IsNullOrEmpty(p)).Distinct().ToList(),
             OutputFile = outputFile,
+            Duplex = duplex,
+            DuplexUnsupported = duplexUnsupported,
         };
     }
 }

@@ -97,11 +97,19 @@ static int PrintPdf(string[] a)
     }
 
     string? outputFile = opts.Has("out") ? opts.Get("out", string.Empty) : null;
+    if (!DuplexModes.TryParse(opts.Get("duplex", "auto"), out var duplex))
+    {
+        Console.Error.WriteLine($"Unknown --duplex value '{opts.Get("duplex", string.Empty)}'. " +
+                                "Use off, long, short or auto.");
+        return 1;
+    }
+
     var settings = new PrintOptions
     {
         Copies = (int)opts.GetDouble("copies", 1),
         Dpi = (int)opts.GetDouble("dpi", 200),
         OutputFile = outputFile,
+        Duplex = duplex,
         JobName = $"OpenLeanPrint - {Path.GetFileName(input)}",
     };
 
@@ -113,8 +121,17 @@ static int PrintPdf(string[] a)
 
     string paper = report.PaperNames.Count > 0 ? string.Join("/", report.PaperNames) : "driver default";
     string copies = report.Copies == 1 ? "1 copy" : $"{report.Copies} copies";
+    string sides = report.Duplex switch
+    {
+        DuplexMode.Simplex => ", single-sided",
+        DuplexMode.LongEdge => ", double-sided (long edge)",
+        DuplexMode.ShortEdge => ", double-sided (short edge)",
+        _ => string.Empty,
+    };
     Console.WriteLine($"Sent {report.Sheets} sheet(s) of {input} to \"{report.PrinterName}\" " +
-                      $"({paper}, {report.Dpi} dpi, {copies}).");
+                      $"({paper}, {report.Dpi} dpi, {copies}{sides}).");
+    if (report.DuplexUnsupported)
+        Console.WriteLine("Note: this printer reports no duplex support, so it printed single-sided.");
 
     if (report.OutputFile is not null)
     {
@@ -196,8 +213,14 @@ static int Watch(string[] a)
 
     string outDir = opts.Get("out-dir", Path.Combine(folder, "imposed"));
     int dpi = (int)opts.GetDouble("dpi", 200);
+    if (!DuplexModes.TryParse(opts.Get("duplex", "auto"), out var watchDuplex))
+    {
+        Console.Error.WriteLine($"Unknown --duplex value '{opts.Get("duplex", string.Empty)}'. " +
+                                "Use off, long, short or auto.");
+        return 1;
+    }
 
-    using var watcher = new JobWatcher(folder, outDir, impose, printer, dpi);
+    using var watcher = new JobWatcher(folder, outDir, impose, printer, dpi, watchDuplex);
     using var cancellation = new CancellationTokenSource();
     Console.CancelKeyPress += (_, e) =>
     {
@@ -208,7 +231,11 @@ static int Watch(string[] a)
     Console.WriteLine($"Watching {Path.GetFullPath(folder)} for new PDFs");
     Console.WriteLine($"  layout: {impose.Describe()}");
     Console.WriteLine($"  output: {Path.GetFullPath(outDir)}");
-    if (printer is not null) Console.WriteLine($"  printing to: \"{printer}\" at {dpi} dpi");
+    if (printer is not null)
+    {
+        Console.WriteLine($"  printing to: \"{printer}\" at {dpi} dpi" +
+                          (watchDuplex == DuplexMode.Default ? string.Empty : $", duplex {watchDuplex}"));
+    }
     Console.WriteLine("Press Ctrl+C to stop.");
 
     watcher.Run(opts.Has("existing"), cancellation.Token);
@@ -233,6 +260,7 @@ static void PrintUsage()
     Console.WriteLine("     --printer NAME  target printer                       default: Windows default");
     Console.WriteLine("     --out FILE      write to a file instead of paper (for \"Microsoft Print to PDF\")");
     Console.WriteLine("     --copies N      copies to request from the driver     default 1");
+    Console.WriteLine("     --duplex MODE   off | long | short | auto             default auto");
     Console.WriteLine("     --dpi N         rasterisation resolution              default 200");
     Console.WriteLine();
     Console.WriteLine("  list-printers                          List installed printers (Windows only)");
@@ -242,6 +270,7 @@ static void PrintUsage()
     Console.WriteLine("     --printer NAME  also print each imposed result      default: only write files");
     Console.WriteLine("     --out-dir DIR   where imposed PDFs go               default <folder>/imposed");
     Console.WriteLine("     --existing      also process PDFs already in there  default: only new ones");
+    Console.WriteLine("     --duplex MODE   off | long | short | auto             default auto");
     Console.WriteLine("     plus the layout options of 'impose' (--nup, --booklet, --paper, --margin, --gutter)");
     Console.WriteLine();
     Console.WriteLine("Examples:");
