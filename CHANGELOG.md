@@ -4,7 +4,9 @@ All notable changes to OpenLeanPrint. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.1.0] — 2026-08-19
+
+First release: the whole chain works, and there is an app for it.
 
 ### Added
 - **Duplex printing** (`--duplex off|long|short|auto`, "Sides" in the app).
@@ -34,9 +36,8 @@ All notable changes to OpenLeanPrint. The format follows
   often a source tree.
 - CI runs on Linux **and** Windows, so the Windows-only tests actually execute.
 
-## [0.1.0] — foundation
+### Foundation
 
-### Added
 - Imposition engine: N-up grids and saddle-stitch booklets, in points with a
   top-left origin, unit-tested and platform-neutral.
 - Driverless capture: a loopback IPP service that Windows' in-box IPP class
