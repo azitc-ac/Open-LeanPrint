@@ -5,6 +5,7 @@ using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
+using System.Windows.Input;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using Microsoft.Win32;
@@ -58,6 +59,9 @@ public partial class MainWindow : Window
     private CancellationTokenSource? _work;
     private CapturedFolderWatcher? _capture;
     private bool _suppressPagesEdit;
+
+    /// <summary>The layout behind the picture, so a click can be traced back to a page.</summary>
+    private ImpositionResult? _layout;
     private readonly TrayPresence _tray;
     private bool _exiting;
 
@@ -468,18 +472,23 @@ public partial class MainWindow : Window
         StatusText.Text = "Imposing…";
         try
         {
-            var (imposed, sheets) = await Task.Run(() =>
+            var (imposed, sheets, layout) = await Task.Run(() =>
             {
-                byte[] pdf = booklet
-                    ? imposer.ImposeBookletToPdf(documents, paper, PtMargins.UniformMm(marginMm), gutter, selections)
-                    : imposer.ImposeToPdf(documents, settings, selections);
-                return (pdf, PdfRasterizer.PageSizes(pdf).Count);
+                // Composing in two steps rather than calling ImposeToPdf keeps the
+                // layout, which is what lets a right-click find the page it hit.
+                var sourcePages = PdfImposer.ReadPageSizes(documents, selections);
+                ImpositionResult result = booklet
+                    ? new BookletImposer().Impose(sourcePages, paper, PtMargins.UniformMm(marginMm), gutter)
+                    : new NUpImposer().Impose(sourcePages, settings);
+                byte[] pdf = imposer.Compose(documents, result);
+                return (pdf, PdfRasterizer.PageSizes(pdf).Count, result);
             }, token);
 
             if (token.IsCancellationRequested) return;
 
             _imposed = imposed;
             _sheetCount = sheets;
+            _layout = layout;
             _sheetIndex = Math.Clamp(_sheetIndex, 0, Math.Max(0, sheets - 1));
             await ShowSheetAsync(token);
         }
@@ -491,6 +500,7 @@ public partial class MainWindow : Window
         {
             _imposed = null;
             _sheetCount = 0;
+            _layout = null;
             PreviewImage.Source = null;
             StatusText.Text = ex.Message;
         }
@@ -519,6 +529,89 @@ public partial class MainWindow : Window
         }
         PreviewImage.Source = image;
         UpdateControls();
+    }
+
+    // ---------- removing pages from the preview ----------
+
+    /// <summary>
+    /// Right-clicking a page offers to drop it. This is the direct way to say
+    /// "not that one"; the Pages box is the same thing spelled out.
+    /// </summary>
+    private void Preview_RightClick(object sender, MouseButtonEventArgs e)
+    {
+        var hit = PlacedPageAt(e.GetPosition(PreviewImage));
+        if (hit is null) return;
+
+        var job = _jobs[hit.Source.DocumentIndex];
+        int pageNumber = hit.Source.PageIndex + 1;
+
+        var menu = new ContextMenu { PlacementTarget = PreviewImage };
+        var remove = new MenuItem { Header = $"Remove page {pageNumber} of {job.Name}" };
+        remove.Click += (_, _) => RemovePage(job, pageNumber);
+        menu.Items.Add(remove);
+
+        if (!job.Pages.IsAll)
+        {
+            var restore = new MenuItem { Header = $"Restore all pages of {job.Name}" };
+            restore.Click += (_, _) => SetJobPages(job, PageSelection.All);
+            menu.Items.Add(restore);
+        }
+
+        menu.IsOpen = true;
+        e.Handled = true;
+    }
+
+    /// <summary>Which placed page sits under a point on the preview image.</summary>
+    private PlacedPage? PlacedPageAt(Point position)
+    {
+        if (_layout is null || _sheetIndex >= _layout.Sheets.Count) return null;
+        if (PreviewImage.ActualWidth <= 0 || PreviewImage.ActualHeight <= 0) return null;
+
+        // The image shows exactly one sheet, so this is a straight scale from
+        // control pixels to sheet points.
+        var sheet = _layout.Sheets[_sheetIndex];
+        double x = position.X / PreviewImage.ActualWidth * sheet.Size.Width;
+        double y = position.Y / PreviewImage.ActualHeight * sheet.Size.Height;
+
+        foreach (var placed in sheet.Pages)
+        {
+            var rect = placed.DestRect;
+            if (x >= rect.X && x <= rect.Right && y >= rect.Y && y <= rect.Bottom) return placed;
+        }
+        return null;
+    }
+
+    private void RemovePage(JobItem job, int pageNumber)
+    {
+        var kept = Enumerable.Range(1, job.PageCount)
+            .Where(number => number != pageNumber && job.Pages.Includes(number))
+            .ToList();
+
+        // Something has to be left to impose, across the whole pool.
+        int remaining = kept.Count + _jobs.Where(other => !ReferenceEquals(other, job))
+            .Sum(other => Enumerable.Range(1, other.PageCount).Count(other.Pages.Includes));
+        if (remaining == 0)
+        {
+            StatusText.Text = "That is the last page left - remove the job instead.";
+            return;
+        }
+
+        SetJobPages(job, PageSelection.FromPages(kept));
+    }
+
+    private void SetJobPages(JobItem job, PageSelection pages)
+    {
+        job.Pages = pages;
+
+        if (ReferenceEquals(JobList.SelectedItem, job))
+        {
+            _suppressPagesEdit = true;
+            PagesBox.Text = pages.IsAll ? string.Empty : pages.ToString();
+            _suppressPagesEdit = false;
+        }
+
+        _sheetIndex = 0;
+        _ = RefreshAsync();
     }
 
     private void PrevSheet_Click(object sender, RoutedEventArgs e) => StepSheet(-1);
@@ -622,6 +715,7 @@ public partial class MainWindow : Window
         NextSheet.IsEnabled = hasSheets && _sheetIndex < _sheetCount - 1;
 
         SheetLabel.Text = hasSheets ? $"Sheet {_sheetIndex + 1} of {_sheetCount}" : "—";
+        PreviewTip.Visibility = hasSheets ? Visibility.Visible : Visibility.Hidden;
 
         if (!hasJobs)
         {

@@ -125,7 +125,8 @@
                                 <DropShadowEffect BlurRadius="18" ShadowDepth="3" Opacity="0.45" Color="Black"/>
                             </Border.Effect>
                             <Image x:Name="PreviewImage" Stretch="Uniform"
-                                   RenderOptions.BitmapScalingMode="HighQuality"/>
+                                   RenderOptions.BitmapScalingMode="HighQuality"
+                                   MouseRightButtonUp="Preview_RightClick"/>
                         </Border>
 
                         <TextBlock x:Name="PreviewHint" Foreground="#FFD8D8DE" FontSize="14"
@@ -134,10 +135,15 @@
                     </Grid>
                 </Border>
 
-                <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,10,0,10">
-                    <Button x:Name="PrevSheet" Content="◀" Click="PrevSheet_Click"/>
-                    <TextBlock x:Name="SheetLabel" Text="—" MinWidth="140" TextAlignment="Center"/>
-                    <Button x:Name="NextSheet" Content="▶" Click="NextSheet_Click"/>
+                <StackPanel Grid.Row="1" Margin="0,10,0,10">
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                        <Button x:Name="PrevSheet" Content="◀" Click="PrevSheet_Click"/>
+                        <TextBlock x:Name="SheetLabel" Text="—" MinWidth="140" TextAlignment="Center"/>
+                        <Button x:Name="NextSheet" Content="▶" Click="NextSheet_Click"/>
+                    </StackPanel>
+                    <TextBlock x:Name="PreviewTip" HorizontalAlignment="Center" Margin="0,6,0,0"
+                               FontSize="11" Foreground="{StaticResource InkMuted}"
+                               Text="Right-click a page in the preview to remove it."/>
                 </StackPanel>
             </Grid>
         </Grid>

@@ -72,6 +72,13 @@ re-imposes in the background and repaints the preview.
 **Preview (middle).** The imposed sheet as it will print. Page through the
 sheets with the arrows below it.
 
+**Right-click a page in the preview to remove it.** The click is traced back
+through the layout to the page it landed on — "Remove page 3 of report.pdf" —
+and the remaining pages flow up to fill the gap. The same menu offers to
+restore all pages of that job. This is the quick way to do what the **Pages**
+box spells out; both edit the same selection, so whichever you use, the other
+shows it.
+
 **Output (bottom).** Choose sides (duplex), a printer, then **Print** — or
 **Save PDF…** to keep the imposed document instead.
 

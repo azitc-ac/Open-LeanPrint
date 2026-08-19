@@ -68,6 +68,30 @@ public sealed class PageSelection
             int.TryParse(text, NumberStyles.None, CultureInfo.InvariantCulture, out value) && value >= 1;
     }
 
+    /// <summary>
+    /// Builds a selection from explicit 1-based page numbers, compressed back
+    /// into ranges — so removing page 3 of a 6-page job yields "1-2,4-6"
+    /// rather than a list of singles.
+    /// </summary>
+    public static PageSelection FromPages(IEnumerable<int> pageNumbers)
+    {
+        ArgumentNullException.ThrowIfNull(pageNumbers);
+
+        var sorted = pageNumbers.Where(n => n >= 1).Distinct().OrderBy(n => n).ToList();
+        if (sorted.Count == 0) return new PageSelection(new[] { (0, 0) }); // keeps nothing
+
+        var ranges = new List<(int From, int To)>();
+        int start = sorted[0], previous = sorted[0];
+        foreach (int page in sorted.Skip(1))
+        {
+            if (page == previous + 1) { previous = page; continue; }
+            ranges.Add((start, previous));
+            start = previous = page;
+        }
+        ranges.Add((start, previous));
+        return new PageSelection(ranges);
+    }
+
     /// <summary>Whether a 1-based page number is kept.</summary>
     public bool Includes(int pageNumber)
     {

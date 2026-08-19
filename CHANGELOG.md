@@ -12,6 +12,8 @@ All notable changes to OpenLeanPrint. The format follows
   it reports support, and the result says what actually happened.
 - **Page selection** (`--pages 1-4,7`, per-job "Pages" in the app) — drop pages
   before imposing. Numbers count within each document, not across the pool.
+- **Right-click a page in the preview to remove it** — the click is traced back
+  through the layout to the source page it landed on.
 - **Watermarks** (`--watermark DRAFT`, plus colour, opacity, angle and size) —
   drawn across every finished sheet, auto-sized to the paper.
 - **MSIX packaging** (`scripts/Build-Msix.ps1`) using makeappx/signtool from a

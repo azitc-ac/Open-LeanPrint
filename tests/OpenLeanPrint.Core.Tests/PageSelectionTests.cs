@@ -133,6 +133,40 @@ public class PageSelectionTests
         Assert.Same(pages, PageSelection.All.Filter(pages));
     }
 
+    [Fact]
+    public void FromPages_CompressesRunsBackIntoRanges()
+    {
+        // Removing page 3 from a six-page job is the case this exists for.
+        var selection = PageSelection.FromPages(new[] { 1, 2, 4, 5, 6 });
+
+        Assert.Equal("1-2,4-6", selection.ToString());
+        Assert.True(selection.Includes(2));
+        Assert.False(selection.Includes(3));
+        Assert.True(selection.Includes(6));
+    }
+
+    [Fact]
+    public void FromPages_SortsAndDeduplicates()
+    {
+        Assert.Equal("1-3", PageSelection.FromPages(new[] { 3, 1, 2, 2, 1 }).ToString());
+    }
+
+    [Fact]
+    public void FromPages_WithNothingLeft_KeepsNothing()
+    {
+        var selection = PageSelection.FromPages(Array.Empty<int>());
+
+        Assert.False(selection.IsAll);
+        Assert.False(selection.Includes(1));
+        Assert.Empty(selection.Filter(new[] { new SourcePage(0, 0, PaperSizes.A4) }));
+    }
+
+    [Fact]
+    public void FromPages_SinglePage_IsASingle()
+    {
+        Assert.Equal("5", PageSelection.FromPages(new[] { 5 }).ToString());
+    }
+
     [Theory]
     [InlineData("1-4,7", "1-4,7")]
     [InlineData("3-", "3-")]

@@ -97,7 +97,8 @@ visual check on paper still open).
 - ✅ **Duplex**, including the short-edge flip booklets need, asked for only when
   the printer reports support (`--duplex`, "Sides" in the app).
 - ✅ **Page selection** — drop pages before imposing (`--pages 1-4,7`, per-job in
-  the app). Numbers count within each document, not across the pool.
+  the app), including removing a page by right-clicking it in the preview.
+  Numbers count within each document, not across the pool.
 - ✅ **Watermarks** — text across every sheet, auto-sized to the paper, with
   colour, opacity and angle.
 - ✅ PDF export (Save PDF… in the app; `impose` has always written one).

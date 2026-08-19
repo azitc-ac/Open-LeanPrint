@@ -30,6 +30,9 @@ Job pool (several PDFs)  ─►  OpenLeanPrint.Core imposition
   jobs nobody wants reprinted.
 - **Drag & drop** — drop PDFs anywhere on the window; anything that is not an
   existing `.pdf` is ignored.
+- **Remove pages by right-clicking them** in the preview. The click is mapped
+  back through the imposition layout to the exact source page, so what you point
+  at is what goes.
 - **Tray icon** — while collecting, closing the window only hides it, because
   the point of collecting is that jobs keep arriving. The tray menu shows the
   window again, toggles collecting, and quits for real; a balloon announces
@@ -90,6 +93,10 @@ Tray and drag & drop, same way:
   (`visible=False loaded=True`) instead of ending the app.
 - The drop filter accepted 1 of 3 offered paths — the real PDF, not the `.txt`
   and not the missing file.
+
+Right-click page removal, same way: on a 4-up sheet the four quadrants resolved
+to source pages 1, 2, 3 and 4, and removing page 2 took the pool from 8 pages to
+7 with the remaining pages flowing up into the gap.
 
 Not verified by hand yet: printing from the app to a physical printer (it calls
 the same `PdfPrinter.Print` that M3 verified), the file dialogs, and the tray
