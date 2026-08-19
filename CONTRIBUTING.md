@@ -9,7 +9,7 @@ You need the [.NET 8 SDK](https://dotnet.microsoft.com/download). Nothing else â
 no Visual Studio, no Windows SDK, no print driver.
 
 ```bash
-git clone https://github.com/azitc-ac/OpenLeanPrint.git
+git clone https://github.com/azitc-ac/Open-LeanPrint.git
 cd OpenLeanPrint
 dotnet test                              # the portable half, on any OS
 dotnet build OpenLeanPrint.Windows.sln   # everything, Windows only

@@ -8,7 +8,7 @@
 several pages on one sheet, preview the result exactly as it will print, and
 send it to any printer.
 
-[![CI](https://github.com/azitc-ac/OpenLeanPrint/actions/workflows/ci.yml/badge.svg)](https://github.com/azitc-ac/OpenLeanPrint/actions/workflows/ci.yml)
+[![CI](https://github.com/azitc-ac/Open-LeanPrint/actions/workflows/ci.yml/badge.svg)](https://github.com/azitc-ac/Open-LeanPrint/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 </div>

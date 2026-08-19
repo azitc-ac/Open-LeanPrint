@@ -3,7 +3,7 @@
 ## Reporting a vulnerability
 
 Please report security issues privately by opening a
-[GitHub security advisory](https://github.com/azitc-ac/OpenLeanPrint/security/advisories/new)
+[GitHub security advisory](https://github.com/azitc-ac/Open-LeanPrint/security/advisories/new)
 rather than a public issue. You should get a first reply within a few days.
 
 ## What OpenLeanPrint touches
