@@ -37,7 +37,7 @@ static int Impose(string[] a)
 {
     if (a.Length < 2)
     {
-        Console.Error.WriteLine("Usage: openleanprint impose <in.pdf> <out.pdf> [--nup RxC] [--paper A4] [--booklet] [--margin MM] [--gutter PT]");
+        Console.Error.WriteLine("Usage: openleanprint impose <in.pdf> <out.pdf> [--nup RxC] [--paper A4] [--booklet] [--margin MM] [--gutter PT] [--pages 1-4,7]");
         return 1;
     }
 
@@ -253,6 +253,7 @@ static void PrintUsage()
     Console.WriteLine("     --booklet     saddle-stitch booklet (overrides --nup)");
     Console.WriteLine("     --margin MM   outer margin in millimetres            default 0");
     Console.WriteLine("     --gutter PT   spacing between cells in points        default 0");
+    Console.WriteLine("     --pages LIST  which source pages to keep, e.g. 1-4,7  default all");
     Console.WriteLine();
     Console.WriteLine("  sample <out.pdf> [--pages N]           Write a colored sample PDF to try");
     Console.WriteLine();

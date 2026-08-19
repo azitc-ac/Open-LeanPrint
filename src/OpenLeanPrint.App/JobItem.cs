@@ -1,17 +1,43 @@
 // WPF implicitly imports System.Windows.Shapes, whose Path would clash with
 // System.IO.Path - the alias keeps the file-system one unambiguous.
+using System.ComponentModel;
+using OpenLeanPrint.Core;
 using Path = System.IO.Path;
 
 namespace OpenLeanPrint.App;
 
 /// <summary>One PDF in the job pool, held in memory so re-imposing is instant.</summary>
-public sealed class JobItem
+public sealed class JobItem : INotifyPropertyChanged
 {
+    private PageSelection _pages = PageSelection.All;
+
     public required string FilePath { get; init; }
     public required byte[] Pdf { get; init; }
     public required int PageCount { get; init; }
 
+    /// <summary>Which of this job's pages to print. Defaults to all of them.</summary>
+    public PageSelection Pages
+    {
+        get => _pages;
+        set
+        {
+            _pages = value;
+            // The list shows the selection, so it has to hear about the change.
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Pages)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Summary)));
+        }
+    }
+
     public string Name => Path.GetFileName(FilePath);
 
-    public string Summary => PageCount == 1 ? "1 page" : $"{PageCount} pages";
+    public string Summary
+    {
+        get
+        {
+            string pages = PageCount == 1 ? "1 page" : $"{PageCount} pages";
+            return _pages.IsAll ? pages : $"{pages} · printing {_pages}";
+        }
+    }
+
+    public event PropertyChangedEventHandler? PropertyChanged;
 }

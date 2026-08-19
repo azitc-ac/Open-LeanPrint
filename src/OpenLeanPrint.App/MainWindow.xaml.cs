@@ -58,6 +58,7 @@ public partial class MainWindow : Window
     private int _sheetCount;
     private CancellationTokenSource? _work;
     private CapturedFolderWatcher? _capture;
+    private bool _suppressPagesEdit;
     private readonly TrayPresence _tray;
     private bool _exiting;
 
@@ -349,7 +350,32 @@ public partial class MainWindow : Window
         _ = RefreshAsync();
     }
 
-    private void JobList_SelectionChanged(object sender, SelectionChangedEventArgs e) => UpdateControls();
+    private void JobList_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        // Show the selected job's own page range without treating it as an edit.
+        _suppressPagesEdit = true;
+        PagesBox.Text = JobList.SelectedItem is JobItem job && !job.Pages.IsAll ? job.Pages.ToString() : string.Empty;
+        _suppressPagesEdit = false;
+
+        UpdateControls();
+    }
+
+    /// <summary>Applies the "Pages" box to the selected job, e.g. 1-4,7 or 3-.</summary>
+    private void Pages_Changed(object sender, TextChangedEventArgs e)
+    {
+        if (!IsLoaded || _suppressPagesEdit) return;
+        if (JobList.SelectedItem is not JobItem job) return;
+
+        bool valid = PageSelection.TryParse(PagesBox.Text, out var selection);
+        // Red while it does not parse - but never silently print the wrong pages.
+        PagesBox.Foreground = valid ? SystemColors.ControlTextBrush : System.Windows.Media.Brushes.Firebrick;
+        if (!valid) return;
+
+        job.Pages = selection;
+        _sheetIndex = 0;
+        _debounce.Stop();
+        _debounce.Start();
+    }
 
     // ---------- layout settings ----------
 
@@ -408,6 +434,7 @@ public partial class MainWindow : Window
         var token = cancellation.Token;
 
         var documents = _jobs.Select(job => job.Pdf).ToList();
+        var selections = _jobs.Select(job => job.Pages).ToList();
         if (documents.Count == 0)
         {
             _imposed = null;
@@ -435,8 +462,8 @@ public partial class MainWindow : Window
             var (imposed, sheets) = await Task.Run(() =>
             {
                 byte[] pdf = booklet
-                    ? _imposer.ImposeBookletToPdf(documents, paper, PtMargins.UniformMm(marginMm), gutter)
-                    : _imposer.ImposeToPdf(documents, settings);
+                    ? _imposer.ImposeBookletToPdf(documents, paper, PtMargins.UniformMm(marginMm), gutter, selections)
+                    : _imposer.ImposeToPdf(documents, settings, selections);
                 return (pdf, PdfRasterizer.PageSizes(pdf).Count);
             }, token);
 
@@ -593,10 +620,14 @@ public partial class MainWindow : Window
             return;
         }
 
-        int pages = _jobs.Sum(job => job.PageCount);
+        int pages = _jobs.Sum(job => job.Pages.IsAll
+            ? job.PageCount
+            : Enumerable.Range(1, job.PageCount).Count(job.Pages.Includes));
         string jobWord = _jobs.Count == 1 ? "job" : "jobs";
+        string pageWord = pages == 1 ? "page" : "pages";
+        string sheetWord = _sheetCount == 1 ? "sheet" : "sheets";
         StatusText.Text = hasSheets
-            ? $"{_jobs.Count} {jobWord} · {pages} pages → {_sheetCount} sheets · {LayoutDescription()}"
-            : $"{_jobs.Count} {jobWord} · {pages} pages";
+            ? $"{_jobs.Count} {jobWord} · {pages} {pageWord} → {_sheetCount} {sheetWord} · {LayoutDescription()}"
+            : $"{_jobs.Count} {jobWord} · {pages} {pageWord}";
     }
 }

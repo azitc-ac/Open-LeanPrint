@@ -14,9 +14,14 @@ internal sealed record ImposeOptions
     public string PaperName { get; init; } = "A4";
     public double MarginMm { get; init; }
     public double Gutter { get; init; }
+    public PageSelection Pages { get; init; } = PageSelection.All;
 
     /// <summary>Short human-readable form, e.g. "2x2-up on A4".</summary>
-    public string Describe() => Booklet ? $"booklet on {PaperName}" : $"{Rows}x{Cols}-up on {PaperName}";
+    public string Describe()
+    {
+        string layout = Booklet ? $"booklet on {PaperName}" : $"{Rows}x{Cols}-up on {PaperName}";
+        return Pages.IsAll ? layout : $"{layout}, pages {Pages}";
+    }
 
     /// <summary>File-name tag for imposed output, e.g. "2x2up".</summary>
     public string FileTag() => Booklet ? "booklet" : $"{Rows}x{Cols}up";
@@ -28,8 +33,14 @@ internal static class ImposeRunner
     public static byte[] Run(byte[] source, ImposeOptions options)
     {
         var imposer = new PdfImposer();
+        var sources = new[] { source };
+        var selections = new[] { options.Pages };
+
         if (options.Booklet)
-            return imposer.ImposeBookletToPdf(source, options.Paper, PtMargins.UniformMm(options.MarginMm), options.Gutter);
+        {
+            return imposer.ImposeBookletToPdf(sources, options.Paper, PtMargins.UniformMm(options.MarginMm),
+                                              options.Gutter, selections);
+        }
 
         var settings = ImpositionSettings.NUp(options.Rows, options.Cols) with
         {
@@ -38,13 +49,16 @@ internal static class ImposeRunner
             GutterX = options.Gutter,
             GutterY = options.Gutter,
         };
-        return imposer.ImposeToPdf(source, settings);
+        return imposer.ImposeToPdf(sources, settings, selections);
     }
 
     public static ImposeOptions Parse(ArgMap options)
     {
         string paperName = options.Get("paper", "A4");
         var (rows, cols) = ParseNUp(options.Get("nup", "2x2"));
+        string pagesText = options.Get("pages", string.Empty);
+        if (!PageSelection.TryParse(pagesText, out var pages))
+            throw new ArgumentException($"Invalid --pages value '{pagesText}'. Use e.g. 1-4,7 or 3-.");
         return new ImposeOptions
         {
             Booklet = options.Has("booklet"),
@@ -54,6 +68,7 @@ internal static class ImposeRunner
             PaperName = paperName,
             MarginMm = options.GetDouble("margin", 0),
             Gutter = options.GetDouble("gutter", 0),
+            Pages = pages,
         };
     }
 

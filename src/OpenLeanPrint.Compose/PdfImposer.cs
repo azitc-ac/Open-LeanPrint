@@ -22,9 +22,16 @@ public sealed class PdfImposer
     /// Imposes several source PDFs as one continuous sequence — the pooled
     /// "combine several print jobs onto shared sheets" case.
     /// </summary>
-    public byte[] ImposeToPdf(IReadOnlyList<byte[]> sourcePdfs, ImpositionSettings settings)
+    /// <param name="sourcePdfs">The pooled source documents, in order.</param>
+    /// <param name="settings">Grid, sheet size, margins and gutters.</param>
+    /// <param name="selections">
+    /// Optional per-document page selection, positional to
+    /// <paramref name="sourcePdfs"/>. Missing entries keep every page.
+    /// </param>
+    public byte[] ImposeToPdf(IReadOnlyList<byte[]> sourcePdfs, ImpositionSettings settings,
+                              IReadOnlyList<PageSelection>? selections = null)
     {
-        var pages = ReadPageSizes(sourcePdfs);
+        var pages = ReadPageSizes(sourcePdfs, selections);
         var result = new NUpImposer().Impose(pages, settings);
         return Compose(sourcePdfs, result);
     }
@@ -36,9 +43,10 @@ public sealed class PdfImposer
 
     /// <summary>Imposes several source PDFs as one saddle-stitch booklet.</summary>
     public byte[] ImposeBookletToPdf(IReadOnlyList<byte[]> sourcePdfs, PtSize sheetSize,
-                                     PtMargins margins = default, double gutter = 0)
+                                     PtMargins margins = default, double gutter = 0,
+                                     IReadOnlyList<PageSelection>? selections = null)
     {
-        var pages = ReadPageSizes(sourcePdfs);
+        var pages = ReadPageSizes(sourcePdfs, selections);
         var result = new BookletImposer().Impose(pages, sheetSize, margins, gutter);
         return Compose(sourcePdfs, result);
     }
@@ -47,14 +55,24 @@ public sealed class PdfImposer
     /// Reads page sizes from several PDFs, tagging each page with the index of
     /// the document it came from so <see cref="Compose"/> can find it again.
     /// </summary>
-    public static IReadOnlyList<SourcePage> ReadPageSizes(IReadOnlyList<byte[]> pdfs)
+    public static IReadOnlyList<SourcePage> ReadPageSizes(IReadOnlyList<byte[]> pdfs,
+                                                          IReadOnlyList<PageSelection>? selections = null)
     {
         ArgumentNullException.ThrowIfNull(pdfs);
 
         var pages = new List<SourcePage>();
         for (int document = 0; document < pdfs.Count; document++)
-            foreach (var page in ReadPageSizes(pdfs[document]))
+        {
+            var selection = selections is not null && document < selections.Count
+                ? selections[document] ?? PageSelection.All
+                : PageSelection.All;
+
+            foreach (var page in selection.Filter(ReadPageSizes(pdfs[document])))
                 pages.Add(page with { DocumentIndex = document });
+        }
+
+        if (pages.Count == 0)
+            throw new ArgumentException("The page selection left no pages to impose.", nameof(selections));
         return pages;
     }
 

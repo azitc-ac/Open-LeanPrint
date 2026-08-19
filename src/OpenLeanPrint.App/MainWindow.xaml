@@ -70,10 +70,17 @@
                     </Border>
 
                     <Border DockPanel.Dock="Bottom" Padding="10,8">
-                        <StackPanel Orientation="Horizontal">
-                            <Button x:Name="UpButton" Content="↑" Click="MoveUp_Click" ToolTip="Move job up"/>
-                            <Button x:Name="DownButton" Content="↓" Click="MoveDown_Click" ToolTip="Move job down"/>
-                            <Button x:Name="ClearButton" Content="Clear" Click="Clear_Click"/>
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                <TextBlock Text="Pages" Style="{StaticResource Label}" Margin="0,0,6,0"/>
+                                <TextBox x:Name="PagesBox" Width="150" TextChanged="Pages_Changed"
+                                         ToolTip="Which pages of the selected job to print, e.g. 1-4,7 or 3-. Empty means all."/>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal">
+                                <Button x:Name="UpButton" Content="↑" Click="MoveUp_Click" ToolTip="Move job up"/>
+                                <Button x:Name="DownButton" Content="↓" Click="MoveDown_Click" ToolTip="Move job down"/>
+                                <Button x:Name="ClearButton" Content="Clear" Click="Clear_Click"/>
+                            </StackPanel>
                         </StackPanel>
                     </Border>
 
