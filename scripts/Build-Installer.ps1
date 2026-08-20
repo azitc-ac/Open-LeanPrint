@@ -3,10 +3,11 @@
     Builds the OpenLeanPrint installer (.msi).
 
 .DESCRIPTION
-    Publishes the desktop app self-contained, then packages it with WiX. The
-    installer sets up the virtual printer during installation, which the app
-    cannot do on its own: creating a printer queue needs administrator rights,
-    and an installer already has them.
+    Publishes the desktop app self-contained, then packages it with WiX.
+
+    The installer does not create the printer: Add-Printer refuses to run from a
+    custom action, which executes as SYSTEM in session 0, even when elevated.
+    The app asks for it on first run instead, in a session where it works.
 
     WiX comes from NuGet, so nothing has to be installed first - the .NET SDK is
     enough.
@@ -127,4 +128,4 @@ if ($folder.Attributes -band [IO.FileAttributes]::ReparsePoint) {
 $size = [math]::Round((Get-Item $target).Length / 1MB, 1)
 Write-Host ""
 Write-Host "Done: $target ($size MB)" -ForegroundColor Green
-Write-Host "Installing it sets up the virtual printer as well - no further steps."
+Write-Host "Installing it puts the app in place; OpenLeanPrint offers to add the printer on first run."
