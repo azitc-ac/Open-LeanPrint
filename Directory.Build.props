@@ -5,7 +5,7 @@
     (Linux/macOS CI as well as Windows), while the Windows app targets net8.0-windows.
   -->
   <PropertyGroup>
-    <Version>0.2.0</Version>
+    <Version>0.2.1</Version>
     <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
