@@ -118,8 +118,9 @@ dotnet run --project src/OpenLeanPrint.Cli -- impose "captured\job-0001.pdf" out
 | `src/OpenLeanPrint.App` | WPF desktop app: pool, live preview, print. Not in OpenLeanPrint.sln. |
 | `src/OpenLeanPrint.Cli` | `openleanprint` CLI: `impose` / `sample` / `print` / `list-printers` / `watch`. |
 | `tests/**` | xUnit tests (Core, Capture, Compose, Print) — run on any OS. |
-| `scripts/*.ps1` | Printer register/unregister; `Publish-App.ps1` (single exe), `Build-Msix.ps1` + `New-SigningCertificate.ps1` (MSIX). |
+| `scripts/*.ps1` | Printer register/unregister; `Publish-App.ps1` (single exe), `Build-Installer.ps1` (.msi), `Build-Msix.ps1` + `New-SigningCertificate.ps1`. |
 | `packaging/` | MSIX manifest, tile assets, and the pinned SDK packaging tools. |
+| `installer/` | WiX .msi: sets up the virtual printer during installation. |
 | `docs/` | ARCHITECTURE, USER-GUIDE, ROADMAP, M1-CAPTURE, M2-IMPOSE, M3-PRINT, M4-APP. |
 
 ## Conventions & guardrails
@@ -160,6 +161,14 @@ dotnet run --project src/OpenLeanPrint.Cli -- impose "captured\job-0001.pdf" out
   you have the full nuget.org feed, so use normal current versions.
 - **Honesty:** when you verify something on Windows, say what you actually ran
   and saw. When you can't verify a step, say so — don't claim success.
+- **Creating a printer queue needs administrator rights** — verified, not
+  assumed: `Add-Printer` fails with access denied as a normal user even with the
+  IPP service answering. That is why the .msi exists (an installer is already
+  elevated) and why the app's own setup button raises a UAC prompt.
+- **The app hosts the capture service itself** (`CaptureService`), so an
+  installed copy needs no console host. `--capture-service` runs it headless,
+  which is what the installer uses to have the queue created against a live
+  endpoint; `--tray` starts hidden and collecting.
 - **MSIX needs no Windows SDK install:** `makeappx`/`signtool` come from the
   `Microsoft.Windows.SDK.BuildTools` NuGet package (arm64 included), pinned in
   `packaging/SdkTools`. The manifest's `Publisher` must match the signing

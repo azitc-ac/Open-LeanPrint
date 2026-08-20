@@ -1,0 +1,39 @@
+<Project Sdk="WixToolset.Sdk/5.0.2">
+
+  <!--
+    Builds the OpenLeanPrint installer. The app is published to publish\ first
+    (scripts\Build-Installer.ps1 does that), then harvested wholesale - a
+    self-contained build is several hundred files and listing them by hand would
+    rot immediately.
+  -->
+  <PropertyGroup>
+    <OutputType>Package</OutputType>
+    <OutputName>OpenLeanPrint</OutputName>
+    <!-- Overridden by scripts\Build-Installer.ps1 so the package version
+         matches the app it wraps. -->
+    <ProductVersion Condition="'$(ProductVersion)' == ''">0.2.0</ProductVersion>
+    <DefineConstants>ProductVersion=$(ProductVersion)</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="WixToolset.Heat" Version="5.0.2" />
+    <PackageReference Include="WixToolset.UI.wixext" Version="5.0.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <BindInputPaths Include="publish" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <HarvestDirectory Include="publish">
+      <ComponentGroupName>AppFiles</ComponentGroupName>
+      <DirectoryRefId>INSTALLFOLDER</DirectoryRefId>
+      <SuppressRootDirectory>true</SuppressRootDirectory>
+      <!-- These are plain payload files. Without this, heat tries to read
+           assembly metadata out of arm64 native libraries and fails. -->
+      <SuppressCom>true</SuppressCom>
+      <SuppressRegistry>true</SuppressRegistry>
+    </HarvestDirectory>
+  </ItemGroup>
+
+</Project>

@@ -16,7 +16,9 @@
                 <Button x:Name="RemoveButton" Content="Remove" Click="RemoveJob_Click"/>
                 <ToggleButton x:Name="CollectToggle" Content="Collect captured jobs" Margin="6,0,0,0"
                               Click="Collect_Click"
-                              ToolTip="Add every job the capture host writes to the pool as it arrives"/>
+                              ToolTip="Run the virtual printer service and add every job you print to the pool"/>
+                <Button x:Name="PrinterSetupButton" Content="Set up virtual printer…" Click="PrinterSetup_Click"
+                        ToolTip="Creates the Windows printer queue that feeds OpenLeanPrint. Needs administrator rights once."/>
 
                 <Border Width="1" Background="{StaticResource Line}" Margin="8,2,14,2"/>
 

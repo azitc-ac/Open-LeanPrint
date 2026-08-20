@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The OpenLeanPrint installer.
+
+  It exists because the app alone cannot finish the job: creating a Windows
+  printer queue needs administrator rights, and an installer already has them.
+  So installing sets up the virtual printer too, and the user can print into
+  OpenLeanPrint straight away instead of hunting for a setup step.
+-->
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
+
+  <Package Name="OpenLeanPrint"
+           Manufacturer="Alexander Zarenko"
+           Version="$(ProductVersion)"
+           UpgradeCode="6f4c6e50-7072-696e-7420-4f70656e4c50"
+           Scope="perMachine"
+           Compressed="yes">
+
+    <SummaryInformation Description="Pool print jobs, impose them N-up or as a booklet, and print the result." />
+    <MajorUpgrade DowngradeErrorMessage="A newer version of OpenLeanPrint is already installed." />
+    <MediaTemplate EmbedCab="yes" />
+
+    <Icon Id="AppIcon" SourceFile="..\src\OpenLeanPrint.App\Assets\OpenLeanPrint.ico" />
+    <Property Id="ARPPRODUCTICON" Value="AppIcon" />
+    <Property Id="ARPURLINFOABOUT" Value="https://github.com/azitc-ac/Open-LeanPrint" />
+    <Property Id="ARPNOREPAIR" Value="1" />
+
+    <WixVariable Id="WixUILicenseRtf" Value="License.rtf" />
+    <!-- Minimal, deliberately: the InstallDir dialog pulls in a path-validation
+         custom action that ships as an x86 DLL, and this installer has to work
+         on arm64 where that is the shakiest part of the whole package. Program
+         Files is the right place anyway. -->
+    <ui:WixUI Id="WixUI_Minimal" />
+
+    <StandardDirectory Id="ProgramFiles6432Folder">
+      <Directory Id="INSTALLFOLDER" Name="OpenLeanPrint" />
+    </StandardDirectory>
+    <StandardDirectory Id="ProgramMenuFolder" />
+    <StandardDirectory Id="StartupFolder" />
+
+    <Feature Id="Main" Title="OpenLeanPrint" Level="1">
+      <ComponentGroupRef Id="AppFiles" />
+      <ComponentGroupRef Id="SetupFiles" />
+      <ComponentGroupRef Id="Shortcuts" />
+    </Feature>
+
+    <!-- The scripts that create and remove the printer travel with the app, so
+         the user can rerun them by hand if they ever need to. -->
+    <ComponentGroup Id="SetupFiles" Directory="INSTALLFOLDER">
+      <Component>
+        <File Id="SetupPrinterScript" Source="Setup-Printer.ps1" />
+      </Component>
+      <Component>
+        <File Id="RemovePrinterScript" Source="Remove-Printer.ps1" />
+      </Component>
+    </ComponentGroup>
+
+    <ComponentGroup Id="Shortcuts">
+      <Component Directory="ProgramMenuFolder" Guid="a1f2c3d4-5e6f-4a7b-8c9d-0e1f2a3b4c5d">
+        <Shortcut Id="StartMenuShortcut"
+                  Name="OpenLeanPrint"
+                  Description="Pool print jobs and put several pages on one sheet"
+                  Target="[INSTALLFOLDER]OpenLeanPrint.exe"
+                  WorkingDirectory="INSTALLFOLDER"
+                  Icon="AppIcon" />
+        <RegistryValue Root="HKCU" Key="Software\OpenLeanPrint" Name="StartMenu"
+                       Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+
+      <!-- Starts hidden in the tray at login: the capture service has to be
+           listening when you print, and nobody wants a window for that. -->
+      <Component Directory="StartupFolder" Guid="b2e3d4c5-6f7a-4b8c-9d0e-1f2a3b4c5d6e">
+        <Shortcut Id="StartupShortcut"
+                  Name="OpenLeanPrint"
+                  Description="Collect print jobs in the background"
+                  Target="[INSTALLFOLDER]OpenLeanPrint.exe"
+                  Arguments="--tray"
+                  WorkingDirectory="INSTALLFOLDER"
+                  Icon="AppIcon" />
+        <RegistryValue Root="HKCU" Key="Software\OpenLeanPrint" Name="Startup"
+                       Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+    </ComponentGroup>
+
+    <!--
+      Creating the printer is best effort: Return="ignore" so a machine where it
+      fails still ends up with a working app, which can set the printer up from
+      its own button.
+
+      These are type 34 custom actions - a directory plus a command line - which
+      the installer runs itself, with no helper DLL. That matters here: the
+      helper ships as x86/x64 and this is an arm64 machine.
+    -->
+    <CustomAction Id="SetupPrinter"
+                  Directory="INSTALLFOLDER"
+                  ExeCommand="powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File &quot;[INSTALLFOLDER]Setup-Printer.ps1&quot; -Exe &quot;[INSTALLFOLDER]OpenLeanPrint.exe&quot;"
+                  Execute="deferred" Impersonate="no" Return="ignore" />
+
+    <CustomAction Id="RemovePrinter"
+                  Directory="INSTALLFOLDER"
+                  ExeCommand="powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File &quot;[INSTALLFOLDER]Remove-Printer.ps1&quot;"
+                  Execute="deferred" Impersonate="no" Return="ignore" />
+
+    <InstallExecuteSequence>
+      <Custom Action="SetupPrinter" After="InstallFiles" Condition="NOT Installed" />
+      <Custom Action="RemovePrinter" Before="RemoveFiles" Condition="REMOVE~=&quot;ALL&quot;" />
+    </InstallExecuteSequence>
+
+  </Package>
+</Wix>

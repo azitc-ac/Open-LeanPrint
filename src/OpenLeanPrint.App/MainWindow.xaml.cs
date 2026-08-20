@@ -59,6 +59,7 @@ public partial class MainWindow : Window
     private int _sheetCount;
     private CancellationTokenSource? _work;
     private CapturedFolderWatcher? _capture;
+    private readonly CaptureService _service = new();
     private bool _suppressPagesEdit;
     private bool _suppressGridEdit;
 
@@ -101,6 +102,7 @@ public partial class MainWindow : Window
         _tray.CollectingChanged += (_, collecting) => Dispatcher.Invoke(() => SetCollecting(collecting));
 
         ApplySettings(AppSettings.Load());
+        UpdatePrinterSetupButton();
         UpdateControls();
 
         // "OpenLeanPrint a.pdf b.pdf" (or "Open with…") starts with a filled pool.
@@ -178,12 +180,24 @@ public partial class MainWindow : Window
     {
         CurrentSettings().Save();
         StopCollecting();
+        _service.Dispose();
         _tray.Dispose();
         base.OnClosed(e);
 
         // ShutdownMode is OnExplicitShutdown so hiding to the tray cannot end the
         // app; that makes this the one place that ends it.
         Application.Current?.Shutdown();
+    }
+
+    /// <summary>
+    /// Starts hidden with collecting already on - what the login shortcut uses,
+    /// so print jobs are caught without a window appearing at every boot.
+    /// </summary>
+    public void StartInTray()
+    {
+        SetCollecting(true);
+        UpdateControls();
+        // Never shown, so nothing to hide: the tray icon is the whole presence.
     }
 
     private void RestoreFromTray()
@@ -241,13 +255,29 @@ public partial class MainWindow : Window
             _capture = new CapturedFolderWatcher(CaptureLocations.DefaultFolder);
             _capture.JobArrived += (_, path) => Dispatcher.Invoke(() => CollectJob(path));
             _capture.Start();
-            StatusText.Text = $"Collecting jobs from {CaptureLocations.DefaultFolder}";
         }
         catch (Exception ex)
         {
             _capture = null;
             MessageBox.Show(this, ex.Message, "Could not watch the capture folder",
                             MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        // Host the loopback IPP service ourselves, so an installed copy needs
+        // nothing else running. Jobs land in the capture folder either way, and
+        // the watcher above picks them up from there.
+        try
+        {
+            _service.Start();
+            StatusText.Text = $"Listening for print jobs on port {_service.Port}.";
+        }
+        catch (Exception ex)
+        {
+            // Usually the console host already owns the port - then it is doing
+            // the listening and the watcher still feeds the pool.
+            StatusText.Text = $"Watching {CaptureLocations.DefaultFolder} " +
+                              $"(port {CaptureService.DefaultPort} is already in use: {ex.Message})";
         }
     }
 
@@ -262,6 +292,7 @@ public partial class MainWindow : Window
     {
         _capture?.Dispose();
         _capture = null;
+        _service.Stop();
     }
 
     // ---------- drag & drop ----------
@@ -758,6 +789,50 @@ public partial class MainWindow : Window
         ProfileBox.Text = string.Empty;
         StatusText.Text = $"Deleted the profile “{profile.Name}”.";
     }
+
+    // ---------- the virtual printer ----------
+
+    /// <summary>
+    /// Creates or removes the Windows printer queue. This needs administrator
+    /// rights once, so it goes through a UAC prompt rather than the app running
+    /// elevated.
+    /// </summary>
+    private void PrinterSetup_Click(object sender, RoutedEventArgs e)
+    {
+        PrinterSetupButton.IsEnabled = false;
+        try
+        {
+            if (PrinterSetup.IsRegistered())
+            {
+                if (PrinterSetup.Unregister())
+                    StatusText.Text = "Removed the OpenLeanPrint printer.";
+                else
+                    StatusText.Text = "The printer was not removed.";
+            }
+            else
+            {
+                if (PrinterSetup.Register(_service.IsRunning ? _service.Port : CaptureService.DefaultPort))
+                {
+                    StatusText.Text = "The OpenLeanPrint printer is ready - print to it from any application.";
+                    if (!_service.IsRunning) SetCollecting(true);
+                }
+                else
+                {
+                    StatusText.Text = "The printer was not created - administrator rights are needed for that step.";
+                }
+            }
+        }
+        finally
+        {
+            PrinterSetupButton.IsEnabled = true;
+            UpdatePrinterSetupButton();
+        }
+    }
+
+    private void UpdatePrinterSetupButton() =>
+        PrinterSetupButton.Content = PrinterSetup.IsRegistered()
+            ? "Remove virtual printer"
+            : "Set up virtual printer…";
 
     private void PrevSheet_Click(object sender, RoutedEventArgs e) => StepSheet(-1);
 

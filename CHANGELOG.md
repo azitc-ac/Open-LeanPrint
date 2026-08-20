@@ -4,6 +4,24 @@ All notable changes to OpenLeanPrint. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- **An installer (.msi)** that sets the whole thing up: it installs the app,
+  creates the virtual printer, and arranges for OpenLeanPrint to run in the
+  background at login. Nothing to configure afterwards.
+- **The app hosts the capture service itself.** Previously capturing meant
+  running a separate console host from a source checkout, which an installed
+  copy had no way to do — so an installed OpenLeanPrint could not capture
+  anything at all.
+- **Set up virtual printer…** in the app, for installs that cannot do it
+  themselves (MSIX forbids install-time scripts). One confirmation, once.
+- `--capture-service` (service only, no window) and `--tray` (start hidden,
+  already collecting) command-line switches.
+
+### Fixed
+- The documentation described a workflow only a source checkout could follow.
+
 ## [0.2.0] — 2026-08-19
 
 Everything a page needs doing to it before it prints: turn it, drop it, or lay

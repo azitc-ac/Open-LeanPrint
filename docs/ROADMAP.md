@@ -84,10 +84,13 @@ visual check on paper still open).
 - ✅ Drag & drop onto the pool; an app icon.
 - ✅ Distributable build: `scripts/Publish-App.ps1` produces one self-contained
   executable per runtime (**ARM64 + x64**).
-- ✅ Installer: `scripts/Build-Msix.ps1` produces a signed MSIX, using
-  makeappx/signtool from a NuGet package — no Windows SDK install, no admin
-  rights. `scripts/New-SigningCertificate.ps1` makes the self-signed
-  certificate for sideloading.
+- ✅ Installer: `scripts/Build-Installer.ps1` produces a signed **.msi** that
+  installs the app, creates the virtual printer and starts OpenLeanPrint at
+  login — installing is the whole setup. `scripts/Build-Msix.ps1` still builds
+  an .msix (app only; MSIX may not run install-time scripts), both using
+  makeappx/signtool from a NuGet package rather than an SDK install.
+- ✅ The app hosts the IPP capture service itself, so an installed copy needs
+  no console host.
 - ▶ A publicly trusted certificate, so the package installs for people who are
   not you (see [M4-APP.md](M4-APP.md)) — SignPath Foundation is the intended
   route for an open-source project.

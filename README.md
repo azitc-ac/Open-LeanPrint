@@ -50,26 +50,24 @@ Plus:
 
 ## Getting started
 
-Download or build the app, then run it:
+Grab the installer from the [latest release](https://github.com/azitc-ac/Open-LeanPrint/releases/latest)
+and run it. It installs the app **and creates the virtual printer**, so there is
+nothing else to set up: print to *OpenLeanPrint* from any application and the
+job lands in the pool, ready to be imposed.
+
+You can also just open PDFs directly — drop them on the window, pick a layout,
+hit Print.
+
+Running from source instead:
 
 ```powershell
 dotnet run --project src/OpenLeanPrint.App
 ```
 
-Drop PDFs on the window, pick a layout, hit Print. That already works without
-any setup.
-
-To capture print jobs **from other applications**, register the virtual printer
-once (in an elevated PowerShell) and leave the capture host running:
-
-```powershell
-dotnet run --project src/OpenLeanPrint.Capture.Host      # leave running
-.\scripts\Register-Printer.ps1 -Port 6310                # elevated, once
-```
-
-Then print to "OpenLeanPrint Virtual Printer" from anywhere, switch on
-**Collect captured jobs** in the app, and your jobs land in the pool as they
-arrive. Full walkthrough: [docs/USER-GUIDE.md](docs/USER-GUIDE.md).
+Then press **Set up virtual printer…** in the app once. It asks for
+administrator rights, because creating a printer queue in Windows requires them —
+that single step is the reason the installer exists. Full walkthrough:
+[docs/USER-GUIDE.md](docs/USER-GUIDE.md).
 
 ## Command line
 
@@ -99,10 +97,15 @@ too; printing and the app are Windows-only and marked as such. To produce
 something copyable — one self-contained executable, or an installable MSIX:
 
 ```powershell
-.\scripts\Publish-App.ps1
-.\scripts\New-SigningCertificate.ps1
-.\scripts\Build-Msix.ps1 -CertificateSubject "CN=Your Name"
+.\scripts\New-SigningCertificate.ps1                              # once
+.\scripts\Build-Installer.ps1 -CertificateSubject "CN=Your Name"  # .msi, sets the printer up too
+.\scripts\Build-Msix.ps1 -CertificateSubject "CN=Your Name"       # .msix, app only
+.\scripts\Publish-App.ps1                                         # one loose .exe
 ```
+
+The **.msi** is the one that leaves you ready to print. MSIX packages are not
+allowed to run install-time scripts, so an .msix installs the app but leaves the
+printer to a button inside it.
 
 ## Project layout
 

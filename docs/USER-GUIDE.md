@@ -4,7 +4,7 @@ Everything the tool does, from both ends: the desktop app and the command line.
 For *why* it is built this way, read [ARCHITECTURE.md](ARCHITECTURE.md).
 
 - [Two ways to get pages in](#two-ways-to-get-pages-in)
-- [Capturing print jobs from other applications](#capturing-print-jobs-from-other-applications)
+- [Setting up the virtual printer](#setting-up-the-virtual-printer)
 - [The desktop app](#the-desktop-app)
 - [Hands-free: watch](#hands-free-watch)
 - [Command-line reference](#command-line-reference)
@@ -17,41 +17,63 @@ For *why* it is built this way, read [ARCHITECTURE.md](ARCHITECTURE.md).
 
 1. **Give it PDFs directly** — drag them onto the app, use *Add PDFs…*, or pass
    them on the command line. Nothing to set up.
-2. **Capture what you print** — register the virtual printer once, then print to
-   it from any application. This is the FinePrint-style workflow and needs the
-   one-time setup below.
+2. **Capture what you print** — print to the OpenLeanPrint printer from any
+   application. This is the FinePrint-style workflow. If you used the installer
+   it already works; otherwise see the next section.
 
-## Capturing print jobs from other applications
+## Setting up the virtual printer
 
-Start the capture host and leave it running:
+How you get the virtual printer depends on how you got OpenLeanPrint. Creating
+a printer queue in Windows requires administrator rights — there is no way
+around that — so the difference is *who* asks for them.
+
+### If you installed the .msi
+
+Nothing to do. The installer already created the printer and arranged for
+OpenLeanPrint to run in the background at login, so print jobs are caught even
+with no window open. Print to **OpenLeanPrint** from any application and the job
+appears in the pool.
+
+### If you installed the .msix
+
+The package cannot create a printer queue during installation — MSIX forbids
+install-time scripts by design. So the app does it: press **Set up virtual
+printer…** in the toolbar, confirm the Windows prompt once, and it is done for
+good. The app runs the capture service itself while *Collect captured jobs* is
+on.
+
+### If you are running from source
+
+The app can do it the same way as above. Or, if you prefer the console host —
+useful when you want to watch the IPP traffic:
 
 ```powershell
 dotnet run --project src/OpenLeanPrint.Capture.Host -- --port 6310
 ```
 
-Register the printer once, in an **elevated** PowerShell:
+and, in an **elevated** PowerShell, once:
 
 ```powershell
 .\scripts\Register-Printer.ps1 -Port 6310
 ```
 
-This attaches Windows' own **IPP class driver** to the loopback service — no
-third-party driver is installed. Do *not* use "Select a shared printer by name"
-in the Windows dialog: that path uses the legacy Internet Printing client and
-will not connect.
+Only one of the two may listen on the port at a time. If the console host is
+running, the app says so and falls back to watching the capture folder, which
+still fills the pool.
 
-Now print to **OpenLeanPrint Virtual Printer** from any application. The host
-logs each job and writes it as a PDF to `%LOCALAPPDATA%\OpenLeanPrint\captured`.
+### What actually happens
 
-When you are done:
+Windows drives the queue with its own **IPP class driver** pointed at
+`http://localhost:6310/leanprint` — no third-party print driver is installed,
+which is the whole reason this works on Windows on ARM. Jobs arrive as PDF and
+are written to `%LOCALAPPDATA%\OpenLeanPrint\captured`.
 
-```powershell
-.\scripts\Unregister-Printer.ps1 -Port 6310
-```
+To remove the printer again: **Remove virtual printer** in the app, or
+`.\scripts\Unregister-Printer.ps1` from a source checkout. Uninstalling the
+.msi removes it for you.
 
-Leaving the printer registered while the host is *not* running means jobs sit in
-the queue with nothing to receive them. Either keep the host running or
-unregister the printer.
+> A printer queue with nothing listening behind it swallows jobs. If you
+> uninstall or stop OpenLeanPrint permanently, remove the printer too.
 
 ## The desktop app
 

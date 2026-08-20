@@ -20,6 +20,11 @@ dist/
 # MSIX package layout (scripts/Build-Msix.ps1)
 build/
 
+# Installer inputs produced by scripts/Build-Installer.ps1 - hundreds of MB of
+# published app, plus the licence converted to RTF
+installer/publish/
+installer/License.rtf
+
 # Signing certificates — a private key must never be committed
 certs/
 *.pfx
