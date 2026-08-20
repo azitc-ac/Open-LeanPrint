@@ -34,6 +34,9 @@ public sealed record AppSettings
     public string Duplex { get; init; } = "Default";
     public string? Watermark { get; init; }
     public bool CollectCapturedJobs { get; init; }
+
+    /// <summary>Whether the app has already offered to create the printer.</summary>
+    public bool PrinterSetupOffered { get; init; }
     public List<LayoutProfile> Profiles { get; init; } = new();
 
     /// <summary><c>%APPDATA%\OpenLeanPrint\settings.json</c>.</summary>

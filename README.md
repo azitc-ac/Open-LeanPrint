@@ -51,9 +51,10 @@ Plus:
 ## Getting started
 
 Grab the installer from the [latest release](https://github.com/azitc-ac/Open-LeanPrint/releases/latest)
-and run it. It installs the app **and creates the virtual printer**, so there is
-nothing else to set up: print to *OpenLeanPrint* from any application and the
-job lands in the pool, ready to be imposed.
+and run it, then start OpenLeanPrint once: it offers to add the virtual printer,
+Windows asks for administrator rights, and that is the setup done. From then on,
+print to *OpenLeanPrint* from any application and the job lands in the pool,
+ready to be imposed.
 
 You can also just open PDFs directly — drop them on the window, pick a layout,
 hit Print.
@@ -64,9 +65,8 @@ Running from source instead:
 dotnet run --project src/OpenLeanPrint.App
 ```
 
-Then press **Set up virtual printer…** in the app once. It asks for
-administrator rights, because creating a printer queue in Windows requires them —
-that single step is the reason the installer exists. Full walkthrough:
+It offers to add the printer on first start, just like the installed copy —
+answer yes and confirm the Windows prompt. Full walkthrough:
 [docs/USER-GUIDE.md](docs/USER-GUIDE.md).
 
 ## Command line
@@ -98,14 +98,15 @@ something copyable — one self-contained executable, or an installable MSIX:
 
 ```powershell
 .\scripts\New-SigningCertificate.ps1                              # once
-.\scripts\Build-Installer.ps1 -CertificateSubject "CN=Your Name"  # .msi, sets the printer up too
+.\scripts\Build-Installer.ps1 -CertificateSubject "CN=Your Name"  # .msi installer
 .\scripts\Build-Msix.ps1 -CertificateSubject "CN=Your Name"       # .msix, app only
 .\scripts\Publish-App.ps1                                         # one loose .exe
 ```
 
-The **.msi** is the one that leaves you ready to print. MSIX packages are not
-allowed to run install-time scripts, so an .msix installs the app but leaves the
-printer to a button inside it.
+The **.msi** is the one to hand to someone else: it installs to Program Files,
+adds a Start-menu entry and starts OpenLeanPrint at login. Either package leaves
+creating the printer to the app, which asks once — that step needs a real user
+session and cannot be done while installing.
 
 ## Project layout
 

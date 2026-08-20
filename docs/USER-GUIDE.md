@@ -27,20 +27,23 @@ How you get the virtual printer depends on how you got OpenLeanPrint. Creating
 a printer queue in Windows requires administrator rights — there is no way
 around that — so the difference is *who* asks for them.
 
-### If you installed the .msi
+### If you installed the .msi or the .msix
 
-Nothing to do. The installer already created the printer and arranged for
-OpenLeanPrint to run in the background at login, so print jobs are caught even
-with no window open. Print to **OpenLeanPrint** from any application and the job
-appears in the pool.
+Start OpenLeanPrint once. It offers to add the printer and Windows asks for
+administrator rights — confirm, and it is done for good. After that, print to
+**OpenLeanPrint** from any application and the job appears in the pool. The .msi
+also arranges for OpenLeanPrint to run in the background at login, so jobs are
+caught with no window open.
 
-### If you installed the .msix
+If you dismissed the question, the toolbar button **Set up virtual printer…**
+does the same thing at any time.
 
-The package cannot create a printer queue during installation — MSIX forbids
-install-time scripts by design. So the app does it: press **Set up virtual
-printer…** in the toolbar, confirm the Windows prompt once, and it is done for
-good. The app runs the capture service itself while *Collect captured jobs* is
-on.
+Why is this not part of installing? Because it cannot be. An installer's custom
+actions run as SYSTEM in session 0, and `Add-Printer` refuses there with "access
+is denied" — even with the print service up and answering, and even though the
+installer itself is elevated. Creating a printer queue wants a real user
+session. Three logged installations went into establishing that, so the app asks
+instead of the installer pretending.
 
 ### If you are running from source
 

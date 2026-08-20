@@ -62,6 +62,7 @@ public partial class MainWindow : Window
     private readonly CaptureService _service = new();
     private bool _suppressPagesEdit;
     private bool _suppressGridEdit;
+    private bool _printerSetupOffered;
 
     /// <summary>The layout behind the picture, so a click can be traced back to a page.</summary>
     private ImpositionResult? _layout;
@@ -101,9 +102,14 @@ public partial class MainWindow : Window
         _tray.ExitRequested += (_, _) => Dispatcher.Invoke(ExitForGood);
         _tray.CollectingChanged += (_, collecting) => Dispatcher.Invoke(() => SetCollecting(collecting));
 
-        ApplySettings(AppSettings.Load());
+        var settings = AppSettings.Load();
+        ApplySettings(settings);
         UpdatePrinterSetupButton();
         UpdateControls();
+
+        // Ask once, after the window is up - a dialog during construction would
+        // appear before anything is on screen.
+        Loaded += (_, _) => OfferPrinterSetup(settings);
 
         // "OpenLeanPrint a.pdf b.pdf" (or "Open with…") starts with a filled pool.
         var startupFiles = Environment.GetCommandLineArgs().Skip(1)
@@ -115,6 +121,7 @@ public partial class MainWindow : Window
 
     private void ApplySettings(AppSettings settings)
     {
+        _printerSetupOffered = settings.PrinterSetupOffered;
         _booklet = settings.Booklet;
         _rows = Math.Max(1, settings.Rows);
         _columns = Math.Max(1, settings.Columns);
@@ -150,6 +157,7 @@ public partial class MainWindow : Window
         Gutter = ParseNumber(GutterBox.Text, 0),
         Printer = PrinterBox.SelectedItem as string,
         Duplex = SelectedDuplex().ToString(),
+        PrinterSetupOffered = _printerSetupOffered,
         Watermark = string.IsNullOrWhiteSpace(WatermarkBox.Text) ? null : WatermarkBox.Text.Trim(),
         Profiles = _profiles.ToList(),
         CollectCapturedJobs = CollectToggle.IsChecked == true,
@@ -804,22 +812,13 @@ public partial class MainWindow : Window
         {
             if (PrinterSetup.IsRegistered())
             {
-                if (PrinterSetup.Unregister())
-                    StatusText.Text = "Removed the OpenLeanPrint printer.";
-                else
-                    StatusText.Text = "The printer was not removed.";
+                StatusText.Text = PrinterSetup.Unregister()
+                    ? "Removed the OpenLeanPrint printer."
+                    : "The printer was not removed.";
             }
             else
             {
-                if (PrinterSetup.Register(_service.IsRunning ? _service.Port : CaptureService.DefaultPort))
-                {
-                    StatusText.Text = "The OpenLeanPrint printer is ready - print to it from any application.";
-                    if (!_service.IsRunning) SetCollecting(true);
-                }
-                else
-                {
-                    StatusText.Text = "The printer was not created - administrator rights are needed for that step.";
-                }
+                CreatePrinter();
             }
         }
         finally
@@ -827,6 +826,53 @@ public partial class MainWindow : Window
             PrinterSetupButton.IsEnabled = true;
             UpdatePrinterSetupButton();
         }
+    }
+
+    /// <summary>
+    /// Creates the printer queue. Windows only accepts an IPP printer while the
+    /// service behind it is answering, so the service has to be up *first* -
+    /// getting that order wrong is the whole reason this is one method.
+    /// </summary>
+    private void CreatePrinter()
+    {
+        if (!_service.IsRunning)
+        {
+            SetCollecting(true);
+            if (!_service.IsRunning)
+            {
+                StatusText.Text = "Could not start the print service, so the printer cannot be created yet.";
+                return;
+            }
+        }
+
+        StatusText.Text = "Creating the printer…";
+        StatusText.Dispatcher.Invoke(() => { }, DispatcherPriority.Render);
+
+        StatusText.Text = PrinterSetup.Register(_service.Port)
+            ? "The OpenLeanPrint printer is ready - print to it from any application."
+            : "The printer was not created. Administrator rights are needed for that one step.";
+    }
+
+    /// <summary>
+    /// Offers to finish the setup the installer cannot do: creating the printer
+    /// needs the user's own session, so it is asked for once, here.
+    /// </summary>
+    private void OfferPrinterSetup(AppSettings settings)
+    {
+        if (settings.PrinterSetupOffered || PrinterSetup.IsRegistered()) return;
+
+        _printerSetupOffered = true;
+        var answer = MessageBox.Show(
+            this,
+            "OpenLeanPrint can add its virtual printer now, so you can print into it from any " +
+            "application.\n\nWindows will ask for administrator rights once - creating a printer " +
+            "queue requires them.",
+            "Set up the virtual printer",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Question);
+
+        if (answer == MessageBoxResult.Yes) CreatePrinter();
+        UpdatePrinterSetupButton();
     }
 
     private void UpdatePrinterSetupButton() =>

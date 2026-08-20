@@ -7,9 +7,11 @@ All notable changes to OpenLeanPrint. The format follows
 ## [Unreleased]
 
 ### Added
-- **An installer (.msi)** that sets the whole thing up: it installs the app,
-  creates the virtual printer, and arranges for OpenLeanPrint to run in the
-  background at login. Nothing to configure afterwards.
+- **An installer (.msi)**: installs the app and arranges for OpenLeanPrint to
+  run in the background at login. The printer itself is added by the app on
+  first run, with one confirmation — `Add-Printer` refuses to run from an
+  installer's custom action, which executes as SYSTEM in session 0, even when
+  elevated and with the print service answering.
 - **The app hosts the capture service itself.** Previously capturing meant
   running a separate console host from a source checkout, which an installed
   copy had no way to do — so an installed OpenLeanPrint could not capture
