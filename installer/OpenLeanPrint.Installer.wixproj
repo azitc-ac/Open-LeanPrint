@@ -13,6 +13,9 @@
          matches the app it wraps. -->
     <ProductVersion Condition="'$(ProductVersion)' == ''">0.2.0</ProductVersion>
     <DefineConstants>ProductVersion=$(ProductVersion)</DefineConstants>
+    <!-- ICE61 objects to AllowSameVersionUpgrades on principle; that setting is
+         deliberate, so the check is not. -->
+    <SuppressIces>ICE61</SuppressIces>
   </PropertyGroup>
 
   <ItemGroup>

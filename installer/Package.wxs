@@ -91,22 +91,23 @@
     </ComponentGroup>
 
     <!--
-      The installer does NOT create the printer, and that is a measured decision
-      rather than an omission.
+      The installer does not call Add-Printer; it asks the Task Scheduler to.
 
-      Measured: from a deferred custom action - SYSTEM, session 0, reported by
-      the installer as having sufficient privileges, with the IPP service up and
-      answering on the port - Add-Printer returns "access is denied". Three
-      installations were logged to establish it. The same command from an
-      elevated user session succeeds.
+      Measured, three contexts running nothing but Add-Printer against the same
+      live endpoint:
 
-      Not established: why. Microsoft documents no session requirement for
-      Add-Printer, and the Point and Print policies usually blamed for this are
-      not set on the machine where it was reproduced. What is certain is the
-      behaviour, not the mechanism.
+        elevated user, session 1, interactive   - creates the printer
+        SYSTEM,        session 0, task          - creates the printer
+        SYSTEM,        session 0, MSI custom action - "access is denied"
 
-      So the app asks for it instead, once, on first run - in a session where it
-      demonstrably works.
+      So neither the account nor the session is the obstacle: the same command,
+      as the same SYSTEM account, in the same session 0, succeeds when the Task
+      Scheduler starts it and fails when msiexec does. What is different about a
+      custom action's process is not established - but it does not have to be,
+      because handing the work to the scheduler avoids it entirely.
+
+      The app also offers to create the printer on first run, for the case where
+      the scheduled attempt did not happen (an .msix cannot run any of this).
 
       Uninstalling still tries to take the queue away - leaving a printer behind
       that nothing answers would swallow print jobs silently. It is best effort:

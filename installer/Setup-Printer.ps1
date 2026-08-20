@@ -31,7 +31,8 @@
 param(
     [string]$Exe,
     [int]$Port = 6310,
-    [string]$LogPath
+    [string]$LogPath,
+    [string]$TaskName
 )
 
 $ErrorActionPreference = "Stop"
@@ -95,11 +96,21 @@ try {
 
         # Add-Printer does not always raise a terminating error, so ask for one -
         # otherwise a permission failure gets reported later as the wrong thing.
-        try {
-            Add-Printer -IppURL $url -ErrorAction Stop
+        # It is retried because an installation that has not quite finished can
+        # still be holding things up.
+        $added = $false
+        for ($attempt = 1; $attempt -le 5 -and -not $added; $attempt++) {
+            try {
+                Add-Printer -IppURL $url -ErrorAction Stop
+                $added = $true
+            }
+            catch {
+                Write-Log "Attempt $attempt failed: $($_.Exception.Message)"
+                if ($attempt -lt 5) { Start-Sleep -Seconds 10 }
+            }
         }
-        catch {
-            Write-Log "Add-Printer failed: $($_.Exception.Message)"
+        if (-not $added) {
+            Write-Log "Giving up after 5 attempts."
             exit 1
         }
 
@@ -115,6 +126,11 @@ try {
         }
 
         Write-Log "Created: $($found.Name)"
+        if ($TaskName) {
+            # The scheduled task exists only to do this once.
+            Unregister-ScheduledTask -TaskName $TaskName -Confirm:$false -ErrorAction SilentlyContinue
+            Write-Log "Removed the scheduled task."
+        }
         exit 0
     }
     finally {
