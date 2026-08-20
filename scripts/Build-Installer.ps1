@@ -54,6 +54,14 @@ dotnet publish (Join-Path $repo "src\OpenLeanPrint.App\OpenLeanPrint.App.csproj"
     -p:DebugType=None --output $publish | Out-Null
 if ($LASTEXITCODE -ne 0) { throw "dotnet publish failed." }
 
+# The console host goes in too. Printer setup runs as SYSTEM in session 0,
+# where a WPF process has no desktop to start on - a console host does. Both
+# publish into the same folder and share the one copy of the runtime.
+dotnet publish (Join-Path $repo "src\OpenLeanPrint.Capture.Host\OpenLeanPrint.Capture.Host.csproj") `
+    --configuration Release --runtime $Runtime --self-contained true `
+    -p:DebugType=None --output $publish | Out-Null
+if ($LASTEXITCODE -ne 0) { throw "publishing the capture host failed." }
+
 $exe = Join-Path $publish "OpenLeanPrint.exe"
 if (-not (Test-Path $exe)) { throw "Expected $exe after publishing." }
 Write-Host "  published $((Get-ChildItem $publish -Recurse -File).Count) files"

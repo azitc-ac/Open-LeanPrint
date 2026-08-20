@@ -5,79 +5,126 @@
 
 .DESCRIPTION
     Windows only creates an IPP queue while the printer is answering, so this
-    starts OpenLeanPrint's capture service headlessly, waits until it responds,
-    adds the printer, and stops the service again. The installed app starts its
-    own service from then on.
+    starts OpenLeanPrint's capture service, waits until it responds, adds the
+    printer, and stops the service again. The installed app runs its own service
+    from then on.
 
-    Needs administrator rights: Add-Printer refuses otherwise. The installer is
-    already elevated, which is the whole reason this runs there.
+    It starts the *console* host rather than the desktop app: during
+    installation this runs as SYSTEM in session 0, where a windowed process has
+    no desktop to start on.
+
+    Needs administrator rights - Add-Printer refuses otherwise, which is the
+    whole reason this runs from the installer.
 
 .PARAMETER Exe
-    Path to OpenLeanPrint.exe. Defaults to the folder this script sits in.
+    The capture host to use. Defaults to the console host next to this script,
+    falling back to the desktop app in headless mode.
 
 .PARAMETER Port
     Loopback port for the IPP service. Default 6310.
+
+.PARAMETER LogPath
+    Where to write a transcript. Defaults next to this script, so a failure
+    during installation leaves something to read.
 #>
 [CmdletBinding()]
 param(
     [string]$Exe,
-    [int]$Port = 6310
+    [int]$Port = 6310,
+    [string]$LogPath
 )
 
 $ErrorActionPreference = "Stop"
-if (-not $Exe) { $Exe = Join-Path $PSScriptRoot "OpenLeanPrint.exe" }
-$url = "http://localhost:$Port/leanprint"
+if (-not $LogPath) { $LogPath = Join-Path $PSScriptRoot "printer-setup.log" }
 
-if (-not (Test-Path $Exe)) { throw "OpenLeanPrint.exe not found at $Exe." }
-
-# Already there? Then there is nothing to do - reinstalling must not create a
-# second queue.
-if (Get-Printer | Where-Object Name -like "*OpenLeanPrint*") {
-    Write-Host "The OpenLeanPrint printer already exists."
-    exit 0
+function Write-Log([string]$message) {
+    $line = "{0:HH:mm:ss}  {1}" -f (Get-Date), $message
+    Write-Host $line
+    try { Add-Content -Path $LogPath -Value $line -ErrorAction SilentlyContinue } catch { }
 }
 
-Write-Host "Starting the capture service..."
-$service = Start-Process -FilePath $Exe -ArgumentList "--capture-service" -PassThru
+$arguments = @()
+if (-not $Exe) {
+    $console = Join-Path $PSScriptRoot "OpenLeanPrint.Capture.Host.exe"
+    $app = Join-Path $PSScriptRoot "OpenLeanPrint.exe"
+    if (Test-Path $console) {
+        $Exe = $console
+        $arguments = @("--port", "$Port")
+    } elseif (Test-Path $app) {
+        $Exe = $app
+        $arguments = @("--capture-service")
+    } else {
+        Write-Log "Neither the capture host nor the app was found next to $PSScriptRoot."
+        exit 1
+    }
+}
+
+$url = "http://localhost:$Port/leanprint"
+Write-Log "Setting up the printer using $Exe"
 
 try {
-    # Wait for it to answer; a fresh process needs a moment.
-    $ready = $false
-    for ($i = 0; $i -lt 30 -and -not $ready; $i++) {
-        Start-Sleep -Milliseconds 500
+    if (Get-Printer | Where-Object Name -like "*OpenLeanPrint*") {
+        Write-Log "The OpenLeanPrint printer already exists - nothing to do."
+        exit 0
+    }
+
+    Write-Log "Starting the capture service..."
+    $service = Start-Process -FilePath $Exe -ArgumentList $arguments -PassThru -WindowStyle Hidden
+
+    try {
+        $ready = $false
+        for ($i = 0; $i -lt 40 -and -not $ready; $i++) {
+            Start-Sleep -Milliseconds 500
+            if ($service.HasExited) {
+                Write-Log "The capture service exited immediately with code $($service.ExitCode)."
+                exit 1
+            }
+            try {
+                Invoke-WebRequest $url -TimeoutSec 2 -UseBasicParsing | Out-Null
+                $ready = $true
+            } catch {
+                # Any HTTP answer at all means the listener is up.
+                if ($_.Exception.Response) { $ready = $true }
+            }
+        }
+        if (-not $ready) {
+            Write-Log "The capture service never answered on port $Port."
+            exit 1
+        }
+        Write-Log "The service is answering; adding the printer..."
+
+        # Add-Printer does not always raise a terminating error, so ask for one -
+        # otherwise a permission failure gets reported later as the wrong thing.
         try {
-            Invoke-WebRequest $url -TimeoutSec 2 -UseBasicParsing | Out-Null
-            $ready = $true
-        } catch {
-            # Any HTTP answer at all means the listener is up.
-            if ($_.Exception.Response) { $ready = $true }
+            Add-Printer -IppURL $url -ErrorAction Stop
+        }
+        catch {
+            Write-Log "Add-Printer failed: $($_.Exception.Message)"
+            exit 1
+        }
+
+        # Adding is asynchronous in places; confirm rather than assume.
+        $found = $null
+        for ($i = 0; $i -lt 20 -and -not $found; $i++) {
+            Start-Sleep -Milliseconds 500
+            $found = Get-Printer | Where-Object Name -like "*OpenLeanPrint*"
+        }
+        if (-not $found) {
+            Write-Log "Add-Printer succeeded but no queue appeared."
+            exit 1
+        }
+
+        Write-Log "Created: $($found.Name)"
+        exit 0
+    }
+    finally {
+        if ($service -and -not $service.HasExited) {
+            Stop-Process -Id $service.Id -Force -ErrorAction SilentlyContinue
+            Write-Log "Stopped the capture service."
         }
     }
-    if (-not $ready) { throw "The capture service did not start listening on port $Port." }
-
-    Write-Host "Adding the printer..."
-    # Add-Printer does not always raise a terminating error, so ask for one -
-    # otherwise a permission failure would be reported later as the wrong thing.
-    try {
-        Add-Printer -IppURL $url -ErrorAction Stop
-    }
-    catch {
-        throw "Could not create the printer: $($_.Exception.Message) " +
-              "(this step needs administrator rights)."
-    }
-
-    # Adding is asynchronous in places; confirm rather than assume.
-    $found = $null
-    for ($i = 0; $i -lt 20 -and -not $found; $i++) {
-        Start-Sleep -Milliseconds 500
-        $found = Get-Printer | Where-Object Name -like "*OpenLeanPrint*"
-    }
-    if (-not $found) { throw "Add-Printer reported success but no queue appeared." }
-
-    Write-Host "Created: $($found.Name)"
 }
-finally {
-    if ($service -and -not $service.HasExited) {
-        Stop-Process -Id $service.Id -Force -ErrorAction SilentlyContinue
-    }
+catch {
+    Write-Log "Unexpected failure: $($_.Exception.Message)"
+    exit 1
 }
