@@ -102,8 +102,14 @@
 
       All four ran in session 1, so the session was never the variable, and the
       commit action shows it is not about the transaction still being open
-      either. It is the account: the print stack accepts this from the elevated
-      user performing the installation and refuses it from SYSTEM.
+      either.
+
+      What is NOT established is why the SYSTEM cases fail. A scheduled task
+      running as SYSTEM creates the printer without trouble, so "SYSTEM may not
+      do this" is demonstrably false - the difference lies somewhere in a custom
+      action's process, and it is still unidentified. Impersonation works, so
+      that is what ships; the open question is what an unattended installation
+      does, where there is no one to impersonate.
 
       Consequence for deployment: an installation performed by a person works. A
       fully unattended one running as SYSTEM has nobody to impersonate and will
