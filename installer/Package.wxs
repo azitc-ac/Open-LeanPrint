@@ -91,15 +91,21 @@
       These are type 34 custom actions - a directory plus a command line - which
       the installer runs itself, with no helper DLL. That matters here: the
       helper ships as x86/x64 and this is an arm64 machine.
+
+      The command lines are deliberately relative. A deferred action cannot read
+      properties, so an [INSTALLFOLDER] in here resolves to nothing and the
+      command dies instantly - which is exactly what happened the first time.
+      The Directory above is the working directory, so plain file names work,
+      and Setup-Printer.ps1 finds the executable next to itself.
     -->
     <CustomAction Id="SetupPrinter"
                   Directory="INSTALLFOLDER"
-                  ExeCommand="powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File &quot;[INSTALLFOLDER]Setup-Printer.ps1&quot; -Exe &quot;[INSTALLFOLDER]OpenLeanPrint.exe&quot;"
+                  ExeCommand="powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File Setup-Printer.ps1"
                   Execute="deferred" Impersonate="no" Return="ignore" />
 
     <CustomAction Id="RemovePrinter"
                   Directory="INSTALLFOLDER"
-                  ExeCommand="powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File &quot;[INSTALLFOLDER]Remove-Printer.ps1&quot;"
+                  ExeCommand="powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File Remove-Printer.ps1"
                   Execute="deferred" Impersonate="no" Return="ignore" />
 
     <InstallExecuteSequence>

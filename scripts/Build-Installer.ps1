@@ -73,8 +73,17 @@ $version = ([xml](Get-Content (Join-Path $repo "Directory.Build.props"))).Projec
 if (-not $version) { $version = "0.0.0" }
 Write-Host "  version : $version"
 
+# The package platform decides where ProgramFiles6432Folder points: an x86
+# package would put an arm64 build into "Program Files (x86)".
+$platform = switch -Wildcard ($Runtime) {
+    "*arm64" { "arm64" }
+    "*x64"   { "x64" }
+    default  { "x86" }
+}
+Write-Host "  platform: $platform"
+
 dotnet build (Join-Path $installer "OpenLeanPrint.Installer.wixproj") `
-    --configuration Release -v minimal -p:ProductVersion=$version
+    --configuration Release -v minimal -p:ProductVersion=$version -p:Platform=$platform
 if ($LASTEXITCODE -ne 0) { throw "The WiX build failed." }
 
 $msi = Get-ChildItem (Join-Path $installer "bin") -Recurse -Filter "OpenLeanPrint.msi" |
