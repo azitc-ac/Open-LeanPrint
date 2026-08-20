@@ -57,6 +57,9 @@
       </Component>
       <Component>
         <File Id="RemovePrinterScript" Source="Remove-Printer.ps1" />
+        <!-- Setup writes this next to itself, so the installer never learns of
+             it and would leave it behind on uninstall. -->
+        <RemoveFile Id="RemovePrinterSetupLog" Name="printer-setup.log" On="uninstall" />
       </Component>
     </ComponentGroup>
 
