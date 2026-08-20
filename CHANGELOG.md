@@ -21,6 +21,8 @@ All notable changes to OpenLeanPrint. The format follows
 
 ### Fixed
 - The documentation described a workflow only a source checkout could follow.
+- `Build-Installer.ps1` warns when it writes the .msi into a synced folder:
+  Windows Installer cannot open a cloud placeholder and blames the package.
 
 ## [0.2.0] — 2026-08-19
 

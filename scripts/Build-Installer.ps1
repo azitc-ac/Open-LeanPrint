@@ -97,6 +97,16 @@ if ($CertificateSubject) {
     Write-Host "  signed with $CertificateSubject"
 }
 
+# --- 5. a warning worth having -----------------------------------------------
+# Windows Installer runs as SYSTEM and cannot fetch a cloud placeholder, so an
+# .msi sitting in a synced folder fails to open with a misleading "not a valid
+# installer package" message. Costly to diagnose, cheap to warn about.
+$folder = Get-Item (Split-Path $target -Parent)
+if ($folder.Attributes -band [IO.FileAttributes]::ReparsePoint) {
+    Write-Warning ("$($folder.FullName) looks like a synced folder (OneDrive and the like). " +
+                   "Copy the .msi somewhere local before installing, or Windows may refuse to open it.")
+}
+
 $size = [math]::Round((Get-Item $target).Length / 1MB, 1)
 Write-Host ""
 Write-Host "Done: $target ($size MB)" -ForegroundColor Green

@@ -236,6 +236,12 @@ uploaded — use `--out DIR` on the host to put them somewhere else.
 
 ## Troubleshooting
 
+**"This installation package could not be opened."** The .msi is in a synced
+folder — OneDrive, Dropbox, or a redirected Downloads folder. Windows Installer
+runs as SYSTEM and cannot pull down a cloud placeholder, so it reports the file
+as invalid when it is merely not there yet. Copy the .msi somewhere local, such
+as `C:\Users\Public\Downloads`, and run it from there.
+
 **The printer appears but nothing is captured.** The capture host must be
 running, on the same port the printer was registered with.
 
