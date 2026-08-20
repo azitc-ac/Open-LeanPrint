@@ -51,10 +51,9 @@ Plus:
 ## Getting started
 
 Grab the installer from the [latest release](https://github.com/azitc-ac/Open-LeanPrint/releases/latest)
-and run it, then start OpenLeanPrint once: it offers to add the virtual printer,
-Windows asks for administrator rights, and that is the setup done. From then on,
-print to *OpenLeanPrint* from any application and the job lands in the pool,
-ready to be imposed.
+and run it. It installs the app **and creates the virtual printer**, so there is
+nothing else to do: print to *OpenLeanPrint* from any application and the job
+lands in the pool, ready to be imposed.
 
 You can also just open PDFs directly — drop them on the window, pick a layout,
 hit Print.
@@ -104,9 +103,9 @@ something copyable — one self-contained executable, or an installable MSIX:
 ```
 
 The **.msi** is the one to hand to someone else: it installs to Program Files,
-adds a Start-menu entry and starts OpenLeanPrint at login. Either package leaves
-creating the printer to the app, which asks once — that step needs a real user
-session and cannot be done while installing.
+creates the virtual printer, adds a Start-menu entry and starts OpenLeanPrint at
+login. An .msix cannot create the printer — MSIX forbids install-time scripts —
+so there the app asks once instead.
 
 ## Project layout
 

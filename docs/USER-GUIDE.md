@@ -27,28 +27,26 @@ How you get the virtual printer depends on how you got OpenLeanPrint. Creating
 a printer queue in Windows requires administrator rights — there is no way
 around that — so the difference is *who* asks for them.
 
-### If you installed the .msi or the .msix
+### If you installed the .msi
 
-Start OpenLeanPrint once. It offers to add the printer and Windows asks for
-administrator rights — confirm, and it is done for good. After that, print to
-**OpenLeanPrint** from any application and the job appears in the pool. The .msi
-also arranges for OpenLeanPrint to run in the background at login, so jobs are
-caught with no window open.
+Nothing to do. The installer creates the printer and arranges for OpenLeanPrint
+to run in the background at login, so jobs are caught with no window open. Print
+to **OpenLeanPrint** from any application and the job appears in the pool.
 
-If you dismissed the question, the toolbar button **Set up virtual printer…**
-does the same thing at any time.
+### If you installed the .msix
 
-Why is this not part of installing? Because it does not work there. An
-installer's custom actions run as SYSTEM in session 0, and `Add-Printer` returns
-"access is denied" from that context — even with the print service up and
-answering, and even though the installer itself reports having sufficient
-privileges. Three logged installations established that; the same command from
-an elevated user session succeeds.
+MSIX packages may not run install-time scripts, so the app does it: start
+OpenLeanPrint once and it offers to add the printer, with one Windows
+confirmation. The toolbar button **Set up virtual printer…** does the same at
+any time.
 
-The *reason* is not established. Microsoft documents no session requirement for
-`Add-Printer`, and the Point and Print policies usually blamed for this were not
-set on the machine where it was reproduced. So: the behaviour is measured, the
-mechanism is not — and the app asks rather than the installer pretending.
+### A note for unattended deployment
+
+The installer creates the printer as the user performing the installation, not
+as SYSTEM — the print stack refuses `Add-Printer` from SYSTEM even when
+elevated, which took a four-way experiment to pin down. A deployment that runs
+the .msi silently as SYSTEM therefore installs the app but not the printer;
+users get the app's own setup prompt instead.
 
 ### If you are running from source
 

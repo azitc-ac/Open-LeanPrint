@@ -91,34 +91,41 @@
     </ComponentGroup>
 
     <!--
-      The installer does not call Add-Printer; it asks the Task Scheduler to.
+      Impersonate="yes" is the whole trick, and it was settled by experiment
+      rather than by reasoning. A throwaway diagnostic package ran the same
+      Add-Printer call from four custom-action configurations:
 
-      Measured, three contexts running nothing but Add-Printer against the same
-      live endpoint:
+        deferred, Impersonate="no"        as SYSTEM              access is denied
+        deferred, Impersonate="yes"       as the installing user creates the printer
+        commit,   Impersonate="no"        as SYSTEM              access is denied
+        immediate after InstallFinalize   as the installing user creates the printer
 
-        elevated user, session 1, interactive   - creates the printer
-        SYSTEM,        session 0, task          - creates the printer
-        SYSTEM,        session 0, MSI custom action - "access is denied"
+      All four ran in session 1, so the session was never the variable, and the
+      commit action shows it is not about the transaction still being open
+      either. It is the account: the print stack accepts this from the elevated
+      user performing the installation and refuses it from SYSTEM.
 
-      So neither the account nor the session is the obstacle: the same command,
-      as the same SYSTEM account, in the same session 0, succeeds when the Task
-      Scheduler starts it and fails when msiexec does. What is different about a
-      custom action's process is not established - but it does not have to be,
-      because handing the work to the scheduler avoids it entirely.
+      Consequence for deployment: an installation performed by a person works. A
+      fully unattended one running as SYSTEM has nobody to impersonate and will
+      not create the printer - there the app's own setup button takes over,
+      which is also what an .msix has to rely on.
 
-      The app also offers to create the printer on first run, for the case where
-      the scheduled attempt did not happen (an .msix cannot run any of this).
-
-      Uninstalling still tries to take the queue away - leaving a printer behind
-      that nothing answers would swallow print jobs silently. It is best effort:
-      Return="ignore" keeps a failure here from breaking the uninstall.
+      Both actions are best effort (Return="ignore"): a machine where this fails
+      still ends up with a working app. Uninstalling takes the queue away again,
+      because a printer with nothing behind it swallows print jobs silently.
     -->
+    <CustomAction Id="SetupPrinter"
+                  Directory="INSTALLFOLDER"
+                  ExeCommand="powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File Setup-Printer.ps1"
+                  Execute="deferred" Impersonate="yes" Return="ignore" />
+
     <CustomAction Id="RemovePrinter"
                   Directory="INSTALLFOLDER"
                   ExeCommand="powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File Remove-Printer.ps1"
-                  Execute="deferred" Impersonate="no" Return="ignore" />
+                  Execute="deferred" Impersonate="yes" Return="ignore" />
 
     <InstallExecuteSequence>
+      <Custom Action="SetupPrinter" After="InstallFiles" Condition="NOT Installed" />
       <Custom Action="RemovePrinter" Before="RemoveFiles" Condition="REMOVE~=&quot;ALL&quot;" />
     </InstallExecuteSequence>
 

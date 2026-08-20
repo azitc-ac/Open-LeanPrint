@@ -7,13 +7,12 @@ All notable changes to OpenLeanPrint. The format follows
 ## [Unreleased]
 
 ### Added
-- **An installer (.msi)**: installs the app and arranges for OpenLeanPrint to
-  run in the background at login. The printer itself is added by the app on
-  first run, with one confirmation — `Add-Printer` returns "access is denied"
-  from an installer's custom action (SYSTEM, session 0), even with sufficient
-  privileges reported and the print service answering, while the same command
-  from an elevated user session works. Reproduced across three installations;
-  the underlying reason is not established.
+- **An installer (.msi)** that sets everything up: installs the app, creates the
+  virtual printer, and runs OpenLeanPrint in the background at login. The
+  printer step needs `Impersonate="yes"` on the custom action — the print stack
+  refuses `Add-Printer` from SYSTEM even when elevated, and accepts it from the
+  user performing the installation. Established by running the same call from
+  four differently scheduled custom actions.
 - **The app hosts the capture service itself.** Previously capturing meant
   running a separate console host from a source checkout, which an installed
   copy had no way to do — so an installed OpenLeanPrint could not capture
