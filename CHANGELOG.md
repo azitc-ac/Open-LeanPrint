@@ -8,11 +8,11 @@ All notable changes to OpenLeanPrint. The format follows
 
 ### Added
 - **An installer (.msi)** that sets everything up: installs the app, creates the
-  virtual printer, and runs OpenLeanPrint in the background at login. The
-  printer step needs `Impersonate="yes"` on the custom action — the print stack
-  refuses `Add-Printer` from SYSTEM even when elevated, and accepts it from the
-  user performing the installation. Established by running the same call from
-  four differently scheduled custom actions.
+  virtual printer, and runs OpenLeanPrint in the background at login. Works
+  unattended as SYSTEM too, so it can be deployed by Intune or SCCM. The printer
+  step needs `Impersonate="yes"` on the custom action: without it the action runs
+  inside the Windows Installer service process, where `Add-Printer` is refused
+  regardless of account.
 - **The app hosts the capture service itself.** Previously capturing meant
   running a separate console host from a source checkout, which an installed
   copy had no way to do — so an installed OpenLeanPrint could not capture

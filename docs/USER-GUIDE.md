@@ -40,13 +40,17 @@ OpenLeanPrint once and it offers to add the printer, with one Windows
 confirmation. The toolbar button **Set up virtual printer…** does the same at
 any time.
 
-### A note for unattended deployment
+### Unattended deployment
 
-The installer creates the printer as the user performing the installation, not
-as SYSTEM — the print stack refuses `Add-Printer` from SYSTEM even when
-elevated, which took a four-way experiment to pin down. A deployment that runs
-the .msi silently as SYSTEM therefore installs the app but not the printer;
-users get the app's own setup prompt instead.
+The .msi works when deployed silently as SYSTEM — Intune, SCCM, a scheduled
+task — and creates the printer there too. That was measured, not assumed:
+`msiexec /i … /qn` started from a SYSTEM context installed the app and the
+printer without anyone logged in to help.
+
+One implementation detail matters if you repackage this: the printer is created
+from a custom action with `Impersonate="yes"`. Without it, the action runs
+inside the Windows Installer service process, where `Add-Printer` is refused no
+matter which account it runs as.
 
 ### If you are running from source
 

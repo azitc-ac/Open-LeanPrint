@@ -104,17 +104,19 @@
       commit action shows it is not about the transaction still being open
       either.
 
-      What is NOT established is why the SYSTEM cases fail. A scheduled task
-      running as SYSTEM creates the printer without trouble, so "SYSTEM may not
-      do this" is demonstrably false - the difference lies somewhere in a custom
-      action's process, and it is still unidentified. Impersonation works, so
-      that is what ships; the open question is what an unattended installation
-      does, where there is no one to impersonate.
+      Nor is it the account, which was the next wrong guess: a fifth measurement
+      installed this package silently as SYSTEM, the way a management system
+      does, and the printer was created. Add-Printer also succeeds from a
+      scheduled task running as SYSTEM.
 
-      Consequence for deployment: an installation performed by a person works. A
-      fully unattended one running as SYSTEM has nobody to impersonate and will
-      not create the printer - there the app's own setup button takes over,
-      which is also what an .msix has to rely on.
+      What actually distinguishes the failing case is the context the action
+      runs in: non-impersonated custom actions execute inside the Windows
+      Installer service process, and Add-Printer is refused there whoever the
+      account is. Impersonated ones do not, and succeed - as the installing
+      user, or as SYSTEM during an unattended installation.
+
+      That makes this deployable unattended, which was the point of testing it.
+      An .msix still cannot do any of this and relies on the app's own setup.
 
       Both actions are best effort (Return="ignore"): a machine where this fails
       still ends up with a working app. Uninstalling takes the queue away again,
