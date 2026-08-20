@@ -38,12 +38,17 @@ caught with no window open.
 If you dismissed the question, the toolbar button **Set up virtual printer…**
 does the same thing at any time.
 
-Why is this not part of installing? Because it cannot be. An installer's custom
-actions run as SYSTEM in session 0, and `Add-Printer` refuses there with "access
-is denied" — even with the print service up and answering, and even though the
-installer itself is elevated. Creating a printer queue wants a real user
-session. Three logged installations went into establishing that, so the app asks
-instead of the installer pretending.
+Why is this not part of installing? Because it does not work there. An
+installer's custom actions run as SYSTEM in session 0, and `Add-Printer` returns
+"access is denied" from that context — even with the print service up and
+answering, and even though the installer itself reports having sufficient
+privileges. Three logged installations established that; the same command from
+an elevated user session succeeds.
+
+The *reason* is not established. Microsoft documents no session requirement for
+`Add-Printer`, and the Point and Print policies usually blamed for this were not
+set on the machine where it was reproduced. So: the behaviour is measured, the
+mechanism is not — and the app asks rather than the installer pretending.
 
 ### If you are running from source
 

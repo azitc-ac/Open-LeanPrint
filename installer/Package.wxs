@@ -18,7 +18,11 @@
            Compressed="yes">
 
     <SummaryInformation Description="Pool print jobs, impose them N-up or as a booklet, and print the result." />
-    <MajorUpgrade DowngradeErrorMessage="A newer version of OpenLeanPrint is already installed." />
+    <!-- AllowSameVersionUpgrades because the product code is regenerated on
+         every build: without it, reinstalling the same version leaves two
+         entries in "Programs and Features" instead of replacing one. -->
+    <MajorUpgrade AllowSameVersionUpgrades="yes"
+                  DowngradeErrorMessage="A newer version of OpenLeanPrint is already installed." />
     <MediaTemplate EmbedCab="yes" />
 
     <Icon Id="AppIcon" SourceFile="..\src\OpenLeanPrint.App\Assets\OpenLeanPrint.ico" />
@@ -85,13 +89,21 @@
 
     <!--
       The installer does NOT create the printer, and that is a measured decision
-      rather than an omission. A custom action runs as SYSTEM in session 0, and
-      Add-Printer refuses there: "access is denied", even with the IPP service
-      up and answering and the action confirmed by the installer as running with
-      sufficient privileges. Three installations were logged to establish that.
+      rather than an omission.
 
-      So the app asks for it instead, once, on first run: elevation via UAC in
-      the user's own session, which is where creating a printer works.
+      Measured: from a deferred custom action - SYSTEM, session 0, reported by
+      the installer as having sufficient privileges, with the IPP service up and
+      answering on the port - Add-Printer returns "access is denied". Three
+      installations were logged to establish it. The same command from an
+      elevated user session succeeds.
+
+      Not established: why. Microsoft documents no session requirement for
+      Add-Printer, and the Point and Print policies usually blamed for this are
+      not set on the machine where it was reproduced. What is certain is the
+      behaviour, not the mechanism.
+
+      So the app asks for it instead, once, on first run - in a session where it
+      demonstrably works.
 
       Uninstalling still tries to take the queue away - leaving a printer behind
       that nothing answers would swallow print jobs silently. It is best effort:
