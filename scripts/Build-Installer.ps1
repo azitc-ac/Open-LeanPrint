@@ -133,3 +133,7 @@ $size = [math]::Round((Get-Item $target).Length / 1MB, 1)
 Write-Host ""
 Write-Host "Done: $target ($size MB)" -ForegroundColor Green
 Write-Host "Installing it sets up the virtual printer as well - nothing further to do."
+Write-Host ""
+Write-Host "  install  : msiexec /i `"$target`" /qb"
+Write-Host "  uninstall: msiexec /x {6F4C6E50-7072-696E-7421-4F70656E4C50} /qb"
+Write-Host "The product code is fixed, so that uninstall line keeps working across builds."

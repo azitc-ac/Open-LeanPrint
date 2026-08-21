@@ -10,17 +10,21 @@
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
      xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
 
+  <!--
+    Both identifiers are fixed. WiX would otherwise generate a fresh ProductCode
+    on every build, which makes each build a different product to Windows: the
+    uninstall GUID changes constantly, "msiexec /x" with a written-down GUID
+    stops working, and reinstalling can leave two entries behind.
+  -->
   <Package Name="OpenLeanPrint"
            Manufacturer="Alexander Zarenko"
            Version="$(ProductVersion)"
+           ProductCode="6f4c6e50-7072-696e-7421-4f70656e4c50"
            UpgradeCode="6f4c6e50-7072-696e-7420-4f70656e4c50"
            Scope="perMachine"
            Compressed="yes">
 
     <SummaryInformation Description="Pool print jobs, impose them N-up or as a booklet, and print the result." />
-    <!-- AllowSameVersionUpgrades because the product code is regenerated on
-         every build: without it, reinstalling the same version leaves two
-         entries in "Programs and Features" instead of replacing one. -->
     <MajorUpgrade AllowSameVersionUpgrades="yes"
                   DowngradeErrorMessage="A newer version of OpenLeanPrint is already installed." />
     <MediaTemplate EmbedCab="yes" />
