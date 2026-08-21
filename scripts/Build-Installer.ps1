@@ -16,7 +16,8 @@
     Target runtime identifier. Default: this machine's architecture.
 
 .PARAMETER Output
-    Where to copy the finished .msi. Default: dist\ in the repository root.
+    Where to copy the finished .msi. Default: dist\ in the repository root,
+    which is git-ignored. The file is pinned so a synced folder keeps it local.
 
 .PARAMETER CertificateSubject
     Sign the installer with this certificate from your store, e.g.
@@ -115,14 +116,17 @@ if ($CertificateSubject) {
     Write-Host "  signed with $CertificateSubject"
 }
 
-# --- 5. a warning worth having -----------------------------------------------
-# Windows Installer runs as SYSTEM and cannot fetch a cloud placeholder, so an
-# .msi sitting in a synced folder fails to open with a misleading "not a valid
-# installer package" message. Costly to diagnose, cheap to warn about.
-$folder = Get-Item (Split-Path $target -Parent)
-if ($folder.Attributes -band [IO.FileAttributes]::ReparsePoint) {
-    Write-Warning ("$($folder.FullName) looks like a synced folder (OneDrive and the like). " +
-                   "Copy the .msi somewhere local before installing, or Windows may refuse to open it.")
+# --- 5. keep the file on this machine ----------------------------------------
+# dist\ often sits inside OneDrive. Pinning costs one line and removes any
+# question about whether the bytes are actually here when the installer runs.
+# It is a precaution, not a fix for a diagnosed fault: a package in a synced
+# folder once failed to open and then installed fine from the same folder,
+# which fits "launched while it was still being written" at least as well.
+& attrib.exe +P -U $target 2>$null
+$attributes = (Get-Item $target).Attributes
+if ($attributes -band 0x00400000) {   # FILE_ATTRIBUTE_RECALL_ON_DATA_ACCESS
+    Write-Warning ("$target is still a cloud placeholder. Copy it somewhere local " +
+                   "before installing, or Windows will refuse to open it.")
 }
 
 $size = [math]::Round((Get-Item $target).Length / 1MB, 1)
