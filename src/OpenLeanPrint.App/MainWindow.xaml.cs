@@ -58,7 +58,7 @@ public partial class MainWindow : Window
     private int _sheetIndex;
     private int _sheetCount;
     private CancellationTokenSource? _work;
-    private CapturedFolderWatcher? _capture;
+    private readonly List<CapturedFolderWatcher> _capture = new();
     private readonly CaptureService _service = new();
     private bool _suppressPagesEdit;
     private bool _suppressGridEdit;
@@ -173,7 +173,7 @@ public partial class MainWindow : Window
     /// </summary>
     protected override void OnClosing(CancelEventArgs e)
     {
-        if (!_exiting && _capture is not null)
+        if (!_exiting && _capture.Count > 0)
         {
             e.Cancel = true;
             Hide();
@@ -247,45 +247,54 @@ public partial class MainWindow : Window
         if (collecting) StartCollecting();
         else StopCollecting();
 
-        bool actuallyCollecting = _capture is not null;
+        bool actuallyCollecting = _capture.Count > 0;
         CollectToggle.IsChecked = actuallyCollecting;
         _tray.SetCollecting(actuallyCollecting);
     }
 
     private void StartCollecting()
     {
-        if (_capture is not null) return;
+        if (_capture.Count > 0) return;
 
-        try
+        // Two places, because jobs can arrive from two directions: the Windows
+        // service writes to the machine-wide folder (it runs as LocalSystem and
+        // has no per-user one), while a console host or this app writes to the
+        // per-user folder.
+        foreach (string folder in new[] { CaptureLocations.DefaultFolder, CaptureLocations.SharedFolder }
+                     .Distinct(StringComparer.OrdinalIgnoreCase))
         {
-            // Only jobs that arrive from now on - the folder may hold older jobs
-            // the user has no interest in reprinting.
-            _capture = new CapturedFolderWatcher(CaptureLocations.DefaultFolder);
-            _capture.JobArrived += (_, path) => Dispatcher.Invoke(() => CollectJob(path));
-            _capture.Start();
-        }
-        catch (Exception ex)
-        {
-            _capture = null;
-            MessageBox.Show(this, ex.Message, "Could not watch the capture folder",
-                            MessageBoxButton.OK, MessageBoxImage.Warning);
-            return;
+            try
+            {
+                // Only jobs that arrive from now on - the folder may hold older
+                // jobs the user has no interest in reprinting.
+                var watcher = new CapturedFolderWatcher(folder);
+                watcher.JobArrived += (_, path) => Dispatcher.Invoke(() => CollectJob(path));
+                watcher.Start();
+                _capture.Add(watcher);
+            }
+            catch (Exception ex)
+            {
+                StatusText.Text = $"Could not watch {folder}: {ex.Message}";
+            }
         }
 
-        // Host the loopback IPP service ourselves, so an installed copy needs
-        // nothing else running. Jobs land in the capture folder either way, and
-        // the watcher above picks them up from there.
+        if (_capture.Count == 0) return;
+
+        // Host the loopback IPP service ourselves when nothing else does, so a
+        // copy without the Windows service still captures. Jobs land in a
+        // watched folder either way.
         try
         {
             _service.Start();
             StatusText.Text = $"Listening for print jobs on port {_service.Port}.";
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            // Usually the console host already owns the port - then it is doing
-            // the listening and the watcher still feeds the pool.
-            StatusText.Text = $"Watching {CaptureLocations.DefaultFolder} " +
-                              $"(port {CaptureService.DefaultPort} is already in use: {ex.Message})";
+            // Normally the Windows service already owns the port - then it does
+            // the listening and the watchers feed the pool.
+            StatusText.Text = PrinterSetup.IsCaptureServiceRunning()
+                ? "Collecting jobs from the OpenLeanPrint service."
+                : $"Port {CaptureService.DefaultPort} is in use by something else; watching the capture folders.";
         }
     }
 
@@ -298,8 +307,8 @@ public partial class MainWindow : Window
 
     private void StopCollecting()
     {
-        _capture?.Dispose();
-        _capture = null;
+        foreach (var watcher in _capture) watcher.Dispose();
+        _capture.Clear();
         _service.Stop();
     }
 

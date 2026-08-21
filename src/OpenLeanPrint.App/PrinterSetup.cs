@@ -19,6 +19,24 @@ internal static class PrinterSetup
     /// <summary>The name Windows gives the queue created from our IPP service.</summary>
     private const string NameFragment = "OpenLeanPrint";
 
+    /// <summary>
+    /// Whether the Windows capture service is running. When it is, it owns the
+    /// IPP port and the app just watches the folder it writes to.
+    /// </summary>
+    public static bool IsCaptureServiceRunning()
+    {
+        try
+        {
+            using var service = new System.ServiceProcess.ServiceController("OpenLeanPrintCapture");
+            return service.Status == System.ServiceProcess.ServiceControllerStatus.Running;
+        }
+        catch (Exception)
+        {
+            // Not installed on this machine.
+            return false;
+        }
+    }
+
     /// <summary>Whether a queue pointing at OpenLeanPrint already exists.</summary>
     public static bool IsRegistered()
     {

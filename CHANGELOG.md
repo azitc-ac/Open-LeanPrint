@@ -4,6 +4,28 @@ All notable changes to OpenLeanPrint. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- **A Windows service** holds the loopback IPP port, so the virtual printer
+  works from system start, with nobody logged in and with the app closed.
+  Previously the listener lived in the desktop app: printing failed right after
+  installing and again whenever anyone quit the app from the tray, leaving jobs
+  stuck in the queue with no explanation. The service writes to
+  `%ProgramData%\OpenLeanPrint\captured` — LocalSystem has no per-user folder
+  anyone could reach — and keeps a log next to it.
+- The installer registers and starts the service, and removes it again on
+  uninstall.
+
+### Changed
+- The app watches both the machine-wide and the per-user capture folder, and
+  steps aside when the service already owns the port.
+
+### Note for multi-user machines
+- Jobs captured by the service land in a machine-wide folder, so they are
+  readable by other users of that machine. Running without the service keeps
+  captured documents per-user.
+
 ## [0.2.1] — 2026-08-20
 
 Install it and print — the setup that used to be a page of instructions is now

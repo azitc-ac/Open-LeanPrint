@@ -56,6 +56,13 @@
         <File Id="SetupPrinterScript" Source="Setup-Printer.ps1" />
       </Component>
       <Component>
+        <File Id="InstallServiceScript" Source="Install-Service.ps1" />
+        <RemoveFile Id="RemoveServiceSetupLog" Name="service-setup.log" On="uninstall" />
+      </Component>
+      <Component>
+        <File Id="UninstallServiceScript" Source="Uninstall-Service.ps1" />
+      </Component>
+      <Component>
         <File Id="RemovePrinterScript" Source="Remove-Printer.ps1" />
         <!-- Setup writes this next to itself, so the installer never learns of
              it and would leave it behind on uninstall. -->
@@ -132,9 +139,41 @@
                   ExeCommand="powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File Remove-Printer.ps1"
                   Execute="deferred" Impersonate="yes" Return="ignore" />
 
+    <!--
+      The capture service is what makes the printer real. Without it the queue
+      only works while the desktop app happens to be running - so printing broke
+      right after installing, and again whenever anyone quit the app from the
+      tray, leaving jobs stuck in the queue with no explanation.
+
+      Registered before the printer is created, because Add-Printer needs
+      something answering on the port, and the service is now that something.
+    -->
+    <CustomAction Id="InstallService"
+                  Directory="INSTALLFOLDER"
+                  ExeCommand="powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File Install-Service.ps1"
+                  Execute="deferred" Impersonate="yes" Return="ignore" />
+
+    <CustomAction Id="UninstallService"
+                  Directory="INSTALLFOLDER"
+                  ExeCommand="powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File Uninstall-Service.ps1"
+                  Execute="deferred" Impersonate="yes" Return="ignore" />
+
+    <!--
+      Starting the app as well is a convenience, not a requirement: with the
+      service running the printer already works. asyncNoWait so the installer
+      does not wait for the app to be closed again.
+    -->
+    <CustomAction Id="LaunchApp"
+                  Directory="INSTALLFOLDER"
+                  ExeCommand="OpenLeanPrint.exe --tray"
+                  Execute="immediate" Return="asyncNoWait" />
+
     <InstallExecuteSequence>
-      <Custom Action="SetupPrinter" After="InstallFiles" Condition="NOT Installed" />
+      <Custom Action="InstallService" After="InstallFiles" Condition="NOT Installed" />
+      <Custom Action="SetupPrinter" After="InstallService" Condition="NOT Installed" />
+      <Custom Action="UninstallService" Before="RemovePrinter" Condition="REMOVE~=&quot;ALL&quot;" />
       <Custom Action="RemovePrinter" Before="RemoveFiles" Condition="REMOVE~=&quot;ALL&quot;" />
+      <Custom Action="LaunchApp" After="InstallFinalize" Condition="NOT Installed" />
     </InstallExecuteSequence>
 
   </Package>

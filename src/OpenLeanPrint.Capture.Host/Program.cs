@@ -1,80 +1,95 @@
 using System.Globalization;
+using System.Runtime.Versioning;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Hosting.WindowsServices;
 using OpenLeanPrint.Capture;
+using OpenLeanPrint.Capture.Host;
 using OpenLeanPrint.Capture.Server;
 
-// Simple argument parsing: --port N, --name NAME, --out DIR.
-string printerName = "OpenLeanPrint";
-int port = 6310;
-// Captured jobs are real documents, so they default to a per-user data folder
-// rather than the working directory (which is often a source tree, and may be
-// cloud-synced). --out overrides it.
-string outDir = CaptureLocations.DefaultFolder;
+// Two ways to run: as a console host for trying things out and for development,
+// or as a Windows service so the printer works whether or not anybody is logged
+// in. A printer that only accepts jobs while a user application happens to be
+// running is not really a printer.
+bool asService = args.Contains("--service", StringComparer.OrdinalIgnoreCase) ||
+                 (OperatingSystem.IsWindows() && WindowsServiceHelpers.IsWindowsService());
 
-for (int i = 0; i < args.Length - 1; i++)
+var settings = CaptureSettings.Parse(args, asService);
+
+// The guard is spelled out here rather than hidden in the flag above, because
+// that is what lets the platform analyser prove the Windows-only call is safe.
+if (asService && OperatingSystem.IsWindows())
 {
-    switch (args[i])
-    {
-        case "--port" when int.TryParse(args[i + 1], out var p): port = p; break;
-        case "--name": printerName = args[i + 1]; break;
-        case "--out": outDir = args[i + 1]; break;
-    }
+    RunService(settings);
+    return;
 }
 
-Directory.CreateDirectory(outDir);
+RunConsole(settings);
 
-var options = new IppPrinterOptions { PrinterName = printerName, Port = port };
-using var server = new IppPrinterServer(options);
+// ---------------------------------------------------------------------------
 
-server.RequestLog += (_, line) =>
+static void RunConsole(CaptureSettings settings)
 {
-    string stamp = DateTime.Now.ToString("HH:mm:ss", CultureInfo.InvariantCulture);
-    Console.WriteLine($"[{stamp}] {line}");
-};
+    Directory.CreateDirectory(settings.OutputFolder);
 
-server.JobCaptured += (_, job) =>
-{
-    string stamp = DateTime.Now.ToString("HH:mm:ss", CultureInfo.InvariantCulture);
-    Console.WriteLine();
-    Console.WriteLine($"[{stamp}] Captured job #{job.JobId}");
-    Console.WriteLine($"    name   : {job.JobName ?? "(none)"}");
-    Console.WriteLine($"    user   : {job.UserName ?? "(none)"}");
-    Console.WriteLine($"    format : {job.DocumentFormat}");
-    Console.WriteLine($"    bytes  : {job.Data.Length:N0}");
+    var options = new IppPrinterOptions { PrinterName = settings.PrinterName, Port = settings.Port };
+    using var server = new IppPrinterServer(options);
 
-    if (job.Document is { } doc)
+    server.RequestLog += (_, line) =>
+        Console.WriteLine($"[{DateTime.Now.ToString("HH:mm:ss", CultureInfo.InvariantCulture)}] {line}");
+
+    server.JobCaptured += (_, job) =>
     {
-        Console.WriteLine($"    pages  : {doc.PageCount}");
-        for (int i = 0; i < doc.PageCount; i++)
+        Console.WriteLine();
+        Console.WriteLine($"[{DateTime.Now.ToString("HH:mm:ss", CultureInfo.InvariantCulture)}] Captured job #{job.JobId}");
+        Console.WriteLine($"    name   : {job.JobName ?? "(none)"}");
+        Console.WriteLine($"    user   : {job.UserName ?? "(none)"}");
+        Console.WriteLine($"    format : {job.DocumentFormat}");
+        Console.WriteLine($"    bytes  : {job.Data.Length:N0}");
+
+        if (job.Document is { } doc)
         {
-            var s = doc.PageSizes[i];
-            Console.WriteLine($"      p{i + 1}: {s.Width:0.#} x {s.Height:0.#} pt");
+            Console.WriteLine($"    pages  : {doc.PageCount}");
+            for (int i = 0; i < doc.PageCount; i++)
+            {
+                var size = doc.PageSizes[i];
+                Console.WriteLine($"      p{i + 1}: {size.Width:0.#} x {size.Height:0.#} pt");
+            }
         }
-    }
-    else if (job.ParseError is { } err)
-    {
-        Console.WriteLine($"    parse  : FAILED ({err})");
-    }
+        else if (job.ParseError is { } error)
+        {
+            Console.WriteLine($"    parse  : FAILED ({error})");
+        }
 
-    string ext = job.IsPdf ? "pdf" : "bin";
-    string path = Path.Combine(outDir, $"job-{job.JobId:D4}.{ext}");
-    File.WriteAllBytes(path, job.Data);
-    Console.WriteLine($"    saved  : {path}");
-};
+        Console.WriteLine($"    saved  : {CapturedJobWriter.Save(job, settings.OutputFolder)}");
+    };
 
-server.Start();
+    server.Start();
 
-Console.WriteLine("OpenLeanPrint capture host");
-Console.WriteLine($"  printer name : {options.PrinterName}");
-Console.WriteLine($"  printer URI  : {options.PrinterUri}");
-Console.WriteLine($"  http prefix  : {options.HttpPrefix}");
-Console.WriteLine($"  output dir   : {outDir}");
-Console.WriteLine();
-Console.WriteLine("On Windows: register the printer (scripts/Register-Printer.ps1),");
-Console.WriteLine("then print to it. Press Ctrl+C to stop.");
+    Console.WriteLine("OpenLeanPrint capture host");
+    Console.WriteLine($"  printer name : {options.PrinterName}");
+    Console.WriteLine($"  printer URI  : {options.PrinterUri}");
+    Console.WriteLine($"  http prefix  : {options.HttpPrefix}");
+    Console.WriteLine($"  output dir   : {settings.OutputFolder}");
+    Console.WriteLine();
+    Console.WriteLine("On Windows: register the printer (scripts/Register-Printer.ps1),");
+    Console.WriteLine("then print to it. Press Ctrl+C to stop.");
 
-var stop = new ManualResetEventSlim(false);
-Console.CancelKeyPress += (_, e) => { e.Cancel = true; stop.Set(); };
-stop.Wait();
+    var stop = new ManualResetEventSlim(false);
+    Console.CancelKeyPress += (_, e) => { e.Cancel = true; stop.Set(); };
+    stop.Wait();
 
-Console.WriteLine("Stopping...");
-await server.StopAsync();
+    Console.WriteLine("Stopping...");
+    server.StopAsync().GetAwaiter().GetResult();
+}
+
+[SupportedOSPlatform("windows")]
+static void RunService(CaptureSettings settings)
+{
+    var builder = Host.CreateApplicationBuilder();
+    builder.Services.AddSingleton(settings);
+    builder.Services.AddHostedService<CaptureServiceWorker>();
+    builder.Services.AddWindowsService(options => options.ServiceName = CaptureSettings.ServiceName);
+
+    builder.Build().Run();
+}

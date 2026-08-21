@@ -61,6 +61,18 @@ if (-not $Exe) {
 }
 
 $url = "http://localhost:$Port/leanprint"
+
+function Test-Endpoint {
+    try {
+        Invoke-WebRequest $url -TimeoutSec 2 -UseBasicParsing | Out-Null
+        return $true
+    }
+    catch {
+        # Any HTTP answer at all means the listener is up.
+        return [bool]$_.Exception.Response
+    }
+}
+
 Write-Log "Setting up the printer using $Exe"
 
 try {
@@ -69,24 +81,26 @@ try {
         exit 0
     }
 
-    Write-Log "Starting the capture service..."
-    $service = Start-Process -FilePath $Exe -ArgumentList $arguments -PassThru -WindowStyle Hidden
+    # The Windows service normally holds the port by now; only start a private
+    # copy if nothing is answering.
+    $service = $null
+    if (Test-Endpoint) {
+        Write-Log "Something is already listening on port $Port - using it."
+    }
+    else {
+        Write-Log "Starting the capture service..."
+        $service = Start-Process -FilePath $Exe -ArgumentList $arguments -PassThru -WindowStyle Hidden
+    }
 
     try {
         $ready = $false
         for ($i = 0; $i -lt 40 -and -not $ready; $i++) {
             Start-Sleep -Milliseconds 500
-            if ($service.HasExited) {
+            if ($service -and $service.HasExited) {
                 Write-Log "The capture service exited immediately with code $($service.ExitCode)."
                 exit 1
             }
-            try {
-                Invoke-WebRequest $url -TimeoutSec 2 -UseBasicParsing | Out-Null
-                $ready = $true
-            } catch {
-                # Any HTTP answer at all means the listener is up.
-                if ($_.Exception.Response) { $ready = $true }
-            }
+            $ready = Test-Endpoint
         }
         if (-not $ready) {
             Write-Log "The capture service never answered on port $Port."

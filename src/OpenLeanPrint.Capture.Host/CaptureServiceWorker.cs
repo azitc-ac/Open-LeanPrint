@@ -1,0 +1,93 @@
+using System.Globalization;
+using Microsoft.Extensions.Hosting;
+using OpenLeanPrint.Capture.Server;
+
+namespace OpenLeanPrint.Capture.Host;
+
+/// <summary>
+/// The capture service: holds the loopback IPP listener for as long as the
+/// machine is running, so the virtual printer works without anybody being
+/// logged in and without the desktop app running.
+/// <para>
+/// It keeps a plain text log next to the captured jobs. A service that fails
+/// silently is impossible to diagnose, and this project has already paid for
+/// that lesson once.
+/// </para>
+/// </summary>
+internal sealed class CaptureServiceWorker : BackgroundService
+{
+    private readonly CaptureSettings _settings;
+    private IppPrinterServer? _server;
+
+    public CaptureServiceWorker(CaptureSettings settings) => _settings = settings;
+
+    protected override Task ExecuteAsync(CancellationToken stoppingToken)
+    {
+        Directory.CreateDirectory(_settings.OutputFolder);
+        Log($"Starting on port {_settings.Port}, writing to {_settings.OutputFolder}");
+
+        try
+        {
+            var server = new IppPrinterServer(new IppPrinterOptions
+            {
+                PrinterName = _settings.PrinterName,
+                Port = _settings.Port,
+            });
+
+            server.JobCaptured += (_, job) =>
+            {
+                try
+                {
+                    string path = CapturedJobWriter.Save(job, _settings.OutputFolder);
+                    Log($"Captured job #{job.JobId} from {job.UserName ?? "(unknown user)"}, " +
+                        $"{job.Data.Length:N0} bytes -> {Path.GetFileName(path)}");
+                }
+                catch (Exception ex)
+                {
+                    // The print queue has already been told the job succeeded;
+                    // losing one job must not take the service down.
+                    Log($"Could not save job #{job.JobId}: {ex.Message}");
+                }
+            };
+
+            server.Start();
+            _server = server;
+            Log("Listening.");
+        }
+        catch (Exception ex)
+        {
+            // Most likely something else already owns the port.
+            Log($"Could not start: {ex.Message}");
+            throw;
+        }
+
+        return Task.CompletedTask;
+    }
+
+    public override async Task StopAsync(CancellationToken cancellationToken)
+    {
+        if (_server is not null)
+        {
+            Log("Stopping.");
+            try { await _server.StopAsync(); } catch (Exception) { /* already gone */ }
+            _server.Dispose();
+            _server = null;
+        }
+        await base.StopAsync(cancellationToken);
+    }
+
+    private void Log(string message)
+    {
+        string line = string.Create(CultureInfo.InvariantCulture,
+            $"{DateTime.Now:yyyy-MM-dd HH:mm:ss}  {message}{Environment.NewLine}");
+        try
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(_settings.LogPath)!);
+            File.AppendAllText(_settings.LogPath, line);
+        }
+        catch (Exception)
+        {
+            // Logging must never be the reason the service fails.
+        }
+    }
+}

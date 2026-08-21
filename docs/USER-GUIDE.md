@@ -29,9 +29,13 @@ around that — so the difference is *who* asks for them.
 
 ### If you installed the .msi
 
-Nothing to do. The installer creates the printer and arranges for OpenLeanPrint
-to run in the background at login, so jobs are caught with no window open. Print
-to **OpenLeanPrint** from any application and the job appears in the pool.
+Nothing to do. The installer registers the **OpenLeanPrint Capture** Windows
+service and creates the printer. The service holds the loopback IPP port from
+system start onwards, so the printer works whether or not anyone is logged in
+and whether or not the app is running — print to **OpenLeanPrint** from any
+application and the job is captured.
+
+Open the app to see the jobs, impose them and print them.
 
 ### If you installed the .msix
 
@@ -236,7 +240,9 @@ openleanprint print out.pdf --printer "Microsoft Print to PDF" --out proof.pdf
 
 | What | Where |
 |---|---|
-| Captured print jobs | `%LOCALAPPDATA%\OpenLeanPrint\captured` |
+| Captured print jobs (service) | `%ProgramData%\OpenLeanPrint\captured` |
+| Captured print jobs (app or console host) | `%LOCALAPPDATA%\OpenLeanPrint\captured` |
+| What the service did | `%ProgramData%\OpenLeanPrint\service.log` |
 | App settings | `%APPDATA%\OpenLeanPrint\settings.json` |
 | Imposed output from `watch` | `<watched folder>\imposed` |
 
