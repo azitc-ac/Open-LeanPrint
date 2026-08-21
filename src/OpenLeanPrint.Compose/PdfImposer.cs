@@ -17,6 +17,9 @@ public sealed class PdfImposer
     /// <summary>Optional text watermark drawn across every finished sheet.</summary>
     public Watermark? Watermark { get; init; }
 
+    /// <summary>Optional frame drawn around every page placed on a sheet.</summary>
+    public PageBorder? PageBorder { get; init; }
+
     /// <summary>Imposes a single source PDF N-up according to <paramref name="settings"/>.</summary>
     public byte[] ImposeToPdf(byte[] sourcePdf, ImpositionSettings settings) =>
         ImposeToPdf(new[] { sourcePdf }, settings);
@@ -136,6 +139,9 @@ public sealed class PdfImposer
                 {
                     var form = FormFor(placed.Source.DocumentIndex, placed.Source.PageIndex);
                     DrawPlaced(gfx, form, placed);
+
+                    // After the page, so a page with a dark edge cannot hide it.
+                    if (PageBorder is { IsEmpty: false } border) DrawBorder(gfx, border, placed);
                 }
 
                 // On top of the pages, so it cannot be hidden by their content.
@@ -151,6 +157,25 @@ public sealed class PdfImposer
         {
             foreach (var s in openStreams) s.Dispose();
         }
+    }
+
+    /// <summary>
+    /// Frames one placed page. The stroke is inset by half its width, so the
+    /// whole line stays inside the page area instead of straddling its edge and
+    /// bleeding into the gutter.
+    /// </summary>
+    private static void DrawBorder(XGraphics gfx, PageBorder border, PlacedPage placed)
+    {
+        var (r, g, b) = border.Color();
+        var pen = new XPen(XColor.FromArgb(r, g, b), border.WidthPt);
+        double inset = border.WidthPt / 2;
+        var rect = placed.DestRect;
+
+        // A page smaller than the line itself has nothing left to frame.
+        if (rect.Width <= border.WidthPt || rect.Height <= border.WidthPt) return;
+
+        gfx.DrawRectangle(pen, rect.X + inset, rect.Y + inset,
+                          rect.Width - border.WidthPt, rect.Height - border.WidthPt);
     }
 
     /// <summary>Draws the watermark across the middle of a sheet.</summary>

@@ -255,6 +255,9 @@ static void PrintUsage()
     Console.WriteLine("     --gutter PT   spacing between cells in points        default 0");
     Console.WriteLine("     --pages LIST  which source pages to keep, e.g. 1-4,7  default all");
     Console.WriteLine("     --rotate DEG  turn every page 90 | 180 | 270          default 0");
+    Console.WriteLine("     --border                draw a thin frame around every page");
+    Console.WriteLine("     --border-width PT       line width, implies --border      default 0.75");
+    Console.WriteLine("     --border-color HEX      e.g. #202020                      default #9A9AA2");
     Console.WriteLine("     --watermark TEXT        draw TEXT across every sheet");
     Console.WriteLine("     --watermark-opacity N   0..1                          default 0.18");
     Console.WriteLine("     --watermark-color HEX   e.g. #C00000                  default #808080");

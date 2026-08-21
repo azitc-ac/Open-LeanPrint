@@ -22,7 +22,8 @@
 
                 <Border Width="1" Background="{StaticResource Line}" Margin="8,2,14,2"/>
 
-                <TextBlock Text="Layout" Style="{StaticResource Label}" Margin="0,0,8,0"/>
+                <TextBlock Text="Layout" Style="{StaticResource Label}" Margin="0,3,8,3"
+                           ToolTip="How many pages go on one sheet. These buttons are the usual choices and simply fill in the Grid box next to them."/>
                 <ToggleButton x:Name="Preset1Up" Content="1-up" Click="Preset_Click" Tag="1x1"/>
                 <ToggleButton x:Name="Preset2Up" Content="2-up" Click="Preset_Click" Tag="1x2"/>
                 <ToggleButton x:Name="Preset4Up" Content="4-up" Click="Preset_Click" Tag="2x2" IsChecked="True"/>
@@ -31,18 +32,25 @@
 
                 <TextBlock Text="Grid" Style="{StaticResource Label}"/>
                 <TextBox x:Name="GridBox" Width="62" Text="2x2" TextChanged="Grid_Changed"
-                         ToolTip="Rows × columns, e.g. 2x3 — or just a count like 6. The presets are shortcuts for the common ones."/>
+                         ToolTip="Pages per sheet, as rows × columns: 2x2 puts four pages on a sheet — the same thing the 4-up button does. Type anything the buttons do not cover, such as 2x3, 1x4, or just a count like 6. The box always shows the layout in force, which is why choosing 4-up writes 2x2 here."/>
 
                 <TextBlock Text="Paper" Style="{StaticResource Label}"/>
                 <ComboBox x:Name="PaperBox" Width="92" SelectionChanged="Paper_Changed"/>
 
-                <TextBlock Text="Margin" Style="{StaticResource Label}"/>
-                <TextBox x:Name="MarginBox" Text="8" TextChanged="Debounced_Changed"/>
-                <TextBlock Text="mm" Style="{StaticResource Label}" Margin="4,0,0,0"/>
+                <TextBlock Text="Margin" Style="{StaticResource Label}"
+                           ToolTip="The blank border around the whole sheet. Leave 10 mm or more if the sheets are to be stapled or punched."/>
+                <TextBox x:Name="MarginBox" Text="8" TextChanged="Debounced_Changed"
+                         ToolTip="The blank border around the whole sheet. Leave 10 mm or more if the sheets are to be stapled or punched."/>
+                <TextBlock Text="mm" Style="{StaticResource Label}" Margin="4,3,0,3"/>
 
-                <TextBlock Text="Gutter" Style="{StaticResource Label}"/>
-                <TextBox x:Name="GutterBox" Text="6" TextChanged="Debounced_Changed"/>
-                <TextBlock Text="pt" Style="{StaticResource Label}" Margin="4,0,0,0"/>
+                <TextBlock Text="Gutter" Style="{StaticResource Label}"
+                           ToolTip="The space between the pages on a sheet. Margin is the border around the outside, gutter is the gap in the middle - with a 1x1 layout it does nothing at all."/>
+                <TextBox x:Name="GutterBox" Text="2" TextChanged="Debounced_Changed"
+                         ToolTip="The space between the pages on a sheet. Margin is the border around the outside, gutter is the gap in the middle - with a 1x1 layout it does nothing at all."/>
+                <TextBlock Text="mm" Style="{StaticResource Label}" Margin="4,3,0,3"/>
+
+                <CheckBox x:Name="BorderToggle" Content="Page borders" Click="Border_Changed"
+                          ToolTip="Draws a thin frame around every page. Without one, four pages on a sheet with white space between them read as a single crowded page."/>
 
                 <TextBlock Text="Watermark" Style="{StaticResource Label}"/>
                 <TextBox x:Name="WatermarkBox" Width="120" TextChanged="Debounced_Changed"
@@ -69,7 +77,7 @@
                 <ComboBox x:Name="PrinterBox" DockPanel.Dock="Right" Width="220"/>
                 <TextBlock DockPanel.Dock="Right" Text="Printer" Style="{StaticResource Label}"/>
                 <ComboBox x:Name="DuplexBox" DockPanel.Dock="Right" Width="180"
-                          ToolTip="Booklets need short-edge flipping: their sheets are landscape, so flipping the long edge prints every second side upside down."/>
+                          ToolTip="Long edge is the usual choice for upright sheets - the back reads like the next page of a book. Booklets need short edge instead: their sheets are landscape, so flipping the long edge prints every second side upside down. What was actually applied is reported after printing."/>
                 <TextBlock DockPanel.Dock="Right" Text="Sides" Style="{StaticResource Label}"/>
                 <Button x:Name="SaveButton" DockPanel.Dock="Right" Content="Save PDF…" Click="Save_Click"/>
                 <TextBlock x:Name="StatusText" Foreground="{StaticResource InkMuted}" Text="No jobs yet."/>
@@ -86,7 +94,11 @@
             <Border Background="{StaticResource Panel}" BorderBrush="{StaticResource Line}" BorderThickness="0,0,1,0">
                 <DockPanel>
                     <Border DockPanel.Dock="Top" Padding="14,12,14,8">
-                        <TextBlock Text="Job pool" FontWeight="SemiBold"/>
+                        <StackPanel>
+                            <TextBlock Text="Job pool" FontWeight="SemiBold"/>
+                            <TextBlock Style="{StaticResource Hint}" Margin="0,4,0,0"
+                                       Text="One entry per PDF. They are laid onto shared sheets in this order — use ↑ ↓ to change it. Select one to choose which of its pages to print; the preview jumps to it."/>
+                        </StackPanel>
                     </Border>
 
                     <Border DockPanel.Dock="Bottom" Padding="10,8">

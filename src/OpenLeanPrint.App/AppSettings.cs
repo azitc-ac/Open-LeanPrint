@@ -13,7 +13,10 @@ public sealed record LayoutProfile
     public bool Booklet { get; init; }
     public string Paper { get; init; } = "A4";
     public double MarginMm { get; init; } = 8;
+
+    /// <summary>Gutter in points, like the rest of the geometry. The app shows millimetres.</summary>
     public double Gutter { get; init; } = 6;
+    public bool PageBorders { get; init; }
     public string? Watermark { get; init; }
     public string Duplex { get; init; } = "Default";
 }
@@ -29,7 +32,10 @@ public sealed record AppSettings
     public bool Booklet { get; init; }
     public string Paper { get; init; } = "A4";
     public double MarginMm { get; init; } = 8;
+
+    /// <summary>Gutter in points, like the rest of the geometry. The app shows millimetres.</summary>
     public double Gutter { get; init; } = 6;
+    public bool PageBorders { get; init; }
     public string? Printer { get; init; }
     public string Duplex { get; init; } = "Default";
     public string? Watermark { get; init; }

@@ -95,18 +95,36 @@ To remove the printer again: **Remove virtual printer** in the app, or
 dotnet run --project src/OpenLeanPrint.App
 ```
 
-**Job pool (left).** Every PDF you add is one job. Jobs are combined onto shared
-sheets in list order — reorder with the arrows, remove what you do not want. The
-**Pages** box applies to the selected job: `1-4,7` keeps those pages, `3-` keeps
-everything from page three, empty keeps all. The box turns red while what you
-typed is not a valid range, and nothing is applied until it is.
+**Job pool (left).** Every PDF you add is one job — this is the list of what
+will be printed, in the order it will be printed. Jobs share sheets: with 4-up,
+a three-page job leaves one cell of its last sheet for the job after it, which is
+the point of pooling in the first place. Reorder with the arrows, remove what you
+do not want.
 
-**Layout (top).** Presets for 1-up, 2-up, 4-up, 9-up and booklet — and a **Grid**
-box for anything they do not cover: type `2x3`, `1x4`, `4x4`, or just a count
-like `6`. The presets and the box always show the same thing; a grid with no
-preset simply leaves them all unlit. Then paper size, margin in millimetres,
-gutter in points, and a watermark. Every change
-re-imposes in the background and repaints the preview.
+Selecting a job does two things: the preview turns to the first sheet that job
+appears on — useful once several are pooled — and the **Pages** box below applies
+to it. `1-4,7` keeps those pages, `3-` keeps everything from page three, empty
+keeps all. The box turns red while what you typed is not a valid range, and
+nothing is applied until it is.
+
+**Layout (top).** How many pages go on one sheet. The buttons — 1-up, 2-up,
+4-up, 9-up, booklet — are the usual choices, and all they do is fill in the
+**Grid** box next to them: pressing *4-up* writes `2x2`, meaning two rows by two
+columns, four pages per sheet. Type into the box for anything the buttons do not
+cover: `2x3`, `1x4`, `4x4`, or just a count like `6`. A grid with no matching
+button simply leaves them all unlit.
+
+**Margin** is the blank border around the whole sheet; **gutter** is the space
+between the pages on it. With a 1x1 layout the gutter does nothing, because
+there is nothing to be between. Both are in millimetres in the app. Leave 10 mm
+or more of margin if the sheets are to be stapled or punched.
+
+**Page borders** draws a thin frame around every page. Four pages on one sheet
+separated only by white space read as a single crowded page; the frame is what
+tells the eye where one ends.
+
+**Watermark** puts text diagonally across every sheet — `DRAFT`, a file name.
+Every change re-imposes in the background and repaints the preview.
 
 **Preview (middle).** The imposed sheet as it will print. Page through the
 sheets with the arrows below it.
@@ -127,7 +145,10 @@ and press **Save**. Picking it later restores the grid, paper, margins, gutter,
 watermark and duplex setting in one go. **✕** deletes the selected profile.
 
 **Output (bottom).** Choose sides (duplex), a printer, then **Print** — or
-**Save PDF…** to keep the imposed document instead.
+**Save PDF…** to keep the imposed document instead. After printing, the status
+line says what was actually applied, including whether two-sided printing
+happened: a printer that cannot do it prints single-sided and says so, rather
+than leaving you to find out from the paper.
 
 **Collect captured jobs.** On by default, because receiving what you print is
 what the app is for. Everything the capture service writes lands in the pool —
@@ -181,9 +202,12 @@ It also takes every layout option of `impose`.
 | `--booklet` | saddle-stitch booklet (overrides `--nup`) | off |
 | `--paper NAME` | `A6`, `A5`, `A4`, `A3`, `Letter`, `Legal`, `Tabloid` | `A4` |
 | `--margin MM` | outer margin, millimetres | `0` |
-| `--gutter PT` | space between cells, points | `0` |
+| `--gutter PT` | space between cells, **points** (the app uses mm) | `0` |
 | `--pages LIST` | which source pages to keep, e.g. `1-4,7` | all |
 | `--rotate DEG` | turn every page: `90`, `180` or `270` | `0` |
+| `--border` | thin frame around every page | off |
+| `--border-width PT` | line width; implies `--border` | `0.75` |
+| `--border-color HEX` | e.g. `#202020` | `#9A9AA2` |
 | `--watermark TEXT` | text across every sheet | none |
 | `--watermark-opacity N` | `0`–`1` | `0.18` |
 | `--watermark-color HEX` | e.g. `#C00000` | `#808080` |
@@ -224,6 +248,10 @@ are landscape.
 **Margins and gutters** are different things: the margin is the border around
 the whole sheet, the gutter is the space *between* cells. For stapling, a margin
 of 10 mm or more is a good idea.
+
+**Page borders** are drawn around each page, not around each cell — a page that
+does not fill its cell is framed at its own edges, so the frame tells you the
+real page size rather than the grid.
 
 ## Printing
 
@@ -296,5 +324,10 @@ but a driver forced to a different size will scale.
 **A job in the pool will not load.** The PDF may be encrypted or damaged; the
 app reports the file and keeps the others.
 
-**Duplex was ignored.** Some drivers report no duplex support; the run then
-prints single-sided and says so.
+**Duplex was ignored, or came out flipped the wrong way.** Some drivers report
+no duplex support; the run then prints single-sided and says so in the status
+line, which is worth reading before blaming the layout. If two-sided printing
+happens but on the wrong edge, check the printer's own default: OpenLeanPrint
+asks for long or short edge exactly as Windows defines it, but a driver whose
+private settings say otherwise can still have the last word. Windows' own
+setting is `Get-PrintConfiguration -PrinterName "…"`.

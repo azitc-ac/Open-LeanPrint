@@ -15,16 +15,32 @@
         <Setter Property="VerticalAlignment" Value="Center"/>
     </Style>
 
+    <!-- A quiet explanatory line under a heading. -->
+    <Style x:Key="Hint" TargetType="TextBlock">
+        <Setter Property="Foreground" Value="{StaticResource InkMuted}"/>
+        <Setter Property="FontSize" Value="11"/>
+        <Setter Property="TextWrapping" Value="Wrap"/>
+    </Style>
+
+    <Style TargetType="CheckBox">
+        <Setter Property="Margin" Value="12,3,6,3"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+        <Setter Property="Foreground" Value="{StaticResource Ink}"/>
+        <Setter Property="Cursor" Value="Hand"/>
+    </Style>
+
     <Style x:Key="Label" TargetType="TextBlock">
         <Setter Property="Foreground" Value="{StaticResource InkMuted}"/>
         <Setter Property="VerticalAlignment" Value="Center"/>
-        <Setter Property="Margin" Value="12,0,6,0"/>
+        <!-- The vertical part matters: the toolbar wraps on a narrow window, and
+             without it the second row is pressed against the first. -->
+        <Setter Property="Margin" Value="12,3,6,3"/>
         <Setter Property="FontSize" Value="12"/>
     </Style>
 
     <Style TargetType="Button">
         <Setter Property="Padding" Value="12,6"/>
-        <Setter Property="Margin" Value="0,0,6,0"/>
+        <Setter Property="Margin" Value="0,3,6,3"/>
         <Setter Property="MinWidth" Value="34"/>
         <Setter Property="Background" Value="{StaticResource Panel}"/>
         <Setter Property="Foreground" Value="{StaticResource Ink}"/>
@@ -67,7 +83,7 @@
     <!-- Layout presets stay pressed while active. -->
     <Style TargetType="ToggleButton">
         <Setter Property="Padding" Value="10,6"/>
-        <Setter Property="Margin" Value="0,0,4,0"/>
+        <Setter Property="Margin" Value="0,3,4,3"/>
         <Setter Property="MinWidth" Value="46"/>
         <Setter Property="Cursor" Value="Hand"/>
         <Setter Property="Foreground" Value="{StaticResource Ink}"/>
@@ -97,6 +113,7 @@
 
     <Style TargetType="TextBox">
         <Setter Property="Padding" Value="6,5"/>
+        <Setter Property="Margin" Value="0,3,0,3"/>
         <Setter Property="Width" Value="52"/>
         <Setter Property="BorderBrush" Value="{StaticResource Line}"/>
         <Setter Property="VerticalContentAlignment" Value="Center"/>
@@ -104,6 +121,7 @@
 
     <Style TargetType="ComboBox">
         <Setter Property="Padding" Value="8,5"/>
+        <Setter Property="Margin" Value="0,3,0,3"/>
         <Setter Property="VerticalContentAlignment" Value="Center"/>
     </Style>
 

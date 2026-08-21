@@ -84,6 +84,17 @@ public partial class MainWindow : Window
     private int _columns = 2;
     private bool _booklet;
 
+    /// <summary>
+    /// The gutter is kept in points, like the rest of the geometry, but shown in
+    /// millimetres: having the margin in mm and the gutter in points next to it
+    /// invited reading "1" as a millimetre and getting a third of one.
+    /// </summary>
+    private const double PointsPerMm = 72.0 / 25.4;
+
+    private static double PointsFromMm(double mm) => mm * PointsPerMm;
+
+    private static double MmFromPoints(double points) => Math.Round(points / PointsPerMm, 1);
+
     public MainWindow()
     {
         InitializeComponent();
@@ -142,7 +153,8 @@ public partial class MainWindow : Window
 
         if (Papers.Contains(settings.Paper)) PaperBox.SelectedItem = settings.Paper;
         MarginBox.Text = settings.MarginMm.ToString(CultureInfo.CurrentCulture);
-        GutterBox.Text = settings.Gutter.ToString(CultureInfo.CurrentCulture);
+        GutterBox.Text = MmFromPoints(settings.Gutter).ToString(CultureInfo.CurrentCulture);
+        BorderToggle.IsChecked = settings.PageBorders;
 
         if (settings.Printer is not null && PrinterBox.Items.Contains(settings.Printer))
             PrinterBox.SelectedItem = settings.Printer;
@@ -168,7 +180,8 @@ public partial class MainWindow : Window
         Booklet = _booklet,
         Paper = (string)PaperBox.SelectedItem,
         MarginMm = ParseNumber(MarginBox.Text, 0),
-        Gutter = ParseNumber(GutterBox.Text, 0),
+        Gutter = GutterPoints(),
+        PageBorders = BorderToggle.IsChecked == true,
         Printer = PrinterBox.SelectedItem as string,
         Duplex = SelectedDuplex().ToString(),
         PrinterSetupOffered = _printerSetupOffered,
@@ -266,6 +279,11 @@ public partial class MainWindow : Window
     // ---------- collecting captured jobs ----------
 
     private void Collect_Click(object sender, RoutedEventArgs e) => SetCollecting(CollectToggle.IsChecked == true);
+
+    private void Border_Changed(object sender, RoutedEventArgs e) => _ = RefreshAsync();
+
+    /// <summary>The gutter box in millimetres, as the points the engine works in.</summary>
+    private double GutterPoints() => PointsFromMm(ParseNumber(GutterBox.Text, 0));
 
     /// <summary>Single entry point, so the toolbar toggle and the tray menu cannot drift apart.</summary>
     private void SetCollecting(bool collecting)
@@ -522,6 +540,7 @@ public partial class MainWindow : Window
         PagesBox.Text = JobList.SelectedItem is JobItem job && !job.Pages.IsAll ? job.Pages.ToString() : string.Empty;
         _suppressPagesEdit = false;
 
+        ShowSheetOf(JobList.SelectedIndex);
         UpdateControls();
     }
 
@@ -647,14 +666,15 @@ public partial class MainWindow : Window
 
         var paper = PaperSizes.ByName((string)PaperBox.SelectedItem) ?? PaperSizes.A4;
         double marginMm = ParseNumber(MarginBox.Text, 0);
-        double gutter = ParseNumber(GutterBox.Text, 0);
+        double gutter = GutterPoints();
         bool booklet = _booklet;
-        // A new imposer per run: the watermark is part of its configuration.
+        // A new imposer per run: watermark and borders are part of its configuration.
         var imposer = new PdfImposer
         {
             Watermark = string.IsNullOrWhiteSpace(WatermarkBox.Text)
                 ? null
                 : new Watermark { Text = WatermarkBox.Text.Trim() },
+            PageBorder = BorderToggle.IsChecked == true ? new PageBorder() : null,
         };
         var settings = ImpositionSettings.NUp(_rows, _columns) with
         {
@@ -850,7 +870,8 @@ public partial class MainWindow : Window
         _columns = Math.Max(1, profile.Columns);
         if (Papers.Contains(profile.Paper)) PaperBox.SelectedItem = profile.Paper;
         MarginBox.Text = profile.MarginMm.ToString(CultureInfo.CurrentCulture);
-        GutterBox.Text = profile.Gutter.ToString(CultureInfo.CurrentCulture);
+        GutterBox.Text = MmFromPoints(profile.Gutter).ToString(CultureInfo.CurrentCulture);
+        BorderToggle.IsChecked = profile.PageBorders;
         WatermarkBox.Text = profile.Watermark ?? string.Empty;
         if (DuplexModes.TryParse(profile.Duplex, out var duplex))
             DuplexBox.SelectedItem = DuplexChoices.FirstOrDefault(choice => choice.Mode == duplex) ?? DuplexChoices[0];
@@ -878,7 +899,8 @@ public partial class MainWindow : Window
             Booklet = _booklet,
             Paper = (string)PaperBox.SelectedItem,
             MarginMm = ParseNumber(MarginBox.Text, 0),
-            Gutter = ParseNumber(GutterBox.Text, 0),
+            Gutter = GutterPoints(),
+            PageBorders = BorderToggle.IsChecked == true,
             Watermark = string.IsNullOrWhiteSpace(WatermarkBox.Text) ? null : WatermarkBox.Text.Trim(),
             Duplex = SelectedDuplex().ToString(),
         };
@@ -985,6 +1007,27 @@ public partial class MainWindow : Window
             ? "Remove virtual printer"
             : "Set up virtual printer…";
 
+    /// <summary>
+    /// Turns the preview to the first sheet carrying a job. Selecting one in the
+    /// pool otherwise had no visible effect at all, which made the list look
+    /// decorative - with several jobs pooled, "where did mine end up?" is the
+    /// question it should answer.
+    /// </summary>
+    private void ShowSheetOf(int jobIndex)
+    {
+        if (jobIndex < 0 || _layout is null || _sheetCount == 0) return;
+
+        for (int sheet = 0; sheet < _layout.Sheets.Count && sheet < _sheetCount; sheet++)
+        {
+            if (!_layout.Sheets[sheet].Pages.Any(page => page.Source.DocumentIndex == jobIndex)) continue;
+            if (sheet == _sheetIndex) return;
+
+            _sheetIndex = sheet;
+            _ = ShowSheetAsync(CancellationToken.None);
+            return;
+        }
+    }
+
     private void PrevSheet_Click(object sender, RoutedEventArgs e) => StepSheet(-1);
 
     private void NextSheet_Click(object sender, RoutedEventArgs e) => StepSheet(+1);
@@ -1023,9 +1066,20 @@ public partial class MainWindow : Window
                 Duplex = duplex,
                 JobName = _jobs.Count == 1 ? $"OpenLeanPrint - {_jobs[0].Name}" : "OpenLeanPrint",
             }));
+            // Reporting the duplex mode that was applied, not the one that was
+            // asked for: they differ when the printer cannot do it, and until
+            // this said so there was no way to tell from inside the app.
+            string sides = report.DuplexUnsupported
+                ? " This printer cannot print two-sided, so it went out single-sided."
+                : report.Duplex switch
+                {
+                    DuplexMode.Simplex => " Single-sided.",
+                    DuplexMode.LongEdge => " Two-sided, flipped on the long edge.",
+                    DuplexMode.ShortEdge => " Two-sided, flipped on the short edge.",
+                    _ => " Sides left to the printer's own setting.",
+                };
             StatusText.Text = $"Sent {report.Sheets} sheet(s) to \"{report.PrinterName}\" " +
-                              $"({string.Join("/", report.PaperNames)})." +
-                              (report.DuplexUnsupported ? " This printer cannot print two-sided." : string.Empty);
+                              $"({string.Join("/", report.PaperNames)})." + sides;
         }
         catch (Exception ex)
         {

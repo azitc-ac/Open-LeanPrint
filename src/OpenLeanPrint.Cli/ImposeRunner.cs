@@ -16,6 +16,7 @@ internal sealed record ImposeOptions
     public double Gutter { get; init; }
     public PageSelection Pages { get; init; } = PageSelection.All;
     public Watermark? Watermark { get; init; }
+    public PageBorder? PageBorder { get; init; }
     public int Rotate { get; init; }
 
     /// <summary>Short human-readable form, e.g. "2x2-up on A4".</summary>
@@ -25,6 +26,7 @@ internal sealed record ImposeOptions
         if (!Pages.IsAll) layout += $", pages {Pages}";
         if (Rotate != 0) layout += $", rotated {Rotate}°";
         if (Watermark is { IsEmpty: false } mark) layout += $", watermarked \"{mark.Text}\"";
+        if (PageBorder is { IsEmpty: false }) layout += ", framed";
         return layout;
     }
 
@@ -37,7 +39,7 @@ internal static class ImposeRunner
 {
     public static byte[] Run(byte[] source, ImposeOptions options)
     {
-        var imposer = new PdfImposer { Watermark = options.Watermark };
+        var imposer = new PdfImposer { Watermark = options.Watermark, PageBorder = options.PageBorder };
         var sources = new[] { source };
         var selections = new[] { options.Pages };
 
@@ -76,6 +78,7 @@ internal static class ImposeRunner
             Gutter = options.GetDouble("gutter", 0),
             Pages = pages,
             Watermark = ParseWatermark(options),
+            PageBorder = ParsePageBorder(options),
             Rotate = (int)options.GetDouble("rotate", 0),
         };
     }
@@ -92,6 +95,22 @@ internal static class ImposeRunner
             FontSize = options.GetDouble("watermark-size", 0),
             AngleDegrees = options.GetDouble("watermark-angle", -45),
             ColorHex = options.Get("watermark-color", "#808080"),
+        };
+    }
+
+    /// <summary>
+    /// <c>--border</c> alone means a hairline; a width or a colour implies it,
+    /// so <c>--border-width 2</c> does not also need <c>--border</c>.
+    /// </summary>
+    private static PageBorder? ParsePageBorder(ArgMap options)
+    {
+        bool asked = options.Has("border") || options.Has("border-width") || options.Has("border-color");
+        if (!asked) return null;
+
+        return new PageBorder
+        {
+            WidthPt = options.GetDouble("border-width", 0.75),
+            ColorHex = options.Get("border-color", "#9A9AA2"),
         };
     }
 

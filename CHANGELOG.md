@@ -7,6 +7,9 @@ All notable changes to OpenLeanPrint. The format follows
 ## [Unreleased]
 
 ### Added
+- **Page borders** — a thin frame around every page, in the app, the CLI
+  (`--border`, `--border-width`, `--border-color`) and the engine. Four pages on
+  a sheet with nothing but white between them read as one crowded page.
 - A startup log, `%APPDATA%\OpenLeanPrint\app.log`. "The app is not running"
   was otherwise unanswerable after the fact: whether anything ever started it,
   under which account and in which session, left no trace anywhere.
@@ -21,6 +24,20 @@ All notable changes to OpenLeanPrint. The format follows
   uninstall.
 
 ### Changed
+- The app says what a print run actually did, including which duplex mode was
+  applied. It only ever mentioned duplex when the printer could not do it, so
+  "did it even ask for two-sided?" had no answer inside the app.
+- Selecting a job in the pool turns the preview to the first sheet that job
+  appears on. Clicking a row used to have no visible effect, which made the list
+  look decorative.
+- The gutter is entered in millimetres, like the margin. Millimetres beside
+  points invited reading "1" as a millimetre and getting a third of one. Saved
+  settings keep their meaning - the value is still stored in points.
+- Plainer wording for the layout controls: what the preset buttons do to the
+  grid box, and that the margin is the border around the sheet while the gutter
+  is the space between the pages on it.
+- The job pool explains itself, and the pool list reads its file name to screen
+  readers.
 - The app watches both the machine-wide and the per-user capture folder, and
   steps aside when the service already owns the port.
 - **Captured jobs actually show up.** Three things had to be true at once and
@@ -40,6 +57,8 @@ All notable changes to OpenLeanPrint. The format follows
   it left in the folder, rather than filling the pool with months of history.
 
 ### Fixed
+- A narrow window squeezed the wrapped second row of the toolbar against the
+  first: the controls had no vertical margin, so wrapping produced no gap.
 - **The installer never started the app.** Its launch action named the
   program relatively, and a relative program name is not found: a throwaway
   package ran both forms side by side and the relative one failed with error
