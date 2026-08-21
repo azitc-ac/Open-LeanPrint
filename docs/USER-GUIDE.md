@@ -297,15 +297,42 @@ openleanprint print out.pdf --printer "Microsoft Print to PDF" --out proof.pdf
 
 | What | Where |
 |---|---|
-| Captured print jobs (service) | `%ProgramData%\OpenLeanPrint\captured` |
+| Captured print jobs (service) | `%ProgramData%\OpenLeanPrint\captured` — kept 7 days / 500 MB |
 | Captured print jobs (app or console host) | `%LOCALAPPDATA%\OpenLeanPrint\captured` |
 | What the service did | `%ProgramData%\OpenLeanPrint\service.log` |
 | App settings | `%APPDATA%\OpenLeanPrint\settings.json` |
 | Imposed output from `watch` | `<watched folder>\imposed` |
 
-Captured jobs are your real documents and are kept until you delete them. If the
-capture folder is inside a synced folder (OneDrive, Dropbox), they will be
-uploaded — use `--out DIR` on the host to put them somewhere else.
+### How long captured jobs are kept
+
+A captured job is a hand-over, not an archive: the service writes the file, the
+app picks it up, and after that it only still matters if the app never got to it.
+So the service clears up after itself — **7 days, or 500 MB, whichever comes
+first**, oldest first. Only files it wrote itself (`job-*.pdf`) are ever touched.
+`--keep-days N` and `--keep-mb N` change the limits; `0` switches either off.
+
+The app is quicker than that where it can be: a captured job that has been
+printed or saved is deleted when the pool is emptied — which is what *Print and
+close* does. PDFs you brought in yourself are never deleted, whatever happens to
+the pool.
+
+You can also just delete them in Explorer. That is not as obvious as it sounds:
+`C:\ProgramData` grants ordinary users read and create but *not* delete, so files
+written by the service would otherwise be undeletable by the person who printed
+them. The service therefore grants the machine's users control of its capture
+folder explicitly, rather than leaving it to whoever happened to create the
+folder first.
+
+Captured jobs are your real documents. If the capture folder is inside a synced
+folder (OneDrive, Dropbox), they will be uploaded — use `--out DIR` on the host
+to put them somewhere else.
+
+**Why not `%TEMP%`?** Because a job you have not printed yet is not a temporary
+file. The service runs as LocalSystem, whose `%TEMP%` is `C:\Windows\Temp` —
+just as invisible, and subject to Windows' own cleanup, which would be free to
+delete a document before you had printed it. A folder with a stated retention
+policy is easier to reason about than one somebody else empties on their own
+schedule.
 
 ## Troubleshooting
 

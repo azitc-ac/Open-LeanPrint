@@ -1,5 +1,6 @@
 using System.Globalization;
 using Microsoft.Extensions.Hosting;
+using OpenLeanPrint.Capture;
 using OpenLeanPrint.Capture.Server;
 
 namespace OpenLeanPrint.Capture.Host;
@@ -26,6 +27,20 @@ internal sealed class CaptureServiceWorker : BackgroundService
         Directory.CreateDirectory(_settings.OutputFolder);
         Log($"Starting on port {_settings.Port}, writing to {_settings.OutputFolder}");
 
+        // Whoever creates this folder first decides who may delete from it, and
+        // as a service that is LocalSystem - which would leave the person who
+        // printed the job unable to remove it. Say so explicitly instead.
+        if (OperatingSystem.IsWindows() &&
+            string.Equals(_settings.OutputFolder, CaptureLocations.SharedFolder,
+                          StringComparison.OrdinalIgnoreCase))
+        {
+            Log(CapturedFolder.AllowUsersToManage(_settings.OutputFolder)
+                ? "Captured jobs can be managed by the users of this machine."
+                : "Could not grant users access to the capture folder; they may not be able to delete their jobs.");
+        }
+
+        Prune();
+
         try
         {
             var server = new IppPrinterServer(new IppPrinterOptions
@@ -41,6 +56,7 @@ internal sealed class CaptureServiceWorker : BackgroundService
                     string path = CapturedJobWriter.Save(job, _settings.OutputFolder);
                     Log($"Captured job #{job.JobId} from {job.UserName ?? "(unknown user)"}, " +
                         $"{job.Data.Length:N0} bytes -> {Path.GetFileName(path)}");
+                    Prune();
                 }
                 catch (Exception ex)
                 {
@@ -74,6 +90,18 @@ internal sealed class CaptureServiceWorker : BackgroundService
             _server = null;
         }
         await base.StopAsync(cancellationToken);
+    }
+
+    /// <summary>
+    /// Keeps the folder from growing without bound. Captured jobs are a
+    /// hand-over to the app, and nothing removed them before - so the folder
+    /// grew with every page anyone printed, somewhere nobody looks.
+    /// </summary>
+    private void Prune()
+    {
+        var removed = CapturedFolder.Prune(_settings.OutputFolder, _settings.MaxAge, _settings.MaxBytes);
+        if (removed.RemovedAnything)
+            Log($"Removed {removed.Files} captured job(s), {removed.Bytes / (1024.0 * 1024.0):N1} MB.");
     }
 
     private void Log(string message)

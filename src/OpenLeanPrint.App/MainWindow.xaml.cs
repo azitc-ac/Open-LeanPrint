@@ -75,6 +75,14 @@ public partial class MainWindow : Window
     /// </summary>
     private readonly HashSet<string> _backlog = new(StringComparer.OrdinalIgnoreCase);
 
+    /// <summary>
+    /// Captured jobs that have been printed or saved. They are deleted when the
+    /// pool is emptied - a captured file is a hand-over, and once it has been
+    /// dealt with, keeping it only makes the folder grow. Files the user brought
+    /// in themselves are never in here to begin with.
+    /// </summary>
+    private readonly HashSet<string> _dealtWith = new(StringComparer.OrdinalIgnoreCase);
+
     /// <summary>The layout behind the picture, so a click can be traced back to a page.</summary>
     private ImpositionResult? _layout;
     private readonly TrayPresence _tray;
@@ -322,6 +330,8 @@ public partial class MainWindow : Window
         string[] folders = new[] { CaptureLocations.DefaultFolder, CaptureLocations.SharedFolder }
             .Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
 
+        foreach (string folder in folders) CapturedFolder.Prune(folder);
+
         int skipped = LimitInitialIntake(folders);
 
         foreach (string folder in folders)
@@ -529,12 +539,39 @@ public partial class MainWindow : Window
     {
         if (_jobs.Count == 0) return;
 
+        var finished = _jobs.Select(job => job.FilePath)
+            .Where(path => _dealtWith.Contains(path) && CapturedFolder.Holds(path))
+            .ToList();
+
         _jobs.Clear();
         _imposed = null;
         _layout = null;
         _sheetIndex = 0;
         _sheetCount = 0;
         _ = RefreshAsync();
+
+        foreach (string path in finished)
+        {
+            _dealtWith.Remove(path);
+            try
+            {
+                File.Delete(path);
+            }
+            catch (Exception)
+            {
+                // Someone else has it open, or the folder does not allow it -
+                // the service prunes by age and size in any case.
+            }
+        }
+    }
+
+    /// <summary>
+    /// Notes that everything in the pool has now been printed or saved, so the
+    /// captured files behind it may go when the pool is emptied.
+    /// </summary>
+    private void MarkPoolDealtWith()
+    {
+        foreach (var job in _jobs) _dealtWith.Add(job.FilePath);
     }
 
     private void MoveUp_Click(object sender, RoutedEventArgs e) => Move(-1);
@@ -1122,6 +1159,7 @@ public partial class MainWindow : Window
                 };
             StatusText.Text = $"Sent {report.Sheets} sheet(s) to \"{report.PrinterName}\" " +
                               $"({string.Join("/", report.PaperNames)})." + sides;
+            MarkPoolDealtWith();
             return true;
         }
         catch (Exception ex)
@@ -1156,6 +1194,7 @@ public partial class MainWindow : Window
 
         File.WriteAllBytes(dialog.FileName, _imposed);
         StatusText.Text = $"Saved {Path.GetFileName(dialog.FileName)} ({_imposed.Length:N0} bytes).";
+        MarkPoolDealtWith();
     }
 
     // ---------- ui state ----------

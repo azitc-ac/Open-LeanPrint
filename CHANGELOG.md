@@ -7,6 +7,18 @@ All notable changes to OpenLeanPrint. The format follows
 ## [Unreleased]
 
 ### Added
+- **Captured jobs are cleared up.** Nothing ever removed them, so the folder
+  grew with every page anyone printed, somewhere nobody looks. The service now
+  keeps 7 days or 500 MB, whichever comes first, oldest first, and only touches
+  files it wrote itself (`--keep-days`, `--keep-mb` to change it). The app is
+  quicker where it can be: a captured job that has been printed or saved is
+  deleted when the pool is emptied. A PDF you brought in yourself is never
+  deleted - a guard with its own test.
+- The service grants the machine's users control of its capture folder.
+  `C:\ProgramData` gives ordinary users read and create but not delete, so
+  whether you could remove your own captured jobs depended on who created the
+  folder first - the service, or an app running as you. Measured on a machine
+  where the accident had gone the lucky way and hidden the problem.
 - **Print and close**, now the default button: prints, empties the pool and
   puts the window away - the usual end of a job. What has been printed is dealt
   with, and keeping it in the pool only risks it going out again with the next
