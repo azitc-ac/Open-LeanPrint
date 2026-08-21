@@ -90,6 +90,26 @@ public class NUpImposerTests
     }
 
     [Fact]
+    public void TwoUp_StackedAndTurned_UsesFarMoreOfTheSheetThanSideBySide()
+    {
+        // Why a plain count of 2 means 2x1 and not 1x2. Two upright pages side
+        // by side on an upright sheet fill about half of it and waste the top
+        // and bottom thirds; stacked, the imposer turns them and they fill it.
+        static double Covered(ImpositionResult result) =>
+            result.Sheets[0].Pages.Sum(page => page.DestRect.Width * page.DestRect.Height);
+
+        var pages = Pages(2, PaperSizes.A4);
+        var stacked = new NUpImposer().Impose(pages,
+            ImpositionSettings.NUp(2, 1) with { SheetSize = PaperSizes.A4 });
+        var sideBySide = new NUpImposer().Impose(pages,
+            ImpositionSettings.NUp(1, 2) with { SheetSize = PaperSizes.A4 });
+
+        Assert.All(stacked.Sheets[0].Pages, page => Assert.Equal(90, page.Rotation));
+        Assert.True(Covered(stacked) > Covered(sideBySide) * 1.9,
+                    $"stacked covered {Covered(stacked):N0}, side by side {Covered(sideBySide):N0}");
+    }
+
+    [Fact]
     public void TwoUp_SideBySideOnPortraitSheet_DoesNotRotate()
     {
         // 1 row, 2 cols on a portrait sheet gives tall/narrow cells that match the

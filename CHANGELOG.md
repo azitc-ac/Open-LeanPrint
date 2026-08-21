@@ -7,6 +7,13 @@ All notable changes to OpenLeanPrint. The format follows
 ## [Unreleased]
 
 ### Added
+- **Print and close**, now the default button: prints, empties the pool and
+  puts the window away - the usual end of a job. What has been printed is dealt
+  with, and keeping it in the pool only risks it going out again with the next
+  job. Collecting carries on in the tray. **Print** still prints and changes
+  nothing, for a second copy or another printer.
+- Closing the window empties the pool, for the same reason. The captured files
+  are untouched; only the list is cleared.
 - **Page borders** — a thin frame around every page, in the app, the CLI
   (`--border`, `--border-width`, `--border-color`) and the engine. Four pages on
   a sheet with nothing but white between them read as one crowded page.
@@ -57,6 +64,18 @@ All notable changes to OpenLeanPrint. The format follows
   it left in the folder, rather than filling the pool with months of history.
 
 ### Fixed
+- **2-up was close to useless.** It laid two upright pages side by side on an
+  upright sheet, which fills about half of it and wastes the top and bottom
+  thirds. Two pages now stack, and the automatic turn - which was there all
+  along - makes them fill the sheet. A plain count follows the same rule
+  wherever it helps: 2 is `2x1`, 6 is `3x2`, 8 is `4x2`. Asking for `RxC`
+  yourself still means exactly what it says.
+- **The layout buttons never wrote the grid box.** Pressing *2-up* changed the
+  layout and left the box reading whatever it said before - the code even
+  carried a comment claiming the two could not disagree.
+- The grid box rewrote itself under the caret: typing `2x3` passed through `2`,
+  which parses as a count, so after one keystroke the box said `1x2` and the
+  rest of what you typed landed after it.
 - A narrow window squeezed the wrapped second row of the toolbar against the
   first: the controls had no vertical margin, so wrapping produced no gap.
 - **The installer never started the app.** Its launch action named the

@@ -11,9 +11,20 @@ public static class NUpGrid
 {
     /// <summary>
     /// Parses <c>RxC</c> (e.g. <c>2x3</c>) or a plain page count (e.g. <c>6</c>).
-    /// A count is turned into the grid people mean by it — 6 is two rows of
-    /// three, not one row of six — falling back to a single row for counts with
-    /// no obvious shape.
+    /// A count is turned into the grid people mean by it, which is a taller grid
+    /// than it looks: 2 is two rows of one, not one row of two.
+    /// <para>
+    /// That is not arbitrary. N-up sheets are upright, and upright source pages
+    /// are the normal case; a page turned sideways fills a wide, short cell far
+    /// better than an upright one fills a narrow, tall cell. Two pages side by
+    /// side on an upright A4 fill about half of it and waste the top and bottom
+    /// thirds — stacked and turned, they fill it. The imposer already turns a
+    /// page when that makes it bigger, so the grid is all that has to be right.
+    /// </para>
+    /// <para>
+    /// <c>RxC</c> is untouched by any of this: ask for <c>1x2</c> and you get one
+    /// row of two.
+    /// </para>
     /// </summary>
     public static bool TryParse(string? text, out int rows, out int columns)
     {
@@ -37,15 +48,15 @@ public static class NUpGrid
             (rows, columns) = count switch
             {
                 1 => (1, 1),
-                2 => (1, 2),
-                3 => (1, 3),
+                2 => (2, 1),
+                3 => (3, 1),
                 4 => (2, 2),
-                6 => (2, 3),
-                8 => (2, 4),
+                6 => (3, 2),
+                8 => (4, 2),
                 9 => (3, 3),
-                12 => (3, 4),
+                12 => (4, 3),
                 16 => (4, 4),
-                _ => (1, count),
+                _ => (count, 1),
             };
             return true;
         }

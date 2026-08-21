@@ -249,6 +249,7 @@ static void PrintUsage()
     Console.WriteLine();
     Console.WriteLine("  impose <in.pdf> <out.pdf> [options]   Impose a PDF N-up or as a booklet");
     Console.WriteLine("     --nup RxC     grid, e.g. 2x2 (or a count: 2, 4, 9)   default 2x2");
+    Console.WriteLine("                   a count picks the grid that fills the sheet: 2 is 2x1");
     Console.WriteLine("     --paper NAME  A4 | A5 | A3 | Letter | Legal | Tabloid  default A4");
     Console.WriteLine("     --booklet     saddle-stitch booklet (overrides --nup)");
     Console.WriteLine("     --margin MM   outer margin in millimetres            default 0");

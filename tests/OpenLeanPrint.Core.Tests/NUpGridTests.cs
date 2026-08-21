@@ -19,12 +19,14 @@ public class NUpGridTests
 
     [Theory]
     [InlineData("1", 1, 1)]
-    [InlineData("2", 1, 2)]
+    [InlineData("2", 2, 1)]   // stacked and turned sideways, not side by side
+    [InlineData("3", 3, 1)]
     [InlineData("4", 2, 2)]
-    [InlineData("6", 2, 3)]   // two rows of three, not one row of six
+    [InlineData("6", 3, 2)]   // three rows of two, not two rows of three
+    [InlineData("8", 4, 2)]
     [InlineData("9", 3, 3)]
     [InlineData("16", 4, 4)]
-    [InlineData("5", 1, 5)]   // no obvious shape: a single row
+    [InlineData("5", 5, 1)]   // no obvious shape: a single column
     public void APlainCount_BecomesTheGridPeopleMean(string text, int rows, int columns)
     {
         Assert.True(NUpGrid.TryParse(text, out int r, out int c));

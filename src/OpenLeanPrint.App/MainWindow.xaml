@@ -25,7 +25,8 @@
                 <TextBlock Text="Layout" Style="{StaticResource Label}" Margin="0,3,8,3"
                            ToolTip="How many pages go on one sheet. These buttons are the usual choices and simply fill in the Grid box next to them."/>
                 <ToggleButton x:Name="Preset1Up" Content="1-up" Click="Preset_Click" Tag="1x1"/>
-                <ToggleButton x:Name="Preset2Up" Content="2-up" Click="Preset_Click" Tag="1x2"/>
+                <ToggleButton x:Name="Preset2Up" Content="2-up" Click="Preset_Click" Tag="2x1"
+                              ToolTip="Two pages per sheet: stacked and turned sideways, which fills the sheet. Side by side upright is 1x2 in the Grid box."/>
                 <ToggleButton x:Name="Preset4Up" Content="4-up" Click="Preset_Click" Tag="2x2" IsChecked="True"/>
                 <ToggleButton x:Name="Preset9Up" Content="9-up" Click="Preset_Click" Tag="3x3"/>
                 <ToggleButton x:Name="PresetBooklet" Content="Booklet" Click="Preset_Click" Tag="booklet"/>
@@ -72,8 +73,13 @@
         <Border DockPanel.Dock="Bottom" Background="{StaticResource Panel}"
                 BorderBrush="{StaticResource Line}" BorderThickness="0,1,0,0" Padding="12,10">
             <DockPanel>
-                <Button x:Name="PrintButton" DockPanel.Dock="Right" Style="{StaticResource PrimaryButton}"
-                        Content="Print" Click="Print_Click" Margin="6,0,0,0" MinWidth="90"/>
+                <Button x:Name="PrintCloseButton" DockPanel.Dock="Right" Style="{StaticResource PrimaryButton}"
+                        Content="Print and close" Click="PrintAndClose_Click" Margin="6,3,0,3" MinWidth="120"
+                        IsDefault="True"
+                        ToolTip="Print, empty the pool and put the window away. The usual end of a job: what you have printed is done with."/>
+                <Button x:Name="PrintButton" DockPanel.Dock="Right"
+                        Content="Print" Click="Print_Click" Margin="6,3,0,3" MinWidth="90"
+                        ToolTip="Print and leave everything as it is - for a second copy, or another printer."/>
                 <ComboBox x:Name="PrinterBox" DockPanel.Dock="Right" Width="220"/>
                 <TextBlock DockPanel.Dock="Right" Text="Printer" Style="{StaticResource Label}"/>
                 <ComboBox x:Name="DuplexBox" DockPanel.Dock="Right" Width="180"

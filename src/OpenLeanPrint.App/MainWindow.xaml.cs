@@ -202,12 +202,18 @@ public partial class MainWindow : Window
     /// </summary>
     protected override void OnClosing(CancelEventArgs e)
     {
+        // Closing the window ends the session, pool and all. Coming back to a
+        // list of documents dealt with days ago is not picking up where you left
+        // off - it is a stack of things waiting to be printed a second time by
+        // accident. The captured files themselves stay where they are.
+        ClearPool();
+
         if (!_exiting && _capture.Count > 0)
         {
             e.Cancel = true;
             Hide();
             _tray.Notify("Still collecting",
-                         "OpenLeanPrint keeps collecting captured jobs. Double-click the tray icon to bring it back.");
+                         "The pool is empty and OpenLeanPrint keeps collecting. Double-click the tray icon to bring it back.");
             return;
         }
         base.OnClosing(e);
@@ -265,13 +271,22 @@ public partial class MainWindow : Window
     /// keeps the grid box showing the same thing. A grid with no preset - 2x3,
     /// say - simply leaves them all unlit.
     /// </summary>
+    /// <summary>Lights the matching preset and writes the grid box to match.</summary>
     private void CheckMatchingPreset()
+    {
+        HighlightPresets();
+        ShowGrid();
+    }
+
+    /// <summary>
+    /// Lights the preset that matches the current layout, without touching the
+    /// grid box - which matters while the box is the thing being typed into.
+    /// </summary>
+    private void HighlightPresets()
     {
         string tag = _booklet ? "booklet" : NUpGrid.Format(_rows, _columns);
         foreach (var preset in Presets)
             preset.IsChecked = (string)preset.Tag == tag;
-
-        ShowGrid();
     }
 
     private ToggleButton[] Presets => new[] { Preset1Up, Preset2Up, Preset4Up, Preset9Up, PresetBooklet };
@@ -507,12 +522,16 @@ public partial class MainWindow : Window
         _ = RefreshAsync();
     }
 
-    private void Clear_Click(object sender, RoutedEventArgs e)
+    private void Clear_Click(object sender, RoutedEventArgs e) => ClearPool();
+
+    /// <summary>Empties the pool and the preview with it.</summary>
+    private void ClearPool()
     {
         if (_jobs.Count == 0) return;
 
         _jobs.Clear();
         _imposed = null;
+        _layout = null;
         _sheetIndex = 0;
         _sheetCount = 0;
         _ = RefreshAsync();
@@ -582,6 +601,10 @@ public partial class MainWindow : Window
             _columns = int.Parse(parts[1], CultureInfo.InvariantCulture);
         }
 
+        // The box is meant to show the layout in force; without this the buttons
+        // changed the layout and left it reading whatever it said before.
+        ShowGrid();
+
         _sheetIndex = 0;
         _ = RefreshAsync();
     }
@@ -601,7 +624,12 @@ public partial class MainWindow : Window
         _rows = rows;
         _columns = columns;
         _booklet = false;
-        CheckMatchingPreset();
+
+        // Only the buttons, deliberately: rewriting the box here would rewrite
+        // it under the caret. Typing "2x3" passes through "2", which parses as a
+        // count of two - the box became "1x2" after the first keystroke and the
+        // rest of what you typed landed after it.
+        HighlightPresets();
 
         _sheetIndex = 0;
         _debounce.Stop();
@@ -1044,18 +1072,32 @@ public partial class MainWindow : Window
 
     // ---------- output ----------
 
-    private async void Print_Click(object sender, RoutedEventArgs e)
+    private async void Print_Click(object sender, RoutedEventArgs e) => await PrintAsync();
+
+    /// <summary>
+    /// The usual end of a job: print, empty the pool, put the window away. What
+    /// has been printed is dealt with, and leaving it in the pool only risks it
+    /// going out again with the next job. Collecting carries on in the tray.
+    /// </summary>
+    private async void PrintAndClose_Click(object sender, RoutedEventArgs e)
     {
-        if (_imposed is null) return;
+        if (await PrintAsync()) Close();
+    }
+
+    /// <summary>Prints the imposed document. False when nothing was sent.</summary>
+    private async Task<bool> PrintAsync()
+    {
+        if (_imposed is null) return false;
         if (PrinterBox.SelectedItem is not string printer)
         {
             MessageBox.Show(this, "Choose a printer first.", "OpenLeanPrint",
                             MessageBoxButton.OK, MessageBoxImage.Information);
-            return;
+            return false;
         }
 
         byte[] pdf = _imposed;
         PrintButton.IsEnabled = false;
+        PrintCloseButton.IsEnabled = false;
         StatusText.Text = $"Printing to \"{printer}\"…";
         try
         {
@@ -1080,15 +1122,18 @@ public partial class MainWindow : Window
                 };
             StatusText.Text = $"Sent {report.Sheets} sheet(s) to \"{report.PrinterName}\" " +
                               $"({string.Join("/", report.PaperNames)})." + sides;
+            return true;
         }
         catch (Exception ex)
         {
             MessageBox.Show(this, ex.Message, "Printing failed", MessageBoxButton.OK, MessageBoxImage.Error);
             UpdateControls();
+            return false;
         }
         finally
         {
             PrintButton.IsEnabled = _imposed is not null;
+            PrintCloseButton.IsEnabled = _imposed is not null;
         }
     }
 
@@ -1135,6 +1180,7 @@ public partial class MainWindow : Window
         DownButton.IsEnabled = hasSelection && JobList.SelectedIndex < _jobs.Count - 1;
         ClearButton.IsEnabled = hasJobs;
         PrintButton.IsEnabled = hasSheets;
+        PrintCloseButton.IsEnabled = hasSheets;
         SaveButton.IsEnabled = hasSheets;
         PrevSheet.IsEnabled = hasSheets && _sheetIndex > 0;
         NextSheet.IsEnabled = hasSheets && _sheetIndex < _sheetCount - 1;

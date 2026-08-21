@@ -110,7 +110,9 @@ nothing is applied until it is.
 **Layout (top).** How many pages go on one sheet. The buttons — 1-up, 2-up,
 4-up, 9-up, booklet — are the usual choices, and all they do is fill in the
 **Grid** box next to them: pressing *4-up* writes `2x2`, meaning two rows by two
-columns, four pages per sheet. Type into the box for anything the buttons do not
+columns, four pages per sheet. *2-up* writes `2x1`: two pages stacked and turned
+sideways, which fills the sheet — side by side and upright would leave the top
+and bottom thirds empty. Type `1x2` if you want that anyway. Type into the box for anything the buttons do not
 cover: `2x3`, `1x4`, `4x4`, or just a count like `6`. A grid with no matching
 button simply leaves them all unlit.
 
@@ -144,11 +146,21 @@ stops rearranging it.
 and press **Save**. Picking it later restores the grid, paper, margins, gutter,
 watermark and duplex setting in one go. **✕** deletes the selected profile.
 
-**Output (bottom).** Choose sides (duplex), a printer, then **Print** — or
-**Save PDF…** to keep the imposed document instead. After printing, the status
-line says what was actually applied, including whether two-sided printing
-happened: a printer that cannot do it prints single-sided and says so, rather
-than leaving you to find out from the paper.
+**Output (bottom).** Choose sides (duplex), a printer, then print — or
+**Save PDF…** to keep the imposed document instead.
+
+**Print and close** is the usual end of a job: it prints, empties the pool and
+puts the window away. What you have printed is dealt with; leaving it in the pool
+only risks it going out again with the next job. Collecting carries on in the
+tray, so the next thing you print still arrives. **Print** on its own prints and
+changes nothing — for a second copy, or the same sheets on another printer.
+
+Closing the window with **✕** empties the pool too, for the same reason. The
+captured files themselves are untouched; only the list is cleared.
+
+After printing, the status line says what was actually applied, including whether
+two-sided printing happened: a printer that cannot do it prints single-sided and
+says so, rather than leaving you to find out from the paper.
 
 **Collect captured jobs.** On by default, because receiving what you print is
 what the app is for. Everything the capture service writes lands in the pool —
@@ -162,8 +174,8 @@ A first start facing a large backlog takes the newest 20 jobs and tells you how
 many it left in the folder.
 
 While collecting, closing the window only hides it — the app keeps running in
-the tray so jobs keep arriving. Double-click the tray icon to bring it back, or
-use *Exit* there to really quit.
+the tray so jobs keep arriving, and the pool starts empty when you come back.
+Double-click the tray icon to bring it back, or use *Exit* there to really quit.
 
 The app remembers your layout, paper, margins, printer, watermark and whether it
 was collecting.
@@ -235,9 +247,17 @@ mistakes obvious at a glance.
 ## Layouts explained
 
 **N-up** places `rows × columns` source pages on each sheet, left to right then
-top to bottom. Pages are scaled to fit their cell and rotated 90° automatically
-when that makes them bigger — which is why 2-up on a portrait sheet gives you
-two upright pages side by side.
+top to bottom. Pages are scaled to fit their cell and turned 90° automatically
+when that makes them bigger.
+
+That is why a plain count means a taller grid than you might expect: **2 is
+`2x1`** — two rows of one — not `1x2`. Sheets are upright and so are most source
+pages, and a page turned sideways fills a wide, short cell far better than an
+upright page fills a narrow, tall one. Two pages side by side on an upright A4
+cover about half of it; stacked and turned, they cover it. The same reasoning
+gives `3x2` for six and `4x2` for eight.
+
+Writing `RxC` yourself overrides all of that: `1x2` really is one row of two.
 
 **Booklet** reorders pages for folding: with 8 pages, sheet one carries pages 8
 and 1, sheet two carries 2 and 7, and so on, so that folding the stack in half
