@@ -11,6 +11,12 @@
     So the listener runs as a Windows service: starts with the machine, needs
     nobody logged in, and writes captured jobs to a machine-wide folder the app
     can read.
+
+    Registration goes through New-Service rather than sc.exe. sc.exe wants its
+    arguments as "key= value" pairs and gets a binary path that contains quotes,
+    spaces and a switch; passing that through PowerShell produced exit code 1639
+    (invalid command line). The cmdlet takes the path as a parameter and does
+    its own quoting.
 #>
 [CmdletBinding()]
 param(
@@ -32,24 +38,26 @@ function Write-Log([string]$message) {
 try {
     if (-not (Test-Path $Exe)) { Write-Log "Capture host not found at $Exe."; exit 1 }
 
-    $existing = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
-    if ($existing) {
-        Write-Log "Service already registered; making sure it runs the current binary."
-        & sc.exe stop $ServiceName | Out-Null
-        Start-Sleep -Seconds 2
+    if (Get-Service -Name $ServiceName -ErrorAction SilentlyContinue) {
+        Write-Log "Service already registered; replacing it so it runs the current binary."
+        try { Stop-Service -Name $ServiceName -Force -ErrorAction SilentlyContinue } catch { }
         & sc.exe delete $ServiceName | Out-Null
         Start-Sleep -Seconds 2
     }
 
-    # sc.exe rather than New-Service: it takes the argument on the binary path
-    # in the form Windows itself uses, and is available everywhere.
-    $binPath = '"{0}" --service' -f $Exe
-    & sc.exe create $ServiceName binPath= $binPath start= auto DisplayName= "OpenLeanPrint Capture" | Out-Null
-    if ($LASTEXITCODE -ne 0) { Write-Log "sc create failed with exit code $LASTEXITCODE."; exit 1 }
+    # The quotes around the executable belong in the value: the path contains a
+    # space, and Windows would otherwise read the switch as part of it.
+    $binaryPath = '"{0}" --service' -f $Exe
+    Write-Log "Registering with binary path: $binaryPath"
 
-    & sc.exe description $ServiceName "Receives print jobs sent to the OpenLeanPrint virtual printer." | Out-Null
+    New-Service -Name $ServiceName `
+                -BinaryPathName $binaryPath `
+                -DisplayName "OpenLeanPrint Capture" `
+                -Description "Receives print jobs sent to the OpenLeanPrint virtual printer." `
+                -StartupType Automatic | Out-Null
 
     # If it dies, bring it back: without the listener the printer swallows jobs.
+    # Simple tokens only - this is the call that sc.exe parses reliably.
     & sc.exe failure $ServiceName reset= 86400 actions= restart/5000/restart/10000/restart/30000 | Out-Null
 
     Start-Service -Name $ServiceName
