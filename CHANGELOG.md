@@ -7,6 +7,9 @@ All notable changes to OpenLeanPrint. The format follows
 ## [Unreleased]
 
 ### Added
+- A startup log, `%APPDATA%\OpenLeanPrint\app.log`. "The app is not running"
+  was otherwise unanswerable after the fact: whether anything ever started it,
+  under which account and in which session, left no trace anywhere.
 - **A Windows service** holds the loopback IPP port, so the virtual printer
   works from system start, with nobody logged in and with the app closed.
   Previously the listener lived in the desktop app: printing failed right after
@@ -37,6 +40,18 @@ All notable changes to OpenLeanPrint. The format follows
   it left in the folder, rather than filling the pool with months of history.
 
 ### Fixed
+- **The installer never started the app.** Its launch action named the
+  program relatively, and a relative program name is not found: a throwaway
+  package ran both forms side by side and the relative one failed with error
+  1721 while the full path started. The script actions only looked like the
+  failing form - there the program is `powershell.exe` from PATH and only its
+  argument is relative, which is why they worked and this one silently did not.
+  It now uses the full path and runs from the UI sequence, in the session with
+  a desktop.
+- Only one copy of the app runs per session. The login shortcut and the Start
+  menu entry used to give you two windows, two folder watchers - every captured
+  job collected twice - and two attempts on the same port. A second start now
+  hands over any files it was asked to open and raises the copy already running.
 - Rows in the job pool announced themselves to screen readers as
   `OpenLeanPrint.App.JobItem`, not as the file name.
 - The installer keeps a fixed product code. WiX generates a new one per build

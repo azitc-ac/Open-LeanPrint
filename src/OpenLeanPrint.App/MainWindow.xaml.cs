@@ -224,6 +224,16 @@ public partial class MainWindow : Window
         // Never shown, so nothing to hide: the tray icon is the whole presence.
     }
 
+    /// <summary>
+    /// Another copy of the app was started - which means "show me", plus
+    /// whatever it was asked to open.
+    /// </summary>
+    public void BringToFront(IReadOnlyList<string> files)
+    {
+        if (files.Count > 0) LoadFiles(files);
+        RestoreFromTray();
+    }
+
     private void RestoreFromTray()
     {
         Show();

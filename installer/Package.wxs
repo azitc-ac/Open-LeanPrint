@@ -166,10 +166,27 @@
       Starting the app as well is a convenience, not a requirement: with the
       service running the printer already works. asyncNoWait so the installer
       does not wait for the app to be closed again.
+
+      The full path is not decoration. With a relative program name and
+      Directory="INSTALLFOLDER" as the working directory the program is simply
+      not found: a throwaway package ran both forms side by side, and
+
+        probe.exe ...                   error 1721, nothing started
+        "[INSTALLFOLDER]probe.exe" ...  started
+
+      The script actions above only look like the failing form. There the
+      program is powershell.exe, found on PATH, and only its argument is
+      relative - which is why they worked and this one silently did not.
+
+      It also belongs in the UI sequence rather than the execute sequence: those
+      actions run in the client process, the one with a desktop and a logged-in
+      user behind it. A silent /qn installation has no UI sequence and so starts
+      nothing, which is right - an unattended deployment has no desktop to start
+      on, and the login shortcut takes over there.
     -->
     <CustomAction Id="LaunchApp"
                   Directory="INSTALLFOLDER"
-                  ExeCommand="OpenLeanPrint.exe --tray"
+                  ExeCommand="&quot;[INSTALLFOLDER]OpenLeanPrint.exe&quot; --tray"
                   Execute="immediate" Return="asyncNoWait" />
 
     <InstallExecuteSequence>
@@ -177,8 +194,11 @@
       <Custom Action="SetupPrinter" After="InstallService" Condition="NOT Installed" />
       <Custom Action="UninstallService" Before="RemovePrinter" Condition="REMOVE~=&quot;ALL&quot;" />
       <Custom Action="RemovePrinter" Before="RemoveFiles" Condition="REMOVE~=&quot;ALL&quot;" />
-      <Custom Action="LaunchApp" After="InstallFinalize" Condition="NOT Installed" />
     </InstallExecuteSequence>
+
+    <InstallUISequence>
+      <Custom Action="LaunchApp" After="ExecuteAction" Condition="NOT Installed" />
+    </InstallUISequence>
 
   </Package>
 </Wix>

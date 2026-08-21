@@ -267,6 +267,12 @@ runs as SYSTEM and cannot pull down a cloud placeholder, so it reports the file
 as invalid when it is merely not there yet. Copy the .msi somewhere local, such
 as `C:\Users\Public\Downloads`, and run it from there.
 
+**There is no tray icon.** Windows 11 keeps new notification-area icons
+hidden: click the chevron next to the clock ("Show hidden icons") and drag
+OpenLeanPrint onto the taskbar if you want it there permanently. Whether the app
+is running at all is answered by `%APPDATA%\OpenLeanPrint\app.log`, which
+records every start with account and session.
+
 **I printed and nothing happened.** Look at
 `%ProgramData%\OpenLeanPrint\service.log` first. A `Captured job #n` line means
 the job did arrive and only the display was missing: open OpenLeanPrint from the
