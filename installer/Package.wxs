@@ -178,11 +178,17 @@
       program is powershell.exe, found on PATH, and only its argument is
       relative - which is why they worked and this one silently did not.
 
-      It also belongs in the UI sequence rather than the execute sequence: those
-      actions run in the client process, the one with a desktop and a logged-in
-      user behind it. A silent /qn installation has no UI sequence and so starts
-      nothing, which is right - an unattended deployment has no desktop to start
-      on, and the login shortcut takes over there.
+      Where it is sequenced was measured too, after a first attempt moved it to
+      the UI sequence and quietly made things worse:
+
+        installed with /qn    execute sequence ran, UI sequence did not
+        installed with /qb    execute sequence ran, UI sequence did not
+
+      Basic and silent installations do not process the UI sequence at all, and
+      /qb is what the build script recommends. So the execute sequence is the
+      one that has to carry it. The UI-sequence entry stays as well, for a
+      full-UI installation; a double start costs nothing, because the app allows
+      one copy per session and a second one just raises the first.
     -->
     <CustomAction Id="LaunchApp"
                   Directory="INSTALLFOLDER"
@@ -194,6 +200,7 @@
       <Custom Action="SetupPrinter" After="InstallService" Condition="NOT Installed" />
       <Custom Action="UninstallService" Before="RemovePrinter" Condition="REMOVE~=&quot;ALL&quot;" />
       <Custom Action="RemovePrinter" Before="RemoveFiles" Condition="REMOVE~=&quot;ALL&quot;" />
+      <Custom Action="LaunchApp" After="InstallFinalize" Condition="NOT Installed" />
     </InstallExecuteSequence>
 
     <InstallUISequence>
