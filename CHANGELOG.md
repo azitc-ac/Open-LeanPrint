@@ -20,6 +20,28 @@ All notable changes to OpenLeanPrint. The format follows
 ### Changed
 - The app watches both the machine-wide and the per-user capture folder, and
   steps aside when the service already owns the port.
+- **Captured jobs actually show up.** Three things had to be true at once and
+  only one of them was, so printing into the virtual printer looked like nothing
+  happening at all — while the service was capturing the jobs correctly the
+  whole time:
+  - jobs already waiting in the capture folder now go into the pool when the app
+    starts, instead of only ones arriving while it happens to be open. The
+    service captures around the clock; the app has to catch up with it.
+  - a job never enters the pool twice, across restarts, so that catching up
+    cannot turn into re-showing what you already dealt with.
+  - a job arriving now brings the window up, the way a print dialog would.
+    Switch that off in the tray menu for a balloon instead.
+- *Collect captured jobs* is on by default. An app whose purpose is to receive
+  what you print should not have to be told to.
+- A first start with a large backlog takes the newest 20 jobs and says how many
+  it left in the folder, rather than filling the pool with months of history.
+
+### Fixed
+- Rows in the job pool announced themselves to screen readers as
+  `OpenLeanPrint.App.JobItem`, not as the file name.
+- The installer keeps a fixed product code. WiX generates a new one per build
+  unless told not to, which made every build a different product to Windows: a
+  written-down `msiexec /x` line stopped working after the next build.
 
 ### Note for multi-user machines
 - Jobs captured by the service land in a machine-wide folder, so they are

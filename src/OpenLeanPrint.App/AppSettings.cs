@@ -33,7 +33,22 @@ public sealed record AppSettings
     public string? Printer { get; init; }
     public string Duplex { get; init; } = "Default";
     public string? Watermark { get; init; }
-    public bool CollectCapturedJobs { get; init; }
+    /// <summary>
+    /// On by default. The app exists to receive what you print into the virtual
+    /// printer; a pool that stays empty after printing is indistinguishable from
+    /// a broken printer.
+    /// </summary>
+    public bool CollectCapturedJobs { get; init; } = true;
+
+    /// <summary>Bring the window up when a job arrives, the way a print dialog would.</summary>
+    public bool ShowOnCapture { get; init; } = true;
+
+    /// <summary>
+    /// Write time of the newest captured job that has already been in the pool.
+    /// The capture service runs with no app open, so jobs wait in the folder;
+    /// this is what separates "waiting to be shown" from "shown once already".
+    /// </summary>
+    public DateTime LastCollectedUtc { get; init; }
 
     /// <summary>Whether the app has already offered to create the printer.</summary>
     public bool PrinterSetupOffered { get; init; }

@@ -64,6 +64,17 @@ public partial class MainWindow : Window
     private bool _suppressGridEdit;
     private bool _printerSetupOffered;
 
+    /// <summary>Newest captured job already taken into the pool - see <see cref="AppSettings.LastCollectedUtc"/>.</summary>
+    private DateTime _collectedThrough;
+    private bool _showOnCapture = true;
+
+    /// <summary>
+    /// Jobs that were already waiting when collecting started. They go into the
+    /// pool but must not raise the window: at login that would mean a window in
+    /// your face for something you printed yesterday.
+    /// </summary>
+    private readonly HashSet<string> _backlog = new(StringComparer.OrdinalIgnoreCase);
+
     /// <summary>The layout behind the picture, so a click can be traced back to a page.</summary>
     private ImpositionResult? _layout;
     private readonly TrayPresence _tray;
@@ -101,6 +112,7 @@ public partial class MainWindow : Window
         _tray.ShowRequested += (_, _) => Dispatcher.Invoke(RestoreFromTray);
         _tray.ExitRequested += (_, _) => Dispatcher.Invoke(ExitForGood);
         _tray.CollectingChanged += (_, collecting) => Dispatcher.Invoke(() => SetCollecting(collecting));
+        _tray.ShowOnCaptureChanged += (_, show) => Dispatcher.Invoke(() => SetShowOnCapture(show));
 
         var settings = AppSettings.Load();
         ApplySettings(settings);
@@ -122,6 +134,8 @@ public partial class MainWindow : Window
     private void ApplySettings(AppSettings settings)
     {
         _printerSetupOffered = settings.PrinterSetupOffered;
+        _collectedThrough = settings.LastCollectedUtc;
+        SetShowOnCapture(settings.ShowOnCapture);
         _booklet = settings.Booklet;
         _rows = Math.Max(1, settings.Rows);
         _columns = Math.Max(1, settings.Columns);
@@ -161,6 +175,8 @@ public partial class MainWindow : Window
         Watermark = string.IsNullOrWhiteSpace(WatermarkBox.Text) ? null : WatermarkBox.Text.Trim(),
         Profiles = _profiles.ToList(),
         CollectCapturedJobs = CollectToggle.IsChecked == true,
+        ShowOnCapture = _showOnCapture,
+        LastCollectedUtc = _collectedThrough,
     };
 
     private DuplexMode SelectedDuplex() =>
@@ -260,16 +276,23 @@ public partial class MainWindow : Window
         // service writes to the machine-wide folder (it runs as LocalSystem and
         // has no per-user one), while a console host or this app writes to the
         // per-user folder.
-        foreach (string folder in new[] { CaptureLocations.DefaultFolder, CaptureLocations.SharedFolder }
-                     .Distinct(StringComparer.OrdinalIgnoreCase))
+        string[] folders = new[] { CaptureLocations.DefaultFolder, CaptureLocations.SharedFolder }
+            .Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
+
+        int skipped = LimitInitialIntake(folders);
+
+        foreach (string folder in folders)
         {
             try
             {
-                // Only jobs that arrive from now on - the folder may hold older
-                // jobs the user has no interest in reprinting.
+                // Jobs already lying in the folder count too. The capture service
+                // runs whether or not this app does, so anything printed while it
+                // was closed is waiting there - and passing those over looked
+                // exactly like a printer that swallows everything. LastCollectedUtc
+                // is what keeps a job from being shown twice.
                 var watcher = new CapturedFolderWatcher(folder);
                 watcher.JobArrived += (_, path) => Dispatcher.Invoke(() => CollectJob(path));
-                watcher.Start();
+                watcher.Start(includeExisting: true);
                 _capture.Add(watcher);
             }
             catch (Exception ex)
@@ -296,13 +319,76 @@ public partial class MainWindow : Window
                 ? "Collecting jobs from the OpenLeanPrint service."
                 : $"Port {CaptureService.DefaultPort} is in use by something else; watching the capture folders.";
         }
+
+        if (skipped > 0)
+            StatusText.Text += $" {skipped} older captured jobs were left in the folder.";
     }
 
+    /// <summary>
+    /// Caps what a first start pulls in. A machine that has been capturing for
+    /// weeks with nobody looking can have a lot waiting, and filling the pool
+    /// with months of history helps no one. Moving the mark past the older jobs
+    /// leaves them on disk and out of the pool; the number is reported rather
+    /// than swallowed. Returns how many were passed over.
+    /// </summary>
+    private int LimitInitialIntake(IEnumerable<string> folders)
+    {
+        const int mostToTakeAtOnce = 20;
+
+        _backlog.Clear();
+        var waiting = folders
+            .Where(Directory.Exists)
+            .SelectMany(folder => Directory.EnumerateFiles(folder, "*.pdf"))
+            .Select(path => new FileInfo(path))
+            .Where(file => file.LastWriteTimeUtc > _collectedThrough)
+            .OrderByDescending(file => file.LastWriteTimeUtc)
+            .ToList();
+
+        if (waiting.Count <= mostToTakeAtOnce)
+        {
+            foreach (var file in waiting) _backlog.Add(file.FullName);
+            return 0;
+        }
+
+        // The newest one being passed over becomes the new mark, so everything
+        // above it - the newest mostToTakeAtOnce - still arrives.
+        foreach (var file in waiting.Take(mostToTakeAtOnce)) _backlog.Add(file.FullName);
+        _collectedThrough = waiting[mostToTakeAtOnce].LastWriteTimeUtc;
+        return waiting.Count - mostToTakeAtOnce;
+    }
+
+    /// <summary>Single entry point, so the tray menu and this cannot drift apart.</summary>
+    private void SetShowOnCapture(bool show)
+    {
+        _showOnCapture = show;
+        _tray.SetShowOnCapture(show);
+    }
+
+    /// <summary>
+    /// Takes one captured file into the pool - at most once, ever - and makes it
+    /// visible. A job you just printed landing in a hidden window is the same
+    /// experience as nothing happening at all.
+    /// </summary>
     private void CollectJob(string path)
     {
+        var file = new FileInfo(path);
+        if (file.Exists)
+        {
+            if (file.LastWriteTimeUtc <= _collectedThrough) return;
+
+            _collectedThrough = file.LastWriteTimeUtc;
+            // Written now rather than on exit: a crash must not show it again.
+            CurrentSettings().Save();
+        }
+
+        bool wasWaiting = _backlog.Remove(Path.GetFullPath(path));
+
+        int before = _jobs.Count;
         LoadFiles(new[] { path });
-        // With the window hidden the pool grows unseen, so say something.
-        if (!IsVisible) _tray.Notify("Job collected", Path.GetFileName(path));
+        if (_jobs.Count == before) return; // unreadable; LoadFiles has said so
+
+        if (_showOnCapture && !wasWaiting) RestoreFromTray();
+        else if (!IsVisible) _tray.Notify("Job collected", Path.GetFileName(path));
     }
 
     private void StopCollecting()

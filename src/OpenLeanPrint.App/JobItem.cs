@@ -33,6 +33,9 @@ public sealed class JobItem : INotifyPropertyChanged
 
     public string Name => Path.GetFileName(FilePath);
 
+    /// <summary>What a screen reader announces for a row; the type name otherwise.</summary>
+    public override string ToString() => Name;
+
     public string Summary
     {
         get

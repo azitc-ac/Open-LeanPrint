@@ -17,7 +17,9 @@ internal sealed class TrayPresence : IDisposable
 {
     private readonly WinForms.NotifyIcon _icon;
     private readonly WinForms.ToolStripMenuItem _collectItem;
+    private readonly WinForms.ToolStripMenuItem _popUpItem;
     private bool _suppressCollectEvent;
+    private bool _suppressPopUpEvent;
 
     public TrayPresence()
     {
@@ -30,6 +32,12 @@ internal sealed class TrayPresence : IDisposable
             if (!_suppressCollectEvent) CollectingChanged?.Invoke(this, _collectItem.Checked);
         };
 
+        _popUpItem = new WinForms.ToolStripMenuItem("Show the window when a job arrives") { CheckOnClick = true };
+        _popUpItem.CheckedChanged += (_, _) =>
+        {
+            if (!_suppressPopUpEvent) ShowOnCaptureChanged?.Invoke(this, _popUpItem.Checked);
+        };
+
         var exitItem = new WinForms.ToolStripMenuItem("Exit");
         exitItem.Click += (_, _) => ExitRequested?.Invoke(this, EventArgs.Empty);
 
@@ -37,6 +45,7 @@ internal sealed class TrayPresence : IDisposable
         menu.Items.Add(showItem);
         menu.Items.Add(new WinForms.ToolStripSeparator());
         menu.Items.Add(_collectItem);
+        menu.Items.Add(_popUpItem);
         menu.Items.Add(new WinForms.ToolStripSeparator());
         menu.Items.Add(exitItem);
 
@@ -59,6 +68,9 @@ internal sealed class TrayPresence : IDisposable
     /// <summary>The user toggled collecting from the tray menu.</summary>
     public event EventHandler<bool>? CollectingChanged;
 
+    /// <summary>The user decided whether an arriving job should raise the window.</summary>
+    public event EventHandler<bool>? ShowOnCaptureChanged;
+
     /// <summary>Mirrors the app's state into the menu without raising <see cref="CollectingChanged"/>.</summary>
     public void SetCollecting(bool collecting)
     {
@@ -67,6 +79,16 @@ internal sealed class TrayPresence : IDisposable
         _suppressCollectEvent = true;
         _collectItem.Checked = collecting;
         _suppressCollectEvent = false;
+    }
+
+    /// <summary>Mirrors the app's state into the menu without raising <see cref="ShowOnCaptureChanged"/>.</summary>
+    public void SetShowOnCapture(bool show)
+    {
+        if (_popUpItem.Checked == show) return;
+
+        _suppressPopUpEvent = true;
+        _popUpItem.Checked = show;
+        _suppressPopUpEvent = false;
     }
 
     /// <summary>Shows a balloon — used when something happens while the window is hidden.</summary>

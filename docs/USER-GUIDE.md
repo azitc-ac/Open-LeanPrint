@@ -129,11 +129,20 @@ watermark and duplex setting in one go. **✕** deletes the selected profile.
 **Output (bottom).** Choose sides (duplex), a printer, then **Print** — or
 **Save PDF…** to keep the imposed document instead.
 
-**Collect captured jobs.** With this on, every job the capture host writes drops
-into the pool as it arrives. Only jobs arriving from then on are taken, so a
-folder of old jobs is not reprinted by surprise. While collecting, closing the
-window only hides it — the app keeps running in the tray so jobs keep arriving.
-Double-click the tray icon to bring it back, or use *Exit* there to really quit.
+**Collect captured jobs.** On by default, because receiving what you print is
+what the app is for. Everything the capture service writes lands in the pool —
+including jobs printed while the app was closed, since the service catches those
+whether or not anyone is looking. A job that arrives brings the window up, the
+way a print dialog would; the tray menu's *Show the window when a job arrives*
+turns that into a balloon instead.
+
+No job enters the pool twice, restarts included: what you cleared stays cleared.
+A first start facing a large backlog takes the newest 20 jobs and tells you how
+many it left in the folder.
+
+While collecting, closing the window only hides it — the app keeps running in
+the tray so jobs keep arriving. Double-click the tray icon to bring it back, or
+use *Exit* there to really quit.
 
 The app remembers your layout, paper, margins, printer, watermark and whether it
 was collecting.
@@ -258,8 +267,16 @@ runs as SYSTEM and cannot pull down a cloud placeholder, so it reports the file
 as invalid when it is merely not there yet. Copy the .msi somewhere local, such
 as `C:\Users\Public\Downloads`, and run it from there.
 
-**The printer appears but nothing is captured.** The capture host must be
-running, on the same port the printer was registered with.
+**I printed and nothing happened.** Look at
+`%ProgramData%\OpenLeanPrint\service.log` first. A `Captured job #n` line means
+the job did arrive and only the display was missing: open OpenLeanPrint from the
+Start menu and the waiting jobs are in the pool. No such line means nothing
+reached the service — check that it is running with
+`Get-Service OpenLeanPrintCapture`.
+
+**The printer appears but nothing is captured.** Something must be listening on
+the port the printer was registered with — the **OpenLeanPrint Capture** service
+if you installed the .msi, otherwise the app or the console host.
 
 **Windows did not create the printer.** Its IPP class driver only creates a
 queue if the service advertises a complete IPP Everywhere attribute set. Watch
