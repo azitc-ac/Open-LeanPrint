@@ -5,7 +5,7 @@
     (Linux/macOS CI as well as Windows), while the Windows app targets net8.0-windows.
   -->
   <PropertyGroup>
-    <Version>0.2.1</Version>
+    <Version>0.3.0</Version>
     <!--
       A build stamp in the file version, because Windows Installer decides
       whether to replace a file by comparing versions: a packaged file whose
@@ -17,7 +17,7 @@
       Build-Installer.ps1 passes the stamp; a plain "dotnet build" leaves it at
       0.2.1.0, which is fine because nothing installs those.
     -->
-    <FileVersion Condition="'$(BuildStamp)' != ''">0.2.$(BuildStamp)</FileVersion>
+    <FileVersion Condition="'$(BuildStamp)' != ''">$(Version.Split('.')[0]).$(Version.Split('.')[1]).$(BuildStamp)</FileVersion>
     <InformationalVersion Condition="'$(BuildStamp)' != ''">$(Version)+$(BuildStamp)</InformationalVersion>
     <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>

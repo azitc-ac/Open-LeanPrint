@@ -4,7 +4,14 @@ All notable changes to OpenLeanPrint. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.3.0] — 2026-08-24
+
+The release that came out of using it. Everything here was found by printing
+something and looking at what happened — a folder quietly filling with every
+page anyone had ever printed, a 2-up layout that wasted half the sheet, colour
+documents arriving grey, an uninstall that took two minutes and left its tray
+icon behind. Several of them were fixed twice, because the first explanation was
+wrong and the measurement said so.
 
 ### Added
 - **Captured jobs are cleared up.** Nothing ever removed them, so the folder
