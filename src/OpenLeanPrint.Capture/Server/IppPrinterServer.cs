@@ -286,6 +286,8 @@ public sealed class IppPrinterServer : IDisposable
             JobId = jobId,
             JobName = request.FindAttribute("job-name")?.AsString(),
             UserName = request.FindAttribute("requesting-user-name")?.AsString(),
+            Sides = request.FindAttribute("sides")?.AsString(),
+            ColorMode = request.FindAttribute("print-color-mode")?.AsString(),
         };
         return JobResponse(request, jobId, IppJobState.Pending, "none");
     }
@@ -306,12 +308,14 @@ public sealed class IppPrinterServer : IDisposable
             return JobResponse(request, jobId, IppJobState.Pending, "none");
 
         _pendingJobs.TryRemove(jobId, out _);
-        FinalizeJob(jobId, request, pending.Buffer.ToArray(), pending.JobName, pending.UserName);
+        FinalizeJob(jobId, request, pending.Buffer.ToArray(), pending.JobName, pending.UserName,
+                    pending.Sides, pending.ColorMode);
         return JobResponse(request, jobId, IppJobState.Completed, "job-completed-successfully");
     }
 
     private CapturedJob FinalizeJob(int jobId, IppMessage request, byte[] data,
-                                    string? jobName = null, string? userName = null)
+                                    string? jobName = null, string? userName = null,
+                                    string? sides = null, string? colorMode = null)
     {
         string format = request.FindAttribute("document-format")?.AsString() ?? "application/pdf";
         var captured = new CapturedJob
@@ -320,8 +324,8 @@ public sealed class IppPrinterServer : IDisposable
             JobName = jobName ?? request.FindAttribute("job-name")?.AsString(),
             UserName = userName ?? request.FindAttribute("requesting-user-name")?.AsString(),
             DocumentFormat = format,
-            Sides = request.FindAttribute("sides")?.AsString(),
-            ColorMode = request.FindAttribute("print-color-mode")?.AsString(),
+            Sides = sides ?? request.FindAttribute("sides")?.AsString(),
+            ColorMode = colorMode ?? request.FindAttribute("print-color-mode")?.AsString(),
             Data = data,
         };
 
@@ -378,11 +382,23 @@ public sealed class IppPrinterServer : IDisposable
         (_listener as IDisposable).Dispose();
     }
 
+    /// <summary>
+    /// A job between Create-Job and its last Send-Document.
+    /// <para>
+    /// Everything the client asked for arrives with Create-Job; Send-Document
+    /// carries the bytes and little else. So what is wanted has to be kept here
+    /// until the document is complete - reading it off the Send-Document request
+    /// finds nothing, which is exactly how a measurement of two-sided printing
+    /// came back empty and looked like the print path had asked for nothing.
+    /// </para>
+    /// </summary>
     private sealed class PendingJob
     {
         public required int JobId { get; init; }
         public string? JobName { get; init; }
         public string? UserName { get; init; }
+        public string? Sides { get; init; }
+        public string? ColorMode { get; init; }
         public MemoryStream Buffer { get; } = new();
     }
 }
