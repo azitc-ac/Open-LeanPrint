@@ -55,7 +55,8 @@ internal sealed class CaptureServiceWorker : BackgroundService
                 {
                     string path = CapturedJobWriter.Save(job, _settings.OutputFolder);
                     Log($"Captured job #{job.JobId} from {job.UserName ?? "(unknown user)"}, " +
-                        $"{job.Data.Length:N0} bytes -> {Path.GetFileName(path)}");
+                        $"{job.Data.Length:N0} bytes, sides={job.Sides ?? "(unset)"}, " +
+                        $"colour={job.ColorMode ?? "(unset)"} -> {Path.GetFileName(path)}");
                     Prune();
                 }
                 catch (Exception ex)

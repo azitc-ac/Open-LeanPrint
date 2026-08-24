@@ -229,9 +229,14 @@ public sealed class IppPrinterServer : IDisposable
         p.Add(new IppAttribute("print-quality-supported", IppTag.Enum, 3, 4, 5));
         p.Add(new IppAttribute("orientation-requested-default", IppTag.Enum, 3)); // portrait
         p.Add(new IppAttribute("orientation-requested-supported", IppTag.Enum, 3, 4)); // portrait, landscape
-        p.Add(new IppAttribute("color-supported", IppTag.Boolean, false));
-        p.Add(new IppAttribute("print-color-mode-default", IppTag.Keyword, "monochrome"));
-        p.Add(new IppAttribute("print-color-mode-supported", IppTag.Keyword, "monochrome"));
+        // Colour, because this printer does not print anything: it hands the
+        // document on to a real one. Advertising monochrome made Windows convert
+        // every job to greyscale on the way in, and a colour document arrived
+        // already grey - the loss happens before the file reaches us and cannot
+        // be undone afterwards.
+        p.Add(new IppAttribute("color-supported", IppTag.Boolean, true));
+        p.Add(new IppAttribute("print-color-mode-default", IppTag.Keyword, "color"));
+        p.Add(new IppAttribute("print-color-mode-supported", IppTag.Keyword, "color", "monochrome"));
 
         // --- Sides ---
         p.Add(new IppAttribute("sides-default", IppTag.Keyword, "one-sided"));
@@ -315,6 +320,8 @@ public sealed class IppPrinterServer : IDisposable
             JobName = jobName ?? request.FindAttribute("job-name")?.AsString(),
             UserName = userName ?? request.FindAttribute("requesting-user-name")?.AsString(),
             DocumentFormat = format,
+            Sides = request.FindAttribute("sides")?.AsString(),
+            ColorMode = request.FindAttribute("print-color-mode")?.AsString(),
             Data = data,
         };
 

@@ -20,6 +20,20 @@ public sealed class CapturedJob
     /// <summary>Document MIME type (IPP "document-format"), e.g. application/pdf.</summary>
     public string DocumentFormat { get; init; } = "application/octet-stream";
 
+    /// <summary>
+    /// Two-sided setting the client asked for (IPP "sides"): <c>one-sided</c>,
+    /// <c>two-sided-long-edge</c> or <c>two-sided-short-edge</c>.
+    /// <para>
+    /// Worth recording for its own sake, and useful beyond that: this is what
+    /// Windows makes of a print job's DEVMODE, so printing into this printer
+    /// says what any other print path actually asked a driver for.
+    /// </para>
+    /// </summary>
+    public string? Sides { get; init; }
+
+    /// <summary>Colour setting the client asked for (IPP "print-color-mode").</summary>
+    public string? ColorMode { get; init; }
+
     /// <summary>The raw spooled document bytes.</summary>
     public required byte[] Data { get; init; }
 

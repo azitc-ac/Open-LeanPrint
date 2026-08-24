@@ -36,6 +36,10 @@ All notable changes to OpenLeanPrint. The format follows
 - **Page borders** — a thin frame around every page, in the app, the CLI
   (`--border`, `--border-width`, `--border-color`) and the engine. Four pages on
   a sheet with nothing but white between them read as one crowded page.
+- The capture service records what each job asked for - `sides` and
+  `print-color-mode` - which also makes the virtual printer a measuring
+  instrument: printing into it shows what a print path really asked a driver for,
+  rather than what it was told to ask for.
 - A startup log, `%APPDATA%\OpenLeanPrint\app.log`. "The app is not running"
   was otherwise unanswerable after the fact: whether anything ever started it,
   under which account and in which session, left no trace anywhere.
@@ -83,6 +87,15 @@ All notable changes to OpenLeanPrint. The format follows
   it left in the folder, rather than filling the pool with months of history.
 
 ### Fixed
+- **The virtual printer was monochrome.** It advertised itself to Windows as a
+  greyscale device, so Windows converted every job on the way in and colour
+  documents arrived already grey - a loss that happens before the file reaches
+  OpenLeanPrint and cannot be undone afterwards. It now advertises colour, which
+  is the honest answer: this printer prints nothing itself, it hands the document
+  to a real one, and that is where the question belongs.
+
+  An existing printer queue keeps the capabilities it was created with. Uninstall
+  and install again to pick this up.
 - **Uninstalling was slow, noisy and left the tray icon behind.** All three came
   from one place: the app was running, Windows found its files in use and set
   the Restart Manager on it - which asked the user to close applications, spent
