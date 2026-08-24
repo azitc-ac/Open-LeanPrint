@@ -8,12 +8,19 @@ All notable changes to OpenLeanPrint. The format follows
 
 ### Added
 - **Captured jobs are cleared up.** Nothing ever removed them, so the folder
-  grew with every page anyone printed, somewhere nobody looks. The service now
-  keeps 7 days or 500 MB, whichever comes first, oldest first, and only touches
-  files it wrote itself (`--keep-days`, `--keep-mb` to change it). The app is
-  quicker where it can be: a captured job that has been printed or saved is
-  deleted when the pool is emptied. A PDF you brought in yourself is never
-  deleted - a guard with its own test.
+  grew with every page anyone printed, somewhere nobody looks.
+
+  In normal use it is now empty. A captured job is spool output on its way from
+  the print queue into the window, not a document - what it was printed from is
+  still open wherever it was - so the app reads the file into the pool and
+  deletes it there and then. What can be left behind is jobs printed while no app
+  was running to take them, and the service clears those after 7 days or 500 MB,
+  whichever comes first, touching only files it wrote itself (`--keep-days`,
+  `--keep-mb`). Uninstalling removes the folder outright.
+
+  A PDF you dragged in yourself is never deleted. For those the file is the
+  document, and that difference is the one thing checked before anything is
+  removed - with its own test.
 - The service grants the machine's users control of its capture folder.
   `C:\ProgramData` gives ordinary users read and create but not delete, so
   whether you could remove your own captured jobs depended on who created the
@@ -87,10 +94,8 @@ All notable changes to OpenLeanPrint. The format follows
   its normal exit path, tray icon and all. With nothing of ours left running
   there is nothing for the Restart Manager to find, so it is switched off - its
   scan was where the two minutes went.
-- Uninstalling tidies up `%ProgramData%\OpenLeanPrint`, which it used to leave
-  behind entirely. Captured jobs stay - somebody's unprinted document is not
-  ours to throw away on the way out - but the log goes, and the folders go with
-  it when nothing of yours is left in them.
+- Uninstalling removes `%ProgramData%\OpenLeanPrint`, which it used to leave
+  behind entirely.
 - **2-up was close to useless.** It laid two upright pages side by side on an
   upright sheet, which fills about half of it and wastes the top and bottom
   thirds. Two pages now stack, and the automatic turn - which was there all
