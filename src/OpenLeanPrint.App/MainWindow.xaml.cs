@@ -64,8 +64,6 @@ public partial class MainWindow : Window
     private bool _suppressGridEdit;
     private bool _printerSetupOffered;
 
-    /// <summary>Newest captured job already taken into the pool - see <see cref="AppSettings.LastCollectedUtc"/>.</summary>
-    private DateTime _collectedThrough;
     private bool _showOnCapture = true;
 
     /// <summary>
@@ -76,12 +74,11 @@ public partial class MainWindow : Window
     private readonly HashSet<string> _backlog = new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>
-    /// Captured jobs that have been printed or saved. They are deleted when the
-    /// pool is emptied - a captured file is a hand-over, and once it has been
-    /// dealt with, keeping it only makes the folder grow. Files the user brought
-    /// in themselves are never in here to begin with.
+    /// Jobs left in the folder because one start found more than it is willing
+    /// to take at once. They are neither loaded nor deleted; the next start
+    /// picks them up.
     /// </summary>
-    private readonly HashSet<string> _dealtWith = new(StringComparer.OrdinalIgnoreCase);
+    private readonly HashSet<string> _tooMany = new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>The layout behind the picture, so a click can be traced back to a page.</summary>
     private ImpositionResult? _layout;
@@ -153,7 +150,6 @@ public partial class MainWindow : Window
     private void ApplySettings(AppSettings settings)
     {
         _printerSetupOffered = settings.PrinterSetupOffered;
-        _collectedThrough = settings.LastCollectedUtc;
         SetShowOnCapture(settings.ShowOnCapture);
         _booklet = settings.Booklet;
         _rows = Math.Max(1, settings.Rows);
@@ -197,7 +193,6 @@ public partial class MainWindow : Window
         Profiles = _profiles.ToList(),
         CollectCapturedJobs = CollectToggle.IsChecked == true,
         ShowOnCapture = _showOnCapture,
-        LastCollectedUtc = _collectedThrough,
     };
 
     private DuplexMode SelectedDuplex() =>
@@ -387,34 +382,26 @@ public partial class MainWindow : Window
     /// <summary>
     /// Caps what a first start pulls in. A machine that has been capturing for
     /// weeks with nobody looking can have a lot waiting, and filling the pool
-    /// with months of history helps no one. Moving the mark past the older jobs
-    /// leaves them on disk and out of the pool; the number is reported rather
-    /// than swallowed. Returns how many were passed over.
+    /// with months of history helps no one. The rest stay in the folder and are
+    /// skipped for now; the number is reported rather than swallowed. Returns how
+    /// many were passed over.
     /// </summary>
     private int LimitInitialIntake(IEnumerable<string> folders)
     {
         const int mostToTakeAtOnce = 20;
 
         _backlog.Clear();
+        _tooMany.Clear();
         var waiting = folders
             .Where(Directory.Exists)
             .SelectMany(folder => Directory.EnumerateFiles(folder, "*.pdf"))
             .Select(path => new FileInfo(path))
-            .Where(file => file.LastWriteTimeUtc > _collectedThrough)
             .OrderByDescending(file => file.LastWriteTimeUtc)
             .ToList();
 
-        if (waiting.Count <= mostToTakeAtOnce)
-        {
-            foreach (var file in waiting) _backlog.Add(file.FullName);
-            return 0;
-        }
-
-        // The newest one being passed over becomes the new mark, so everything
-        // above it - the newest mostToTakeAtOnce - still arrives.
         foreach (var file in waiting.Take(mostToTakeAtOnce)) _backlog.Add(file.FullName);
-        _collectedThrough = waiting[mostToTakeAtOnce].LastWriteTimeUtc;
-        return waiting.Count - mostToTakeAtOnce;
+        foreach (var file in waiting.Skip(mostToTakeAtOnce)) _tooMany.Add(file.FullName);
+        return _tooMany.Count;
     }
 
     /// <summary>Single entry point, so the tray menu and this cannot drift apart.</summary>
@@ -425,30 +412,55 @@ public partial class MainWindow : Window
     }
 
     /// <summary>
-    /// Takes one captured file into the pool - at most once, ever - and makes it
-    /// visible. A job you just printed landing in a hidden window is the same
-    /// experience as nothing happening at all.
+    /// Takes one captured file into the pool and makes it visible - a job you
+    /// just printed landing in a hidden window is the same experience as nothing
+    /// happening at all.
+    /// <para>
+    /// The file is deleted straight afterwards, because that was all it was for.
+    /// A captured job is spool output on its way from the print queue into this
+    /// window, not a document: the real one is still open in whatever you printed
+    /// from. The pool holds the bytes, so nothing here needs the file again.
+    /// </para>
     /// </summary>
     private void CollectJob(string path)
     {
-        var file = new FileInfo(path);
-        if (file.Exists)
-        {
-            if (file.LastWriteTimeUtc <= _collectedThrough) return;
+        string full = Path.GetFullPath(path);
+        if (_tooMany.Contains(full)) return;   // backlog this start is not taking
 
-            _collectedThrough = file.LastWriteTimeUtc;
-            // Written now rather than on exit: a crash must not show it again.
-            CurrentSettings().Save();
-        }
-
-        bool wasWaiting = _backlog.Remove(Path.GetFullPath(path));
+        bool wasWaiting = _backlog.Remove(full);
 
         int before = _jobs.Count;
         LoadFiles(new[] { path });
-        if (_jobs.Count == before) return; // unreadable; LoadFiles has said so
+        if (_jobs.Count == before) return; // unreadable; LoadFiles has said so, and it stays
+
+        DiscardCapturedFile(full);
 
         if (_showOnCapture && !wasWaiting) RestoreFromTray();
         else if (!IsVisible) _tray.Notify("Job collected", Path.GetFileName(path));
+    }
+
+    /// <summary>
+    /// Removes a captured file now that the pool has its contents.
+    /// <para>
+    /// The guard is the whole point: only files inside a capture folder are ever
+    /// deleted. The pool also holds PDFs dragged in from someone's own documents,
+    /// and for those the file <em>is</em> the document - deleting one would be
+    /// data loss rather than housekeeping.
+    /// </para>
+    /// </summary>
+    private static void DiscardCapturedFile(string path)
+    {
+        if (!CapturedFolder.Holds(path)) return;
+
+        try
+        {
+            File.Delete(path);
+        }
+        catch (Exception)
+        {
+            // Locked, or a folder that will not have it. The service prunes by
+            // age and size, so nothing accumulates for ever either way.
+        }
     }
 
     private void StopCollecting()
@@ -546,39 +558,12 @@ public partial class MainWindow : Window
     {
         if (_jobs.Count == 0) return;
 
-        var finished = _jobs.Select(job => job.FilePath)
-            .Where(path => _dealtWith.Contains(path) && CapturedFolder.Holds(path))
-            .ToList();
-
         _jobs.Clear();
         _imposed = null;
         _layout = null;
         _sheetIndex = 0;
         _sheetCount = 0;
         _ = RefreshAsync();
-
-        foreach (string path in finished)
-        {
-            _dealtWith.Remove(path);
-            try
-            {
-                File.Delete(path);
-            }
-            catch (Exception)
-            {
-                // Someone else has it open, or the folder does not allow it -
-                // the service prunes by age and size in any case.
-            }
-        }
-    }
-
-    /// <summary>
-    /// Notes that everything in the pool has now been printed or saved, so the
-    /// captured files behind it may go when the pool is emptied.
-    /// </summary>
-    private void MarkPoolDealtWith()
-    {
-        foreach (var job in _jobs) _dealtWith.Add(job.FilePath);
     }
 
     private void MoveUp_Click(object sender, RoutedEventArgs e) => Move(-1);
@@ -1166,7 +1151,6 @@ public partial class MainWindow : Window
                 };
             StatusText.Text = $"Sent {report.Sheets} sheet(s) to \"{report.PrinterName}\" " +
                               $"({string.Join("/", report.PaperNames)})." + sides;
-            MarkPoolDealtWith();
             return true;
         }
         catch (Exception ex)
@@ -1201,7 +1185,6 @@ public partial class MainWindow : Window
 
         File.WriteAllBytes(dialog.FileName, _imposed);
         StatusText.Text = $"Saved {Path.GetFileName(dialog.FileName)} ({_imposed.Length:N0} bytes).";
-        MarkPoolDealtWith();
     }
 
     // ---------- ui state ----------

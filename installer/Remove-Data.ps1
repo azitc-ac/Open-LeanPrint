@@ -1,16 +1,16 @@
 <#
 .SYNOPSIS
-    Tidies up what the capture service left in ProgramData.
+    Removes what the capture service left in ProgramData.
 
 .DESCRIPTION
     Uninstalling removed the program but left C:\ProgramData\OpenLeanPrint
-    behind, log and all.
+    behind, captured jobs and log and all.
 
-    Captured jobs are the user's own documents and are deliberately not deleted -
-    somebody's unprinted payslip is not ours to throw away on the way out. The
-    service log is ours, so that goes, and the folders go too if nothing of the
-    user's is left in them. Uninstall on a machine with nothing pending therefore
-    leaves nothing behind.
+    Nothing in there is worth keeping. A captured job is spool output on its way
+    from the print queue into the app's window - the document it came from is
+    still wherever it was printed from, and the app deletes each file as soon as
+    it has read it anyway. What is left when the program goes is the handful
+    nobody got round to printing.
 #>
 [CmdletBinding()]
 param(
@@ -30,24 +30,12 @@ function Write-Log([string]$message) {
 try {
     if (-not (Test-Path $DataFolder)) { Write-Log "Nothing in $DataFolder."; exit 0 }
 
-    foreach ($ours in @("service.log")) {
-        $path = Join-Path $DataFolder $ours
-        if (Test-Path $path) { Remove-Item $path -Force -ErrorAction SilentlyContinue }
-    }
-
-    $captured = Join-Path $DataFolder "captured"
-    $left = @(Get-ChildItem $captured -File -ErrorAction SilentlyContinue)
-    if ($left.Count -gt 0) {
-        Write-Log "Keeping $($left.Count) captured job(s) in $captured - they are your documents."
-        exit 0
-    }
-
-    Remove-Item $captured -Force -Recurse -ErrorAction SilentlyContinue
-    Remove-Item $DataFolder -Force -Recurse -ErrorAction SilentlyContinue
-    Write-Log "Removed $DataFolder."
+    $files = @(Get-ChildItem $DataFolder -Recurse -File -ErrorAction SilentlyContinue)
+    Remove-Item $DataFolder -Recurse -Force -ErrorAction Stop
+    Write-Log "Removed $DataFolder ($($files.Count) file(s))."
     exit 0
 }
 catch {
-    Write-Log "Could not tidy up $DataFolder : $($_.Exception.Message)"
-    exit 0
+    Write-Log "Could not remove $DataFolder : $($_.Exception.Message)"
+    exit 0   # never block an uninstall
 }
