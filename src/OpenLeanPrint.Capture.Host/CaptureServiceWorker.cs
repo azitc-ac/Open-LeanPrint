@@ -25,7 +25,11 @@ internal sealed class CaptureServiceWorker : BackgroundService
     protected override Task ExecuteAsync(CancellationToken stoppingToken)
     {
         Directory.CreateDirectory(_settings.OutputFolder);
-        Log($"Starting on port {_settings.Port}, writing to {_settings.OutputFolder}");
+        // Which build is running should never again be a matter of comparing
+        // file hashes by hand.
+        string build = System.Diagnostics.FileVersionInfo
+            .GetVersionInfo(System.Reflection.Assembly.GetExecutingAssembly().Location).FileVersion ?? "unknown";
+        Log($"Starting build {build} on port {_settings.Port}, writing to {_settings.OutputFolder}");
 
         // Whoever creates this folder first decides who may delete from it, and
         // as a service that is LocalSystem - which would leave the person who

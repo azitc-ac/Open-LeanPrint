@@ -6,6 +6,19 @@
   -->
   <PropertyGroup>
     <Version>0.2.1</Version>
+    <!--
+      A build stamp in the file version, because Windows Installer decides
+      whether to replace a file by comparing versions: a packaged file whose
+      version is not higher than the one already there is silently skipped. With
+      every build stamped 0.2.1.0, installing a rebuilt package left the old
+      binaries in place and the change under test simply never ran - which cost
+      an afternoon of measuring the wrong build.
+
+      Build-Installer.ps1 passes the stamp; a plain "dotnet build" leaves it at
+      0.2.1.0, which is fine because nothing installs those.
+    -->
+    <FileVersion Condition="'$(BuildStamp)' != ''">0.2.$(BuildStamp)</FileVersion>
+    <InformationalVersion Condition="'$(BuildStamp)' != ''">$(Version)+$(BuildStamp)</InformationalVersion>
     <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>

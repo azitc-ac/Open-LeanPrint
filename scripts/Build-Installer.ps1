@@ -46,6 +46,14 @@ $installer = Join-Path $repo "installer"
 $publish = Join-Path $installer "publish"
 if (-not $Output) { $Output = Join-Path $repo "dist" }
 
+# Every build needs a file version of its own. Windows Installer skips a
+# packaged file whose version is not higher than the installed one, so rebuilding
+# without this leaves the old binaries in place and the new code never runs.
+# Days-then-minutes keeps it rising, and both parts stay inside the 16 bits a
+# version field allows.
+$now = (Get-Date).ToUniversalTime()
+$stamp = "{0}.{1}" -f [int]($now - [datetime]"2026-01-01").TotalDays, ($now.Hour * 60 + $now.Minute)
+
 Write-Host "Building the OpenLeanPrint installer" -ForegroundColor Cyan
 Write-Host "  runtime : $Runtime"
 
@@ -53,7 +61,7 @@ Write-Host "  runtime : $Runtime"
 if (Test-Path $publish) { Remove-Item $publish -Recurse -Force }
 dotnet publish (Join-Path $repo "src\OpenLeanPrint.App\OpenLeanPrint.App.csproj") `
     --configuration Release --runtime $Runtime --self-contained true `
-    -p:DebugType=None --output $publish | Out-Null
+    -p:DebugType=None -p:BuildStamp=$stamp --output $publish | Out-Null
 if ($LASTEXITCODE -ne 0) { throw "dotnet publish failed." }
 
 # The console host goes in too. Printer setup runs as SYSTEM in session 0,
@@ -61,7 +69,7 @@ if ($LASTEXITCODE -ne 0) { throw "dotnet publish failed." }
 # publish into the same folder and share the one copy of the runtime.
 dotnet publish (Join-Path $repo "src\OpenLeanPrint.Capture.Host\OpenLeanPrint.Capture.Host.csproj") `
     --configuration Release --runtime $Runtime --self-contained true `
-    -p:DebugType=None --output $publish | Out-Null
+    -p:DebugType=None -p:BuildStamp=$stamp --output $publish | Out-Null
 if ($LASTEXITCODE -ne 0) { throw "publishing the capture host failed." }
 
 $exe = Join-Path $publish "OpenLeanPrint.exe"
@@ -82,6 +90,7 @@ $escaped = $license -replace '\\', '\\\\' -replace '([{}])', '\$1' -replace "`r`
 $version = ([xml](Get-Content (Join-Path $repo "Directory.Build.props"))).Project.PropertyGroup.Version
 if (-not $version) { $version = "0.0.0" }
 Write-Host "  version : $version"
+Write-Host "  build   : $stamp   (in the file version, so installing replaces the old binaries)"
 
 # The package platform decides where ProgramFiles6432Folder points: an x86
 # package would put an arm64 build into "Program Files (x86)".
