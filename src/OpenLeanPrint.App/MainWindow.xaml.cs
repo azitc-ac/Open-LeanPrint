@@ -1041,11 +1041,25 @@ public partial class MainWindow : Window
     /// Offers to finish the setup the installer cannot do: creating the printer
     /// needs the user's own session, so it is asked for once, here.
     /// </summary>
+    /// <summary>
+    /// Offers to create the printer, once, when there is none.
+    /// <para>
+    /// This is the path for copies an installer cannot help: an .msix, or a run
+    /// from source. An installed copy never gets here - the installer has made
+    /// the printer already, and it does so without asking anybody for anything.
+    /// </para>
+    /// <para>
+    /// Both the question and the answer are logged. An unexplained elevation
+    /// prompt is alarming, and one turned up once from a copy left running in
+    /// the background, with nothing anywhere recording that it had asked.
+    /// </para>
+    /// </summary>
     private void OfferPrinterSetup(AppSettings settings)
     {
         if (settings.PrinterSetupOffered || PrinterSetup.IsRegistered()) return;
 
         _printerSetupOffered = true;
+        App.Log("no virtual printer found; asking whether to create one");
         var answer = MessageBox.Show(
             this,
             "OpenLeanPrint can add its virtual printer now, so you can print into it from any " +
@@ -1055,6 +1069,7 @@ public partial class MainWindow : Window
             MessageBoxButton.YesNo,
             MessageBoxImage.Question);
 
+        App.Log($"answer to the printer question: {answer}");
         if (answer == MessageBoxResult.Yes) CreatePrinter();
         UpdatePrinterSetupButton();
     }
