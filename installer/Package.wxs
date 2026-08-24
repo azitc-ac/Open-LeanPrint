@@ -33,6 +33,10 @@
     <Property Id="ARPPRODUCTICON" Value="AppIcon" />
     <Property Id="ARPURLINFOABOUT" Value="https://github.com/azitc-ac/Open-LeanPrint" />
     <Property Id="ARPNOREPAIR" Value="1" />
+    <!-- See the StopApp comment below: our own processes are stopped first, so
+         there is nothing for the Restart Manager to find and its scan is pure
+         delay. It was where an uninstall spent about two minutes. -->
+    <Property Id="MSIRESTARTMANAGERCONTROL" Value="Disable" />
 
     <WixVariable Id="WixUILicenseRtf" Value="License.rtf" />
     <!-- Minimal, deliberately: the InstallDir dialog pulls in a path-validation
@@ -65,6 +69,13 @@
       </Component>
       <Component>
         <File Id="UninstallServiceScript" Source="Uninstall-Service.ps1" />
+      </Component>
+      <Component>
+        <File Id="StopAppScript" Source="Stop-App.ps1" />
+        <RemoveFile Id="RemoveUninstallLog" Name="uninstall.log" On="uninstall" />
+      </Component>
+      <Component>
+        <File Id="RemoveDataScript" Source="Remove-Data.ps1" />
       </Component>
       <Component>
         <File Id="RemovePrinterScript" Source="Remove-Printer.ps1" />
@@ -157,6 +168,32 @@
                   ExeCommand="powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File Install-Service.ps1"
                   Execute="deferred" Impersonate="yes" Return="ignore" />
 
+    <!--
+      Uninstalling while the app was running cost two minutes, a dialog asking
+      the user to close unrelated applications, and a tray icon that stayed on
+      screen afterwards. All three come from the same place: Windows found the
+      program in use and set the Restart Manager on it.
+
+      So the app is asked to stop first - through its own exit path, which is
+      what takes the tray icon away; a terminated process never gets to. With
+      nothing of ours left running there is nothing for the Restart Manager to
+      find, which is also why MSIRESTARTMANAGERCONTROL is off: its scan is what
+      the two minutes were spent on.
+    -->
+    <CustomAction Id="StopApp"
+                  Directory="INSTALLFOLDER"
+                  ExeCommand="powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File Stop-App.ps1"
+                  Execute="deferred" Impersonate="yes" Return="ignore" />
+
+    <!--
+      Captured jobs are the user's documents and are left alone; the log and the
+      folders go if nothing of theirs is in them.
+    -->
+    <CustomAction Id="RemoveData"
+                  Directory="INSTALLFOLDER"
+                  ExeCommand="powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File Remove-Data.ps1"
+                  Execute="deferred" Impersonate="yes" Return="ignore" />
+
     <CustomAction Id="UninstallService"
                   Directory="INSTALLFOLDER"
                   ExeCommand="powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File Uninstall-Service.ps1"
@@ -198,8 +235,13 @@
     <InstallExecuteSequence>
       <Custom Action="InstallService" After="InstallFiles" Condition="NOT Installed" />
       <Custom Action="SetupPrinter" After="InstallService" Condition="NOT Installed" />
+      <!-- No condition: an upgrade replaces the same files, and with the
+           Restart Manager off nothing else would ask the running copy to let
+           go of them. -->
+      <Custom Action="StopApp" After="InstallInitialize" />
       <Custom Action="UninstallService" Before="RemovePrinter" Condition="REMOVE~=&quot;ALL&quot;" />
       <Custom Action="RemovePrinter" Before="RemoveFiles" Condition="REMOVE~=&quot;ALL&quot;" />
+      <Custom Action="RemoveData" After="RemovePrinter" Condition="REMOVE~=&quot;ALL&quot;" />
       <Custom Action="LaunchApp" After="InstallFinalize" Condition="NOT Installed" />
     </InstallExecuteSequence>
 

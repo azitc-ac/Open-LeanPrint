@@ -23,14 +23,24 @@ internal sealed class SingleInstance : IDisposable
     private const string MutexName = @"Local\OpenLeanPrint.App.Instance";
     private const string SignalName = @"Local\OpenLeanPrint.App.Show";
 
+    /// <summary>
+    /// How the uninstaller asks the app to stop. Killing it instead leaves its
+    /// tray icon behind: the notification area only drops an icon when the owner
+    /// takes it away, and a process that is terminated never gets to.
+    /// </summary>
+    public const string QuitSignalName = @"Local\OpenLeanPrint.App.Quit";
+
     private readonly Mutex _mutex;
     private readonly EventWaitHandle _signal;
+    private readonly EventWaitHandle _quit;
     private RegisteredWaitHandle? _registration;
+    private RegisteredWaitHandle? _quitRegistration;
 
-    private SingleInstance(Mutex mutex, EventWaitHandle signal)
+    private SingleInstance(Mutex mutex, EventWaitHandle signal, EventWaitHandle quit)
     {
         _mutex = mutex;
         _signal = signal;
+        _quit = quit;
     }
 
     /// <summary>
@@ -42,8 +52,9 @@ internal sealed class SingleInstance : IDisposable
     {
         var mutex = new Mutex(initiallyOwned: true, MutexName, out bool weAreTheFirst);
         var signal = new EventWaitHandle(false, EventResetMode.AutoReset, SignalName);
+        var quit = new EventWaitHandle(false, EventResetMode.ManualReset, QuitSignalName);
 
-        if (weAreTheFirst) return new SingleInstance(mutex, signal);
+        if (weAreTheFirst) return new SingleInstance(mutex, signal, quit);
 
         // Written before the signal, so the other copy finds it there.
         if (files.Count > 0) Handoff(files);
@@ -51,6 +62,7 @@ internal sealed class SingleInstance : IDisposable
 
         mutex.Dispose();
         signal.Dispose();
+        quit.Dispose();
         return null;
     }
 
@@ -60,6 +72,13 @@ internal sealed class SingleInstance : IDisposable
         _registration = ThreadPool.RegisterWaitForSingleObject(
             _signal, (_, _) => show(TakeHandoff()), state: null,
             Timeout.Infinite, executeOnlyOnce: false);
+    }
+
+    /// <summary>Runs <paramref name="quit"/> when something asks the app to stop.</summary>
+    public void OnQuitRequested(Action quit)
+    {
+        _quitRegistration = ThreadPool.RegisterWaitForSingleObject(
+            _quit, (_, _) => quit(), state: null, Timeout.Infinite, executeOnlyOnce: true);
     }
 
     /// <summary>Where a second copy leaves the files it was asked to open.</summary>
@@ -99,6 +118,8 @@ internal sealed class SingleInstance : IDisposable
     public void Dispose()
     {
         _registration?.Unregister(waitObject: null);
+        _quitRegistration?.Unregister(waitObject: null);
+        _quit.Dispose();
         try { _mutex.ReleaseMutex(); }
         catch (ApplicationException) { /* never owned it */ }
         _mutex.Dispose();

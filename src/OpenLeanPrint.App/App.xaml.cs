@@ -48,6 +48,13 @@ public partial class App : Application
         _instance.OnShowRequested(wanted =>
             window.Dispatcher.Invoke(() => window.BringToFront(wanted)));
 
+        // The uninstaller asks rather than kills, so the tray icon goes with it.
+        _instance.OnQuitRequested(() =>
+        {
+            Log("asked to stop");
+            window.Dispatcher.Invoke(window.QuitForGood);
+        });
+
         if (e.Args.Contains(TraySwitch, StringComparer.OrdinalIgnoreCase))
         {
             window.StartInTray();

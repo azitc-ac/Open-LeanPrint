@@ -275,6 +275,13 @@ public partial class MainWindow : Window
     }
 
     /// <summary>
+    /// Stop for real, from outside - the uninstaller. Going through the normal
+    /// exit is the point: it disposes the tray icon, which a terminated process
+    /// never gets to do, leaving the icon on screen until someone hovers over it.
+    /// </summary>
+    public void QuitForGood() => ExitForGood();
+
+    /// <summary>
     /// Lights up the preset button that matches the current layout, if any, and
     /// keeps the grid box showing the same thing. A grid with no preset - 2x3,
     /// say - simply leaves them all unlit.

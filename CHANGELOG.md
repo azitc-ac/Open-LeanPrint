@@ -76,6 +76,21 @@ All notable changes to OpenLeanPrint. The format follows
   it left in the folder, rather than filling the pool with months of history.
 
 ### Fixed
+- **Uninstalling was slow, noisy and left the tray icon behind.** All three came
+  from one place: the app was running, Windows found its files in use and set
+  the Restart Manager on it - which asked the user to close applications, spent
+  about two minutes looking, and had the process terminated in the end. A
+  terminated process never takes its tray icon away, because the notification
+  area only drops an icon when its owner asks it to.
+
+  The app is now asked to stop before any file is touched and shuts down through
+  its normal exit path, tray icon and all. With nothing of ours left running
+  there is nothing for the Restart Manager to find, so it is switched off - its
+  scan was where the two minutes went.
+- Uninstalling tidies up `%ProgramData%\OpenLeanPrint`, which it used to leave
+  behind entirely. Captured jobs stay - somebody's unprinted document is not
+  ours to throw away on the way out - but the log goes, and the folders go with
+  it when nothing of yours is left in them.
 - **2-up was close to useless.** It laid two upright pages side by side on an
   upright sheet, which fills about half of it and wastes the top and bottom
   thirds. Two pages now stack, and the automatic turn - which was there all
