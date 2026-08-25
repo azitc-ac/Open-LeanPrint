@@ -1,0 +1,115 @@
+name: Release
+
+# Builds the installers on GitHub's runners rather than on somebody's desk.
+#
+# Two reasons, and the second is the one that matters for the future:
+#
+#   1. A release built here comes from a commit anyone can check out, with a
+#      toolchain anyone can read, instead of from whatever happened to be
+#      installed on one machine. That has already cost this project an
+#      afternoon once, when a locally built package turned out to be hours
+#      older than the change it was supposed to carry.
+#   2. SignPath Foundation - which is where the publicly trusted certificate is
+#      meant to come from - will not sign an artifact somebody uploads. It signs
+#      artifacts produced by a build system it trusts, fetched from the workflow
+#      run that produced them. That is why the packages are uploaded as workflow
+#      artifacts and not only attached to the release.
+#
+# The packages built here are deliberately NOT signed. That is the shape
+# SignPath expects: the build produces an unsigned artifact, the signing request
+# goes out from this workflow, and the signed package comes back. Until the
+# certificate exists, releases are still signed locally with
+# scripts/Build-Installer.ps1 -CertificateSubject "...".
+
+on:
+  push:
+    tags: ['v*']
+  # So the whole thing can be exercised without cutting a release.
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: ${{ matrix.runtime }}
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        runtime: [win-arm64, win-x64]
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '8.0.x'
+
+      # A release that ships failing code is worse than a late release. The
+      # runner is x64, so the arm64 package is cross-built - which is fine for
+      # packaging but means the tests run against the runner's own runtime.
+      - name: Test
+        if: matrix.runtime == 'win-x64'
+        run: dotnet test OpenLeanPrint.sln --configuration Release
+
+      - name: Build the installer
+        run: ./scripts/Build-Installer.ps1 -Runtime ${{ matrix.runtime }}
+        shell: pwsh
+
+      - name: Name it after the version it carries
+        id: package
+        shell: pwsh
+        run: |
+          $version = ([xml](Get-Content Directory.Build.props)).Project.PropertyGroup.Version
+          $source = "dist/OpenLeanPrint-${{ matrix.runtime }}.msi"
+          $named = "dist/OpenLeanPrint-$version-${{ matrix.runtime }}.msi"
+          Move-Item $source $named -Force
+          "version=$version" >> $env:GITHUB_OUTPUT
+          "path=$named" >> $env:GITHUB_OUTPUT
+          Write-Host "  $named  ($([math]::Round((Get-Item $named).Length / 1MB, 1)) MB)"
+
+      # SignPath reads its input from here. Keep the name stable: a signing
+      # request names the artifact it wants.
+      - name: Upload the package
+        uses: actions/upload-artifact@v4
+        with:
+          name: installer-${{ matrix.runtime }}
+          path: ${{ steps.package.outputs.path }}
+          if-no-files-found: error
+
+      # ---------------------------------------------------------------------
+      # Once SignPath Foundation has approved the project, the signing step
+      # goes here, between building and publishing:
+      #
+      #   - uses: signpath/github-action-submit-signing-request@v1
+      #
+      # It takes the artifact uploaded above, submits a signing request, waits
+      # for the approval, and writes the signed package back. Nothing else in
+      # this workflow has to change - which is the point of building unsigned.
+      # ---------------------------------------------------------------------
+
+  publish:
+    name: Attach to the release
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Collect the packages
+        uses: actions/download-artifact@v4
+        with:
+          pattern: installer-*
+          merge-multiple: true
+          path: dist
+
+      # Attaching rather than creating: the release and its notes are written by
+      # hand, and a workflow should not decide what a release says.
+      - name: Attach them
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ls -la dist
+          gh release upload "${GITHUB_REF_NAME}" dist/*.msi --clobber \
+            --repo "${GITHUB_REPOSITORY}"
