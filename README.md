@@ -65,6 +65,20 @@ lands in the pool, ready to be imposed.
 You can also just open PDFs directly — drop them on the window, pick a layout,
 hit Print.
 
+### Code signing
+
+Free code signing is provided by [SignPath.io](https://signpath.io/), with a
+certificate from the [SignPath Foundation](https://signpath.org/). The installers
+are built by [a GitHub Actions workflow](.github/workflows/release.yml) from the
+tagged commit and signed from there, so a package can be traced back to the
+source it came from.
+
+> **While that certificate is being arranged**, releases carry a self-signed one
+> instead. Windows will not recognise it until you say it should — the release
+> notes explain the one command that does it. A self-signed certificate
+> establishes that the files came from the same place, not who that place is;
+> the point of the Foundation certificate is to remove that step.
+
 Running from source instead:
 
 ```powershell
