@@ -38,13 +38,18 @@ script is blocked, say so rather than working around security.
   round trip capture → impose → print. A sheet was also sent to the physical
   Brother queue and completed (1/1 page); nobody has inspected the paper yet.
 
-- **M4 — desktop app** ◑ (`OpenLeanPrint.App`, **WPF**): job pool (several PDFs
-  combined onto shared sheets), presets, live WYSIWYG preview, print, save PDF,
-  settings that survive a restart, "Collect captured jobs" (new jobs from the
-  capture host drop into the pool), drag & drop, and a tray icon that keeps
-  collecting with the window closed. Verified by driving the real window.
+- **M4 — desktop app** ✅ (`OpenLeanPrint.App`, **WPF**): job pool (several PDFs
+  combined onto shared sheets), presets, live WYSIWYG preview, page borders,
+  print, "Print and close", save PDF, settings that survive a restart, drag &
+  drop, one instance per session, and a tray icon that keeps collecting with the
+  window closed. Verified by driving the real window.
   `scripts/Publish-App.ps1` produces one self-contained exe and
   `scripts/Build-Msix.ps1` a signed MSIX — see [`docs/M4-APP.md`](docs/M4-APP.md).
+- **A Windows service** (`--service` on the capture host) holds the loopback IPP
+  port, so the printer works from system start, with nobody logged in and with
+  the app closed. The installer registers it. Captured jobs are a hand-over, not
+  an archive: the app reads each file into the pool and deletes it, and the
+  service prunes what nobody collected (7 days / 500 MB, `CapturedFolder`).
 - **`watch`** ✅: imposes (and optionally prints) every new PDF in a folder — the
   hands-free workflow. Arrival detection is `CapturedFolderWatcher` in
   `OpenLeanPrint.Capture`, shared with the app and unit-tested.
@@ -55,8 +60,8 @@ script is blocked, say so rather than working around security.
   engine, CLI and app. Skip-blank-page detection was dropped on purpose — the
   preview plus right-click removal covers it without guessing.
 
-Everything is pushed to `main`. 110 tests pass (Windows-only ones self-skip on
-Linux; CI runs both a Linux and a Windows job).
+Everything is pushed to `main`. 163 tests pass (Windows-only ones self-skip on
+Linux; CI runs both a Linux and a Windows job). Latest release: **0.3.1**.
 
 **Two solutions:** `OpenLeanPrint.sln` is the cross-platform one that CI builds
 and tests — **do not add the WPF app to it**, WPF cannot build on Linux.
@@ -67,12 +72,23 @@ and tests — **do not add the WPF app to it**, WPF cannot build on Linux.
 Roughly in priority order — confirm with the user which they want:
 
 1. **SignPath Foundation application** — the user intends to apply for a free
-   open-source code-signing certificate. The MSIX builds and signs fine
-   (`scripts/Build-Msix.ps1`); only a publicly trusted certificate is missing.
+   open-source code-signing certificate. Everything else is ready: MIT licence,
+   public repository, CI, documentation, reproducible signed builds. Only a
+   publicly trusted certificate is missing.
 2. **Look at the printed sheet** — a 4-up test page went to the Brother on
    2026-08-17 and the spooler completed it, but the paper itself has not been
    checked. Confirming margins/scale on paper closes M3's last exit criterion.
-3. **Duplex hint and per-job presets** for printing.
+3. **More than one language** — see "Later" in `docs/ROADMAP.md`. The interface
+   is English with no localisation layer; strings sit in the XAML.
+
+**Two-sided printing is closed as far as this code goes.** Choosing long or short
+edge produces short-edge output on the user's Brother, and every layer that can
+be inspected carries the right value: the app sets `Duplex.Vertical`, the queued
+job holds `dmDuplex 2` with `DM_DUPLEX` set, the driver reads it back as
+`TwoSidedLongEdge`, and it leaves as `sides=two-sided-long-edge`. Handing the
+DEVMODE back to the driver to reconcile changes nothing - long and short differ
+by one byte of the documented field and none of the driver's private area. The
+device is where it stops. Do not "fix" this in `PdfPrinter` without new evidence.
 
 ## Build, test, run
 
@@ -118,7 +134,7 @@ dotnet run --project src/OpenLeanPrint.Cli -- impose "captured\job-0001.pdf" out
 | `src/OpenLeanPrint.App` | WPF desktop app: pool, live preview, print. Not in OpenLeanPrint.sln. |
 | `src/OpenLeanPrint.Cli` | `openleanprint` CLI: `impose` / `sample` / `print` / `list-printers` / `watch`. |
 | `tests/**` | xUnit tests (Core, Capture, Compose, Print) — run on any OS. |
-| `scripts/*.ps1` | Printer register/unregister; `Publish-App.ps1` (single exe), `Build-Installer.ps1` (.msi), `Build-Msix.ps1` + `New-SigningCertificate.ps1`. |
+| `scripts/*.ps1` | Printer register/unregister; `Publish-App.ps1` (single exe), `Build-Installer.ps1` (.msi), `Build-Msix.ps1` + `New-SigningCertificate.ps1`, `New-Icon.ps1` (draws the icon and every packaged size). |
 | `packaging/` | MSIX manifest, tile assets, and the pinned SDK packaging tools. |
 | `installer/` | WiX .msi: sets up the virtual printer during installation. |
 | `docs/` | ARCHITECTURE, USER-GUIDE, ROADMAP, M1-CAPTURE, M2-IMPOSE, M3-PRINT, M4-APP. |
@@ -161,6 +177,27 @@ dotnet run --project src/OpenLeanPrint.Cli -- impose "captured\job-0001.pdf" out
   you have the full nuget.org feed, so use normal current versions.
 - **Honesty:** when you verify something on Windows, say what you actually ran
   and saw. When you can't verify a step, say so — don't claim success.
+- **Never let the installer start the app directly.** A custom action inherits
+  the installer's token, so `ExeCommand="[INSTALLFOLDER]OpenLeanPrint.exe"` runs
+  the app as whoever authorised the installation - on this machine a separate
+  admin account, giving an elevated window with a file dialog in it. The launch
+  goes through `explorer.exe` and the Startup shortcut, which hands it to the
+  session that already has one. Failing to start is the acceptable failure;
+  starting as an administrator is not.
+- **The ProductCode must follow the version, the UpgradeCode never changes.** Let
+  WiX generate a ProductCode per build and the uninstall GUID moves under your
+  feet; nail it to one value and upgrading dies with "another version of this
+  product is already installed", because Windows skips a package whose code is
+  already installed. `Build-Installer.ps1` derives it from the version.
+- **Every build needs a rising FileVersion.** Windows Installer skips a packaged
+  file whose version is not higher than the installed one, so rebuilding without
+  a new stamp leaves the old binaries in place and the change under test never
+  runs. That cost an afternoon of measuring a binary from hours earlier. The
+  stamp is days-then-minutes; use `TimeSpan.Days`, not `[int]` on `TotalDays`,
+  which rounds and can make the newer build lose.
+- `MSIRESTARTMANAGERCONTROL=Disable` does **not** remove the "please close these
+  applications" question. It falls back to older, coarser detection that then
+  names unrelated programs. Stopping our own processes first is the actual fix.
 - **Creating a printer queue needs administrator rights** — verified, not
   assumed: `Add-Printer` fails with access denied as a normal user even with the
   IPP service answering. That is why the .msi exists (an installer is already

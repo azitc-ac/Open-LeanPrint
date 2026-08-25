@@ -79,8 +79,17 @@ still fills the pool.
 
 Windows drives the queue with its own **IPP class driver** pointed at
 `http://localhost:6310/leanprint` — no third-party print driver is installed,
-which is the whole reason this works on Windows on ARM. Jobs arrive as PDF and
-are written to `%LOCALAPPDATA%\OpenLeanPrint\captured`.
+which is the whole reason this works on Windows on ARM. Jobs arrive as PDF, in
+colour: the virtual printer advertises colour because it prints nothing itself,
+and telling Windows otherwise would have it convert every job to grey on the way
+in, before OpenLeanPrint ever sees it.
+
+Where the file lands depends on who caught it. The **service** writes to
+`%ProgramData%\OpenLeanPrint\captured`, because it runs as LocalSystem, whose
+per-user folder is somewhere no one can reach. The app or the console host,
+running as you, write to `%LOCALAPPDATA%\OpenLeanPrint\captured`. The app watches
+both, and deletes each file once it has it — see
+[How long captured jobs are kept](#how-long-captured-jobs-are-kept).
 
 To remove the printer again: **Remove virtual printer** in the app, or
 `.\scripts\Unregister-Printer.ps1` from a source checkout. Uninstalling the

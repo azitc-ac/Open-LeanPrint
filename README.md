@@ -41,10 +41,17 @@ Plus:
   sheet, not three.
 - **Drop or turn pages** before printing — type a range, or right-click a page
   in the preview to remove or rotate it.
+- **Page borders** — a thin frame around each page, so four pages on a sheet
+  read as four pages rather than one crowded one.
 - **Save layouts as profiles** and pick them again later.
 - **Duplex**, including the short-edge flip that booklets need.
+- **Colour goes through.** The virtual printer does not print, it hands the
+  document to one that does, so it keeps colour rather than flattening it to grey
+  on the way in.
 - **Live WYSIWYG preview** that re-imposes as you change anything.
-- **Print or save** — send it to a printer, or keep the imposed PDF.
+- **Print and close** — printing ends the job: the pool empties and the window
+  goes away, while collecting carries on in the tray. Or **save** the imposed PDF
+  instead.
 - **Hands-free mode** — every job you print gets imposed and printed
   automatically, no window needed.
 
@@ -123,8 +130,12 @@ so there the app asks once instead.
 ## Status
 
 Capture, imposition, printing, the desktop app and packaging all work and are
-verified on Windows 11 ARM64 — see [docs/ROADMAP.md](docs/ROADMAP.md) for what
-each milestone delivered and what is still open.
+verified on Windows 11 ARM64. A Windows service holds the loopback port, so the
+printer works from system start, with nobody logged in and with no window open.
+163 automated tests; CI builds and tests on Linux and Windows.
+
+See [docs/ROADMAP.md](docs/ROADMAP.md) for what each milestone delivered and what
+is still open.
 
 ## Contributing
 

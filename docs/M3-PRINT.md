@@ -140,7 +140,7 @@ no paper used:
    not been looked at yet (nobody was at the printer), so hardware margins and
    colour on paper are still unconfirmed.
 
-Automated: 33 tests in `OpenLeanPrint.Print.Tests` (110 in the solution). The
+Automated: 33 tests in `OpenLeanPrint.Print.Tests` (163 in the solution). The
 geometry and paper-matching tests run on any OS; the GDI+/PDFium ones are
 `[WindowsFact]` and skip themselves elsewhere. The suite deliberately does **not**
 spool a real job — that stays a manual check, so `dotnet test` has no side
