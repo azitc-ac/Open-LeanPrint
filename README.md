@@ -65,6 +65,12 @@ lands in the pool, ready to be imposed.
 You can also just open PDFs directly — drop them on the window, pick a layout,
 hit Print.
 
+### Privacy
+
+OpenLeanPrint collects nothing and sends nothing — no telemetry, no update
+check, no server. It does handle your documents, because that is what it is for:
+[PRIVACY.md](PRIVACY.md) says exactly where they go and how long they stay.
+
 ### Code signing
 
 Free code signing is provided by [SignPath.io](https://signpath.io/), with a
