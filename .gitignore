@@ -37,3 +37,8 @@ certs/
 # OS cruft
 .DS_Store
 Thumbs.db
+
+# Notes for AI assistants working in this repository. Kept out of the repo on
+# purpose: the durable parts live in CONTRIBUTING.md, docs/ARCHITECTURE.md and
+# docs/ROADMAP.md, where a person would look for them.
+CLAUDE.md

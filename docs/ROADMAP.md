@@ -1,5 +1,19 @@
 # Open-LeanPrint roadmap
 
+**Where it stands.** M0 to M4 are done and released; the app, the capture
+service, the installer and the packaging all work and are verified on Windows 11
+ARM64. What is still open is listed under each milestone and in `Later` at the
+end. The nearest three, in the order they are likely to be tackled:
+
+1. **A publicly trusted signing certificate.** Everything an application to the
+   [SignPath Foundation](https://signpath.org/) needs is in place except
+   evidence of use: MIT licence, public repository, CI, documentation, and a
+   release build that runs on GitHub Actions rather than somebody's desk.
+2. **Look at a printed sheet.** Printing is verified through the spooler and
+   against *Microsoft Print to PDF*; margins and scale on real paper are the one
+   thing nobody has checked, and it is M3's last exit criterion.
+3. **More than one language** - see `Later`.
+
 Incremental milestones from the current foundation to a usable app. Each
 milestone is meant to be independently reviewable.
 

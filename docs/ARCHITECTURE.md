@@ -121,7 +121,32 @@ Details and the WYSIWYG pitfalls: [M3-PRINT.md](M3-PRINT.md).
 origin** (X right, Y down) to match UI toolkits. PDF uses a bottom-left origin;
 the renderer/output layer converts. See `Geometry.cs`.
 
-## 7. Project structure
+## 7. Details that have bitten us
+
+Small facts with large consequences, each found the hard way:
+
+- **PdfSharpCore imports external page content at `Save()` time**, not when the
+  page is placed. Every `XPdfForm` and its source stream has to stay alive until
+  then — see `PdfImposer.Compose`.
+- **Printer `Graphics` uses `GraphicsUnit.Display` = 1/100 inch**, the same unit
+  as `PageBounds` and `HardMarginX/Y`. With `OriginAtMargins = false` the origin
+  is the top-left of the *printable* area rather than of the paper, so drawing a
+  full-bleed sheet needs a `-HardMarginX/-HardMarginY` offset.
+- **Windows drivers silently fall back to their default paper** unless
+  `PageSettings.PaperSize` is set explicitly. Hence `PaperMatch`.
+- **`PrinterSettings.PrintToFile` with `PrintFileName`** makes *Microsoft Print
+  to PDF* write without a save dialog. The spooler writes that file
+  asynchronously, so wait for it before reporting success.
+- **Two-sided printing is correct as far as this code can reach.** Choosing long
+  or short edge produced short-edge output on one device, and every layer that
+  can be inspected carries the right value: the app sets `Duplex.Vertical`, the
+  queued job holds `dmDuplex 2` with `DM_DUPLEX` set, the driver reads it back as
+  `TwoSidedLongEdge`, and it leaves as `sides=two-sided-long-edge`. Handing the
+  DEVMODE back to the driver to reconcile changes nothing — long and short differ
+  by one byte of the documented field and none of the driver's private area. The
+  device is where it stops; do not go looking for it in `PdfPrinter`.
+
+## 8. Project structure
 
 | Project | State | Responsibility |
 |---|---|---|
@@ -136,7 +161,7 @@ Keeping `OpenLeanPrint.Core` free of Windows dependencies is a deliberate rule: 
 keeps the geometric core unit-testable on any OS/CI, which is where correctness
 bugs would otherwise be expensive to catch.
 
-## 8. Why .NET
+## 9. Why .NET
 
 - First-class **ARM64** support; single codebase for ARM64 + x64.
 - **WinUI 3 / WPF** for the desktop UI; good access to Windows print APIs.
