@@ -4,28 +4,39 @@
 
 # Open-LeanPrint
 
-**Pool your print jobs, put several pages on one sheet, and print the result —
-without installing a print driver.**
+**Four pages on one sheet — and you see the sheet before you print it.**
 
-An open-source alternative to FinePrint that runs natively on Windows on ARM.
+A free, open-source alternative to FinePrint. Runs on Windows on ARM as happily
+as on Intel.
 
 [![CI](https://github.com/azitc-ac/Open-LeanPrint/actions/workflows/ci.yml/badge.svg)](https://github.com/azitc-ac/Open-LeanPrint/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 </div>
 
-Open-LeanPrint is a Windows tool for getting more onto less paper. It collects
-the documents you print, arranges several pages per sheet or reorders them into a
-foldable booklet, shows you the result before anything reaches paper, and forwards
-it to a real printer.
+**Install the `.msi` and print.** Setting up is the installation: it creates its
+own printer along the way, and from then on *Open-LeanPrint* sits in every print
+dialog on the machine like any other printer. Print to it, and the window comes up
+with your document already in it — pick a layout, press Print.
 
-Unlike the established tools of its kind it installs **no print driver at all**.
-It registers a printer that Windows drives with its own in-box IPP class driver,
-pointed at a local service. That is what lets it work on Windows on ARM, where
-third-party x64 print drivers are not emulated — and what keeps it working as
-Microsoft retires the driver category.
+A 40-page draft becomes **five sheets** at four pages a side, printed on both. The
+preview is the sheet, so nothing is a surprise: page through it, right-click a page
+you do not want, and print when it looks right.
 
-## Why another print tool?
+What it saves you:
+
+- **Paper and toner**, obviously — a stack of drafts turns into a handful.
+- **Reading time.** Four pages on a sheet is a table of contents you can see at a
+  glance; leafing through forty is not.
+- **The reprint.** Wrong layout, page upside down, one page you forgot to drop —
+  all of it visible before the printer starts rather than after.
+- **Fiddling.** No driver to install, no settings to hunt through in three
+  different dialogs, no account, nothing that phones home.
+
+Booklets fold and staple properly, watermarks go across every sheet, and several
+documents can share one sheet instead of each starting a new one.
+
+## Why it works where the others are stopping
 
 FinePrint and its kind install a **virtual printer driver**. Microsoft is
 phasing that whole category out: Windows Protected Print only permits the in-box
@@ -65,13 +76,14 @@ Plus:
 
 ## Getting started
 
-Grab the installer from the [latest release](https://github.com/azitc-ac/Open-LeanPrint/releases/latest)
-and run it. It installs the app **and creates the virtual printer**, so there is
-nothing else to do: print to *Open-LeanPrint* from any application and the job
-lands in the pool, ready to be imposed.
+1. Download the installer from the [latest release](https://github.com/azitc-ac/Open-LeanPrint/releases/latest)
+   and run it.
+2. Print something — anything — to **Open-LeanPrint**.
+3. The window comes up with it. Pick a layout, press **Print and close**.
 
-You can also just open PDFs directly — drop them on the window, pick a layout,
-hit Print.
+That is the whole setup. No driver to approve, no configuration, no restart.
+
+Already have PDFs? Drop them straight on the window instead.
 
 ### Privacy
 
