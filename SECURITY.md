@@ -6,7 +6,7 @@ Please report security issues privately by opening a
 [GitHub security advisory](https://github.com/azitc-ac/Open-LeanPrint/security/advisories/new)
 rather than a public issue. You should get a first reply within a few days.
 
-## What OpenLeanPrint touches
+## What Open-LeanPrint touches
 
 Worth knowing when assessing risk:
 
@@ -14,8 +14,8 @@ Worth knowing when assessing risk:
   `http://localhost:<port>/leanprint` (6310 by default). It is intended for the
   local machine only; do not expose that port to a network.
 - **It handles your documents.** Captured print jobs are written as PDFs — to
-  `%ProgramData%\OpenLeanPrint\captured` when the service catches them, to
-  `%LOCALAPPDATA%\OpenLeanPrint\captured` when the app or console host does. They
+  `%ProgramData%\Open-LeanPrint\captured` when the service catches them, to
+  `%LOCALAPPDATA%\Open-LeanPrint\captured` when the app or console host does. They
   are exactly the documents you printed. The app deletes each file as it takes it
   into the pool and the service clears up what nobody collected, but treat those
   folders like the documents themselves — a synced folder (OneDrive, Dropbox)

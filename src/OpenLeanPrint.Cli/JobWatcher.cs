@@ -68,7 +68,7 @@ internal sealed class JobWatcher : IDisposable
                 {
                     Dpi = _dpi,
                     Duplex = _duplex,
-                    JobName = $"OpenLeanPrint - {name}",
+                    JobName = $"Open-LeanPrint - {name}",
                 });
                 Console.WriteLine($"    printed {report.Sheets} sheet(s) to \"{report.PrinterName}\".");
             }

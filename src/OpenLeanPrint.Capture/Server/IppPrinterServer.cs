@@ -9,7 +9,7 @@ namespace OpenLeanPrint.Capture.Server;
 public sealed record IppPrinterOptions
 {
     /// <summary>The printer name advertised to the OS.</summary>
-    public string PrinterName { get; init; } = "OpenLeanPrint";
+    public string PrinterName { get; init; } = "Open-LeanPrint";
 
     /// <summary>TCP port the loopback HTTP/IPP endpoint listens on.</summary>
     public int Port { get; init; } = 6310;
@@ -184,10 +184,10 @@ public sealed class IppPrinterServer : IDisposable
         p.Add(new IppAttribute("printer-name", IppTag.NameWithoutLanguage, _options.PrinterName));
         p.Add(new IppAttribute("printer-info", IppTag.TextWithoutLanguage, _options.PrinterName));
         p.Add(new IppAttribute("printer-location", IppTag.TextWithoutLanguage, ""));
-        p.Add(new IppAttribute("printer-make-and-model", IppTag.TextWithoutLanguage, "OpenLeanPrint Virtual Printer"));
+        p.Add(new IppAttribute("printer-make-and-model", IppTag.TextWithoutLanguage, "Open-LeanPrint Virtual Printer"));
         p.Add(new IppAttribute("printer-uuid", IppTag.Uri, PrinterUuid));
         p.Add(new IppAttribute("printer-device-id", IppTag.TextWithoutLanguage,
-            "MFG:OpenLeanPrint;MDL:Virtual Printer;CMD:PDF;CLS:PRINTER;"));
+            "MFG:Open-LeanPrint;MDL:Virtual Printer;CMD:PDF;CLS:PRINTER;"));
 
         // --- State ---
         p.Add(new IppAttribute("printer-state", IppTag.Enum, (int)IppPrinterState.Idle));

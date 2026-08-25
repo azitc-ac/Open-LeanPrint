@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    Registers and starts the OpenLeanPrint capture service.
+    Registers and starts the Open-LeanPrint capture service.
 
 .DESCRIPTION
     The virtual printer only works while something is listening on the loopback
@@ -52,8 +52,8 @@ try {
 
     New-Service -Name $ServiceName `
                 -BinaryPathName $binaryPath `
-                -DisplayName "OpenLeanPrint Capture" `
-                -Description "Receives print jobs sent to the OpenLeanPrint virtual printer." `
+                -DisplayName "Open-LeanPrint Capture" `
+                -Description "Receives print jobs sent to the Open-LeanPrint virtual printer." `
                 -StartupType Automatic | Out-Null
 
     # If it dies, bring it back: without the listener the printer swallows jobs.

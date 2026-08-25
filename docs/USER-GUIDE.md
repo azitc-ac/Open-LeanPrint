@@ -1,4 +1,4 @@
-# OpenLeanPrint user guide
+# Open-LeanPrint user guide
 
 Everything the tool does, from both ends: the desktop app and the command line.
 For *why* it is built this way, read [ARCHITECTURE.md](ARCHITECTURE.md).
@@ -17,22 +17,22 @@ For *why* it is built this way, read [ARCHITECTURE.md](ARCHITECTURE.md).
 
 1. **Give it PDFs directly** — drag them onto the app, use *Add PDFs…*, or pass
    them on the command line. Nothing to set up.
-2. **Capture what you print** — print to the OpenLeanPrint printer from any
+2. **Capture what you print** — print to the Open-LeanPrint printer from any
    application. This is the FinePrint-style workflow. If you used the installer
    it already works; otherwise see the next section.
 
 ## Setting up the virtual printer
 
-How you get the virtual printer depends on how you got OpenLeanPrint. Creating
+How you get the virtual printer depends on how you got Open-LeanPrint. Creating
 a printer queue in Windows requires administrator rights — there is no way
 around that — so the difference is *who* asks for them.
 
 ### If you installed the .msi
 
-Nothing to do. The installer registers the **OpenLeanPrint Capture** Windows
+Nothing to do. The installer registers the **Open-LeanPrint Capture** Windows
 service and creates the printer. The service holds the loopback IPP port from
 system start onwards, so the printer works whether or not anyone is logged in
-and whether or not the app is running — print to **OpenLeanPrint** from any
+and whether or not the app is running — print to **Open-LeanPrint** from any
 application and the job is captured.
 
 Open the app to see the jobs, impose them and print them.
@@ -40,7 +40,7 @@ Open the app to see the jobs, impose them and print them.
 ### If you installed the .msix
 
 MSIX packages may not run install-time scripts, so the app does it: start
-OpenLeanPrint once and it offers to add the printer, with one Windows
+Open-LeanPrint once and it offers to add the printer, with one Windows
 confirmation. The toolbar button **Set up virtual printer…** does the same at
 any time.
 
@@ -82,12 +82,12 @@ Windows drives the queue with its own **IPP class driver** pointed at
 which is the whole reason this works on Windows on ARM. Jobs arrive as PDF, in
 colour: the virtual printer advertises colour because it prints nothing itself,
 and telling Windows otherwise would have it convert every job to grey on the way
-in, before OpenLeanPrint ever sees it.
+in, before Open-LeanPrint ever sees it.
 
 Where the file lands depends on who caught it. The **service** writes to
-`%ProgramData%\OpenLeanPrint\captured`, because it runs as LocalSystem, whose
+`%ProgramData%\Open-LeanPrint\captured`, because it runs as LocalSystem, whose
 per-user folder is somewhere no one can reach. The app or the console host,
-running as you, write to `%LOCALAPPDATA%\OpenLeanPrint\captured`. The app watches
+running as you, write to `%LOCALAPPDATA%\Open-LeanPrint\captured`. The app watches
 both, and deletes each file once it has it — see
 [How long captured jobs are kept](#how-long-captured-jobs-are-kept).
 
@@ -96,7 +96,7 @@ To remove the printer again: **Remove virtual printer** in the app, or
 .msi removes it for you.
 
 > A printer queue with nothing listening behind it swallows jobs. If you
-> uninstall or stop OpenLeanPrint permanently, remove the printer too.
+> uninstall or stop Open-LeanPrint permanently, remove the printer too.
 
 ## The desktop app
 
@@ -307,10 +307,10 @@ openleanprint print out.pdf --printer "Microsoft Print to PDF" --out proof.pdf
 
 | What | Where |
 |---|---|
-| Captured print jobs (service) | `%ProgramData%\OpenLeanPrint\captured` — deleted as the app takes them |
-| Captured print jobs (app or console host) | `%LOCALAPPDATA%\OpenLeanPrint\captured` |
-| What the service did | `%ProgramData%\OpenLeanPrint\service.log` |
-| App settings | `%APPDATA%\OpenLeanPrint\settings.json` |
+| Captured print jobs (service) | `%ProgramData%\Open-LeanPrint\captured` — deleted as the app takes them |
+| Captured print jobs (app or console host) | `%LOCALAPPDATA%\Open-LeanPrint\captured` |
+| What the service did | `%ProgramData%\Open-LeanPrint\service.log` |
+| App settings | `%APPDATA%\Open-LeanPrint\settings.json` |
 | Imposed output from `watch` | `<watched folder>\imposed` |
 
 ### How long captured jobs are kept
@@ -354,19 +354,19 @@ as `C:\Users\Public\Downloads`, and run it from there.
 
 **There is no tray icon.** Windows 11 keeps new notification-area icons
 hidden: click the chevron next to the clock ("Show hidden icons") and drag
-OpenLeanPrint onto the taskbar if you want it there permanently. Whether the app
-is running at all is answered by `%APPDATA%\OpenLeanPrint\app.log`, which
+Open-LeanPrint onto the taskbar if you want it there permanently. Whether the app
+is running at all is answered by `%APPDATA%\Open-LeanPrint\app.log`, which
 records every start with account and session.
 
 **I printed and nothing happened.** Look at
-`%ProgramData%\OpenLeanPrint\service.log` first. A `Captured job #n` line means
-the job did arrive and only the display was missing: open OpenLeanPrint from the
+`%ProgramData%\Open-LeanPrint\service.log` first. A `Captured job #n` line means
+the job did arrive and only the display was missing: open Open-LeanPrint from the
 Start menu and the waiting jobs are in the pool. No such line means nothing
 reached the service — check that it is running with
 `Get-Service OpenLeanPrintCapture`.
 
 **The printer appears but nothing is captured.** Something must be listening on
-the port the printer was registered with — the **OpenLeanPrint Capture** service
+the port the printer was registered with — the **Open-LeanPrint Capture** service
 if you installed the .msi, otherwise the app or the console host.
 
 **Windows did not create the printer.** Its IPP class driver only creates a
@@ -375,7 +375,7 @@ the host window while adding the printer: a `GetPrinterAttributes` line means
 Windows is talking to it.
 
 **The print came out scaled or off-centre.** Check that the printer's paper
-matches the sheet size you imposed for. OpenLeanPrint picks the matching paper,
+matches the sheet size you imposed for. Open-LeanPrint picks the matching paper,
 but a driver forced to a different size will scale.
 
 **A job in the pool will not load.** The PDF may be encrypted or damaged; the
@@ -384,7 +384,7 @@ app reports the file and keeps the others.
 **Duplex was ignored, or came out flipped the wrong way.** Some drivers report
 no duplex support; the run then prints single-sided and says so in the status
 line, which is worth reading before blaming the layout. If two-sided printing
-happens but on the wrong edge, check the printer's own default: OpenLeanPrint
+happens but on the wrong edge, check the printer's own default: Open-LeanPrint
 asks for long or short edge exactly as Windows defines it, but a driver whose
 private settings say otherwise can still have the last word. Windows' own
 setting is `Get-PrintConfiguration -PrinterName "…"`.

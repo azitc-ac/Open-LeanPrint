@@ -2,27 +2,35 @@
 
 <img src="docs/images/icon.png" width="88" alt="">
 
-# OpenLeanPrint
+# Open-LeanPrint
 
-**A modern, open-source alternative to FinePrint.** Pool your print jobs, put
-several pages on one sheet, preview the result exactly as it will print, and
-send it to any printer.
+**Pool your print jobs, put several pages on one sheet, and print the result —
+without installing a print driver.**
+
+An open-source alternative to FinePrint that runs natively on Windows on ARM.
 
 [![CI](https://github.com/azitc-ac/Open-LeanPrint/actions/workflows/ci.yml/badge.svg)](https://github.com/azitc-ac/Open-LeanPrint/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 </div>
 
-Built to run natively on **Windows on ARM** as well as x64 — by avoiding the one
-thing that makes classic virtual-printer tools ARM-hostile: a third-party print
-driver.
+Open-LeanPrint is a Windows tool for getting more onto less paper. It collects
+the documents you print, arranges several pages per sheet or reorders them into a
+foldable booklet, shows you the result before anything reaches paper, and forwards
+it to a real printer.
+
+Unlike the established tools of its kind it installs **no print driver at all**.
+It registers a printer that Windows drives with its own in-box IPP class driver,
+pointed at a local service. That is what lets it work on Windows on ARM, where
+third-party x64 print drivers are not emulated — and what keeps it working as
+Microsoft retires the driver category.
 
 ## Why another print tool?
 
 FinePrint and its kind install a **virtual printer driver**. Microsoft is
 phasing that whole category out: Windows Protected Print only permits the in-box
 IPP class driver, and on Windows on ARM, x64 print drivers are not emulated at
-all. So OpenLeanPrint ships no driver. It registers a local printer that
+all. So Open-LeanPrint ships no driver. It registers a local printer that
 Windows drives with its **own** IPP class driver, pointed at a loopback service —
 driverless, ARM64-native, and future-proof by construction. The reasoning in
 full: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
@@ -59,7 +67,7 @@ Plus:
 
 Grab the installer from the [latest release](https://github.com/azitc-ac/Open-LeanPrint/releases/latest)
 and run it. It installs the app **and creates the virtual printer**, so there is
-nothing else to do: print to *OpenLeanPrint* from any application and the job
+nothing else to do: print to *Open-LeanPrint* from any application and the job
 lands in the pool, ready to be imposed.
 
 You can also just open PDFs directly — drop them on the window, pick a layout,
@@ -67,7 +75,7 @@ hit Print.
 
 ### Privacy
 
-OpenLeanPrint collects nothing and sends nothing — no telemetry, no update
+Open-LeanPrint collects nothing and sends nothing — no telemetry, no update
 check, no server. It does handle your documents, because that is what it is for:
 [PRIVACY.md](PRIVACY.md) says exactly where they go and how long they stay.
 
@@ -130,7 +138,7 @@ something copyable — one self-contained executable, or an installable MSIX:
 ```
 
 The **.msi** is the one to hand to someone else: it installs to Program Files,
-creates the virtual printer, adds a Start-menu entry and starts OpenLeanPrint at
+creates the virtual printer, adds a Start-menu entry and starts Open-LeanPrint at
 login. An .msix cannot create the printer — MSIX forbids install-time scripts —
 so there the app asks once instead.
 
@@ -171,4 +179,4 @@ PDF rendering uses [PDFium](https://pdfium.googlesource.com/pdfium/) (BSD) via
 [PDFtoImage](https://github.com/sungaila/PDFtoImage) (MIT), composition uses
 [PdfSharpCore](https://github.com/ststeiger/PdfSharpCore) (MIT) and parsing uses
 [PdfPig](https://github.com/UglyToad/PdfPig) (Apache-2.0). Ghostscript and MuPDF
-are AGPL and are deliberately avoided so OpenLeanPrint can stay permissive.
+are AGPL and are deliberately avoided so Open-LeanPrint can stay permissive.

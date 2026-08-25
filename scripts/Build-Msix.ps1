@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    Packages the OpenLeanPrint desktop app as a signed MSIX.
+    Packages the Open-LeanPrint desktop app as a signed MSIX.
 
 .DESCRIPTION
     Publishes the app, assembles a package layout, patches the manifest and runs

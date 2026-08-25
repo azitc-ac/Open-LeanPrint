@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    Draws the OpenLeanPrint icon and writes every size the app and packages need.
+    Draws the Open-LeanPrint icon and writes every size the app and packages need.
 
 .DESCRIPTION
     The icon is a sheet of paper with a folded corner carrying two landscape
@@ -150,7 +150,7 @@ function Save-Ico([int[]]$sizes, [string]$path) {
     Write-Host ("  {0,-52} {1} sizes" -f (Split-Path -Leaf $path), $pngs.Count)
 }
 
-Write-Host "Drawing the OpenLeanPrint icon" -ForegroundColor Cyan
+Write-Host "Drawing the Open-LeanPrint icon" -ForegroundColor Cyan
 
 Save-Ico @(16, 20, 24, 32, 48, 64, 128, 256) (Join-Path $Repo "src\OpenLeanPrint.App\Assets\OpenLeanPrint.ico")
 

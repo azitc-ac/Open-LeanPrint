@@ -1,4 +1,4 @@
-# OpenLeanPrint roadmap
+# Open-LeanPrint roadmap
 
 Incremental milestones from the current foundation to a usable app. Each
 milestone is meant to be independently reviewable.
@@ -13,7 +13,7 @@ milestone is meant to be independently reviewable.
 
 ## ✅ M1 — Capture prototype (done, verified end-to-end on Windows)
 
-Goal: print from a real app and receive the PDF in OpenLeanPrint, with **no
+Goal: print from a real app and receive the PDF in Open-LeanPrint, with **no
 third-party driver**. See [M1-CAPTURE.md](M1-CAPTURE.md) for details.
 
 - ✅ `OpenLeanPrint.Capture`: loopback **IPP service** (`localhost:PORT`) —
@@ -85,7 +85,7 @@ visual check on paper still open).
 - ✅ Distributable build: `scripts/Publish-App.ps1` produces one self-contained
   executable per runtime (**ARM64 + x64**).
 - ✅ Installer: `scripts/Build-Installer.ps1` produces a signed **.msi** that
-  installs the app, creates the virtual printer and starts OpenLeanPrint at
+  installs the app, creates the virtual printer and starts Open-LeanPrint at
   login — installing is the whole setup. `scripts/Build-Msix.ps1` still builds
   an .msix (app only; MSIX may not run install-time scripts), both using
   makeappx/signtool from a NuGet package rather than an SDK install.

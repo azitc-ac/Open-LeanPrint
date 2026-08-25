@@ -224,7 +224,7 @@ public partial class MainWindow : Window
             e.Cancel = true;
             Hide();
             _tray.Notify("Still collecting",
-                         "The pool is empty and OpenLeanPrint keeps collecting. Double-click the tray icon to bring it back.");
+                         "The pool is empty and Open-LeanPrint keeps collecting. Double-click the tray icon to bring it back.");
             return;
         }
         base.OnClosing(e);
@@ -379,7 +379,7 @@ public partial class MainWindow : Window
             // Normally the Windows service already owns the port - then it does
             // the listening and the watchers feed the pool.
             StatusText.Text = PrinterSetup.IsCaptureServiceRunning()
-                ? "Collecting jobs from the OpenLeanPrint service."
+                ? "Collecting jobs from the Open-LeanPrint service."
                 : $"Port {CaptureService.DefaultPort} is in use by something else; watching the capture folders.";
         }
 
@@ -1046,7 +1046,7 @@ public partial class MainWindow : Window
             if (PrinterSetup.IsRegistered())
             {
                 StatusText.Text = PrinterSetup.Unregister()
-                    ? "Removed the OpenLeanPrint printer."
+                    ? "Removed the Open-LeanPrint printer."
                     : "The printer was not removed.";
             }
             else
@@ -1082,7 +1082,7 @@ public partial class MainWindow : Window
         StatusText.Dispatcher.Invoke(() => { }, DispatcherPriority.Render);
 
         StatusText.Text = PrinterSetup.Register(_service.Port)
-            ? "The OpenLeanPrint printer is ready - print to it from any application."
+            ? "The Open-LeanPrint printer is ready - print to it from any application."
             : "The printer was not created. Administrator rights are needed for that one step.";
     }
 
@@ -1111,7 +1111,7 @@ public partial class MainWindow : Window
         App.Log("no virtual printer found; asking whether to create one");
         var answer = MessageBox.Show(
             this,
-            "OpenLeanPrint can add its virtual printer now, so you can print into it from any " +
+            "Open-LeanPrint can add its virtual printer now, so you can print into it from any " +
             "application.\n\nWindows will ask for administrator rights once - creating a printer " +
             "queue requires them.",
             "Set up the virtual printer",
@@ -1183,7 +1183,7 @@ public partial class MainWindow : Window
         if (_imposed is null) return false;
         if (PrinterBox.SelectedItem is not string printer)
         {
-            MessageBox.Show(this, "Choose a printer first.", "OpenLeanPrint",
+            MessageBox.Show(this, "Choose a printer first.", "Open-LeanPrint",
                             MessageBoxButton.OK, MessageBoxImage.Information);
             return false;
         }
@@ -1199,7 +1199,7 @@ public partial class MainWindow : Window
             {
                 Dpi = PrintDpi,
                 Duplex = duplex,
-                JobName = _jobs.Count == 1 ? $"OpenLeanPrint - {_jobs[0].Name}" : "OpenLeanPrint",
+                JobName = _jobs.Count == 1 ? $"Open-LeanPrint - {_jobs[0].Name}" : "Open-LeanPrint",
             }));
             // Reporting the duplex mode that was applied, not the one that was
             // asked for: they differ when the printer cannot do it, and until

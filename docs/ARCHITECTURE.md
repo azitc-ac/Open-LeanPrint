@@ -1,6 +1,6 @@
-# OpenLeanPrint architecture
+# Open-LeanPrint architecture
 
-OpenLeanPrint is a driverless, ARM64-friendly print utility. This document explains
+Open-LeanPrint is a driverless, ARM64-friendly print utility. This document explains
 the pipeline, the capture strategy, why it is chosen over the classic
 virtual-driver approach, and how the code is organised.
 
@@ -25,7 +25,7 @@ That model is a poor fit for the direction Windows is moving:
 Conclusion: **do not ship a printer driver.** Reuse Microsoft's in-box driver
 and capture the job in user mode.
 
-## 2. The OpenLeanPrint pipeline
+## 2. The Open-LeanPrint pipeline
 
 ```
 ┌─────────────┐   prints to    ┌───────────────────────────┐
@@ -35,7 +35,7 @@ and capture the job in user mode.
                                              │ IPP  (application/pdf)
                                              ▼
                              ┌───────────────────────────────┐
-                             │ OpenLeanPrint loopback IPP service │  ← Capture
+                             │ Open-LeanPrint loopback IPP service │  ← Capture
                              │ (localhost, user mode)         │
                              └───────────────┬───────────────┘
                                              │ PDF document
@@ -64,13 +64,13 @@ and capture the job in user mode.
 ## 3. Capture: a local loopback IPP printer
 
 The capture layer registers a **local printer** that Windows drives with its
-**in-box IPP class driver**, pointed at a loopback IPP endpoint that OpenLeanPrint
+**in-box IPP class driver**, pointed at a loopback IPP endpoint that Open-LeanPrint
 hosts (`ipp://localhost:PORT/leanprint`). When the user prints:
 
 1. Windows renders the job and sends it to our endpoint via IPP.
 2. The document arrives as **PDF** (`application/pdf`) — the modern print path's
    native transfer format — or PWG/PCLm raster as a fallback.
-3. OpenLeanPrint parses the PDF's page sizes and hands a `PrintDocument` to the pool.
+3. Open-LeanPrint parses the PDF's page sizes and hands a `PrintDocument` to the pool.
 
 Why this is the right call:
 

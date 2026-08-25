@@ -151,7 +151,7 @@ public partial class App : Application
     private void OnUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
     {
         Log($"unhandled: {e.Exception}");
-        MessageBox.Show(e.Exception.Message, "OpenLeanPrint", MessageBoxButton.OK, MessageBoxImage.Error);
+        MessageBox.Show(e.Exception.Message, "Open-LeanPrint", MessageBoxButton.OK, MessageBoxImage.Error);
         e.Handled = true;
     }
 }

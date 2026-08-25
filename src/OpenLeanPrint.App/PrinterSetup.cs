@@ -17,7 +17,10 @@ namespace OpenLeanPrint.App;
 internal static class PrinterSetup
 {
     /// <summary>The name Windows gives the queue created from our IPP service.</summary>
-    private const string NameFragment = "OpenLeanPrint";
+    // Matches the queue whatever it is called. The product was renamed to
+    // Open-LeanPrint, and a machine can still be carrying a queue created under
+    // the old name - which the hyphen would otherwise hide.
+    private const string NameFragment = "LeanPrint";
 
     /// <summary>
     /// Whether the Windows capture service is running. When it is, it owns the

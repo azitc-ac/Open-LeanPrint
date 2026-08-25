@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    Asks a running OpenLeanPrint to stop, before its files are removed.
+    Asks a running Open-LeanPrint to stop, before its files are removed.
 
 .DESCRIPTION
     Uninstalling while the app was running had three visible consequences: the

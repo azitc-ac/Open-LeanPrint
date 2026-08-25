@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    Stops and removes the OpenLeanPrint capture service.
+    Stops and removes the Open-LeanPrint capture service.
 #>
 [CmdletBinding()]
 param([string]$ServiceName = "OpenLeanPrintCapture")

@@ -110,7 +110,7 @@ static int PrintPdf(string[] a)
         Dpi = (int)opts.GetDouble("dpi", 200),
         OutputFile = outputFile,
         Duplex = duplex,
-        JobName = $"OpenLeanPrint - {Path.GetFileName(input)}",
+        JobName = $"Open-LeanPrint - {Path.GetFileName(input)}",
     };
 
     byte[] pdf = File.ReadAllBytes(input);
@@ -245,7 +245,7 @@ static int Watch(string[] a)
 
 static void PrintUsage()
 {
-    Console.WriteLine("OpenLeanPrint CLI");
+    Console.WriteLine("Open-LeanPrint CLI");
     Console.WriteLine();
     Console.WriteLine("  impose <in.pdf> <out.pdf> [options]   Impose a PDF N-up or as a booklet");
     Console.WriteLine("     --nup RxC     grid, e.g. 2x2 (or a count: 2, 4, 9)   default 2x2");

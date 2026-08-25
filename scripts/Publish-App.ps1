@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    Publishes the OpenLeanPrint desktop app as a single executable.
+    Publishes the Open-LeanPrint desktop app as a single executable.
 
 .DESCRIPTION
     Produces a self-contained, single-file build that runs on a machine with no
@@ -44,7 +44,7 @@ $repo = Split-Path -Parent $PSScriptRoot
 $project = Join-Path $repo "src\OpenLeanPrint.App\OpenLeanPrint.App.csproj"
 if (-not $Output) { $Output = Join-Path $repo "dist\$Runtime" }
 
-Write-Host "Publishing OpenLeanPrint" -ForegroundColor Cyan
+Write-Host "Publishing Open-LeanPrint" -ForegroundColor Cyan
 Write-Host "  runtime        : $Runtime"
 Write-Host "  self-contained : $SelfContained"
 Write-Host "  output         : $Output"

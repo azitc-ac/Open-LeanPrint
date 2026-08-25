@@ -23,7 +23,7 @@ internal sealed class TrayPresence : IDisposable
 
     public TrayPresence()
     {
-        var showItem = new WinForms.ToolStripMenuItem("Show OpenLeanPrint");
+        var showItem = new WinForms.ToolStripMenuItem("Show Open-LeanPrint");
         showItem.Click += (_, _) => ShowRequested?.Invoke(this, EventArgs.Empty);
 
         _collectItem = new WinForms.ToolStripMenuItem("Collect captured jobs") { CheckOnClick = true };
@@ -52,7 +52,7 @@ internal sealed class TrayPresence : IDisposable
         _icon = new WinForms.NotifyIcon
         {
             Icon = LoadIcon(),
-            Text = "OpenLeanPrint",
+            Text = "Open-LeanPrint",
             Visible = true,
             ContextMenuStrip = menu,
         };

@@ -1,4 +1,4 @@
-# Contributing to OpenLeanPrint
+# Contributing to Open-LeanPrint
 
 Thanks for considering it. Bug reports, layout edge cases and printer
 compatibility reports are as welcome as code.
@@ -10,7 +10,7 @@ no Visual Studio, no Windows SDK, no print driver.
 
 ```bash
 git clone https://github.com/azitc-ac/Open-LeanPrint.git
-cd OpenLeanPrint
+cd Open-LeanPrint
 dotnet test                              # the portable half, on any OS
 dotnet build OpenLeanPrint.Windows.sln   # everything, Windows only
 ```

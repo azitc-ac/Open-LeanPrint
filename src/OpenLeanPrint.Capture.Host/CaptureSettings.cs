@@ -9,7 +9,7 @@ public sealed record CaptureSettings
     /// <summary>The name the Windows service is registered under.</summary>
     public const string ServiceName = "OpenLeanPrintCapture";
 
-    public string PrinterName { get; init; } = "OpenLeanPrint";
+    public string PrinterName { get; init; } = "Open-LeanPrint";
     public int Port { get; init; } = 6310;
     public required string OutputFolder { get; init; }
 
@@ -36,7 +36,7 @@ public sealed record CaptureSettings
     /// </summary>
     public static CaptureSettings Parse(string[] args, bool asService)
     {
-        string printerName = "OpenLeanPrint";
+        string printerName = "Open-LeanPrint";
         int port = 6310;
         string? outputFolder = null;
         TimeSpan maxAge = CapturedFolder.DefaultMaxAge;

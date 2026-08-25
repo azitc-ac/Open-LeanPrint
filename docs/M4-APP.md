@@ -24,7 +24,7 @@ Job pool (several PDFs)  ─►  OpenLeanPrint.Core imposition
 - **Print** — pick any installed printer (the Windows default is preselected)
   and print at 200 dpi.
 - **Save PDF…** — write the imposed PDF out instead of printing it.
-- **Open with** — `OpenLeanPrint a.pdf b.pdf` starts with a filled pool.
+- **Open with** — `Open-LeanPrint a.pdf b.pdf` starts with a filled pool.
 - **Collect captured jobs** — with this on, every job the capture host writes
   drops into the pool as it arrives, so printing from any application lands in
   the app. Only jobs arriving *from now on* are taken; the folder may hold older
@@ -40,7 +40,7 @@ Job pool (several PDFs)  ─►  OpenLeanPrint.Core imposition
   window again, toggles collecting, and quits for real; a balloon announces
   jobs that arrive while the window is hidden.
 - **Remembers itself** — layout, paper, margin, gutter, printer and whether it
-  was collecting are saved to `%APPDATA%\OpenLeanPrint\settings.json` on exit.
+  was collecting are saved to `%APPDATA%\Open-LeanPrint\settings.json` on exit.
   Unreadable settings fall back to defaults rather than blocking startup.
 
 ## Why WPF, and why a second solution

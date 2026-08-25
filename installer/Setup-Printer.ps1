@@ -1,11 +1,11 @@
 <#
 .SYNOPSIS
-    Creates the OpenLeanPrint virtual printer. Run by the installer; safe to run
+    Creates the Open-LeanPrint virtual printer. Run by the installer; safe to run
     by hand from an elevated PowerShell.
 
 .DESCRIPTION
     Windows only creates an IPP queue while the printer is answering, so this
-    starts OpenLeanPrint's capture service, waits until it responds, adds the
+    starts Open-LeanPrint's capture service, waits until it responds, adds the
     printer, and stops the service again. The installed app runs its own service
     from then on.
 
@@ -76,8 +76,8 @@ function Test-Endpoint {
 Write-Log "Setting up the printer using $Exe"
 
 try {
-    if (Get-Printer | Where-Object Name -like "*OpenLeanPrint*") {
-        Write-Log "The OpenLeanPrint printer already exists - nothing to do."
+    if (Get-Printer | Where-Object Name -like "*LeanPrint*") {
+        Write-Log "The Open-LeanPrint printer already exists - nothing to do."
         exit 0
     }
 
@@ -132,7 +132,7 @@ try {
         $found = $null
         for ($i = 0; $i -lt 20 -and -not $found; $i++) {
             Start-Sleep -Milliseconds 500
-            $found = Get-Printer | Where-Object Name -like "*OpenLeanPrint*"
+            $found = Get-Printer | Where-Object Name -like "*LeanPrint*"
         }
         if (-not $found) {
             Write-Log "Add-Printer succeeded but no queue appeared."

@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    Registers a local Windows printer that points at the OpenLeanPrint loopback
+    Registers a local Windows printer that points at the Open-LeanPrint loopback
     IPP capture service, using the in-box Microsoft IPP Class Driver (no
     third-party print driver required, Windows Protected Print compatible).
 
@@ -15,7 +15,7 @@
     Resource path of the print queue. Default "leanprint".
 
 .PARAMETER Name
-    Printer name to create. Default "OpenLeanPrint".
+    Printer name to create. Default "Open-LeanPrint".
 
 .EXAMPLE
     .\Register-Printer.ps1 -Port 6310
@@ -24,7 +24,7 @@
 param(
     [int]$Port = 6310,
     [string]$ResourcePath = "leanprint",
-    [string]$Name = "OpenLeanPrint"
+    [string]$Name = "Open-LeanPrint"
 )
 
 $ErrorActionPreference = "Stop"

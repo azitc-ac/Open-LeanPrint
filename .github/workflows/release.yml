@@ -63,8 +63,8 @@ jobs:
         shell: pwsh
         run: |
           $version = ([xml](Get-Content Directory.Build.props)).Project.PropertyGroup.Version
-          $source = "dist/OpenLeanPrint-${{ matrix.runtime }}.msi"
-          $named = "dist/OpenLeanPrint-$version-${{ matrix.runtime }}.msi"
+          $source = "dist/Open-LeanPrint-${{ matrix.runtime }}.msi"
+          $named = "dist/Open-LeanPrint-$version-${{ matrix.runtime }}.msi"
           Move-Item $source $named -Force
           "version=$version" >> $env:GITHUB_OUTPUT
           "path=$named" >> $env:GITHUB_OUTPUT

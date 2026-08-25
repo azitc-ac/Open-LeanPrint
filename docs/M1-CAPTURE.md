@@ -1,13 +1,13 @@
 # M1 — Capture prototype
 
 M1 delivers the **capture layer**: a driverless way to receive a print job from
-any Windows application as a PDF, and turn it into the OpenLeanPrint domain
+any Windows application as a PDF, and turn it into the Open-LeanPrint domain
 model. It proves out the only real technical risk in the whole project.
 
 ## What it does
 
 ```
-App prints ─► Microsoft in-box IPP class driver ─► OpenLeanPrint loopback IPP
+App prints ─► Microsoft in-box IPP class driver ─► Open-LeanPrint loopback IPP
                                                      service (this component)
                                                           │
                                                           ▼
@@ -77,9 +77,9 @@ is silently not created.
    `POST /leanprint [...] IPP GetPrinterAttributes -> SuccessfulOk`). That line
    confirms Windows is talking to the service.
 
-3. **Print** to the *OpenLeanPrint* printer from any app. The host logs the job
+3. **Print** to the *Open-LeanPrint* printer from any app. The host logs the job
    (name, user, page count and sizes) and saves the PDF to
-   `%LOCALAPPDATA%\OpenLeanPrint\captured` — captured jobs are your real
+   `%LOCALAPPDATA%\Open-LeanPrint\captured` — captured jobs are your real
    documents, so they deliberately do not land in the working directory (which
    is often a source tree, and may be cloud-synced). `--out DIR` overrides it;
    the host prints the folder it uses on startup.

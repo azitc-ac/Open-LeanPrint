@@ -1,8 +1,30 @@
 # Changelog
 
-All notable changes to OpenLeanPrint. The format follows
+All notable changes to Open-LeanPrint. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+### Changed
+
+- **The name is now written `Open-LeanPrint`.** Same tool, a hyphen: it reads
+  better, it is easier to remember, and it matches the repository, which had the
+  hyphen all along.
+
+  What changed is what people see - the window, the tray, the printer in your
+  print dialog (**Open-LeanPrint Virtual Printer**), the entry in Add/Remove
+  Programs, the Start-menu shortcut, the installer file name, and the folder
+  under Program Files.
+
+  What did not change is anything that is an identifier rather than a name:
+  namespaces, assemblies, project folders, the `openleanprint` command, the
+  service id, and the data folders under `%ProgramData%` and `%APPDATA%`. A
+  hyphen is not valid in a C# identifier, and renaming the data folders would
+  orphan every captured job and every setting already in them.
+
+  Printer lookups now match on `LeanPrint` rather than the full name, so a queue
+  created before the rename is still found - and not quietly duplicated.
 
 ## [0.3.2] — 2026-08-25
 
@@ -110,7 +132,7 @@ wrong and the measurement said so.
   `print-color-mode` - which also makes the virtual printer a measuring
   instrument: printing into it shows what a print path really asked a driver for,
   rather than what it was told to ask for.
-- A startup log, `%APPDATA%\OpenLeanPrint\app.log`. "The app is not running"
+- A startup log, `%APPDATA%\Open-LeanPrint\app.log`. "The app is not running"
   was otherwise unanswerable after the fact: whether anything ever started it,
   under which account and in which session, left no trace anywhere.
 - **A Windows service** holds the loopback IPP port, so the virtual printer
@@ -118,7 +140,7 @@ wrong and the measurement said so.
   Previously the listener lived in the desktop app: printing failed right after
   installing and again whenever anyone quit the app from the tray, leaving jobs
   stuck in the queue with no explanation. The service writes to
-  `%ProgramData%\OpenLeanPrint\captured` — LocalSystem has no per-user folder
+  `%ProgramData%\Open-LeanPrint\captured` — LocalSystem has no per-user folder
   anyone could reach — and keeps a log next to it.
 - The installer registers and starts the service, and removes it again on
   uninstall.
@@ -160,7 +182,7 @@ wrong and the measurement said so.
 - **The virtual printer was monochrome.** It advertised itself to Windows as a
   greyscale device, so Windows converted every job on the way in and colour
   documents arrived already grey - a loss that happens before the file reaches
-  OpenLeanPrint and cannot be undone afterwards. It now advertises colour, which
+  Open-LeanPrint and cannot be undone afterwards. It now advertises colour, which
   is the honest answer: this printer prints nothing itself, it hands the document
   to a real one, and that is where the question belongs.
 
@@ -175,7 +197,7 @@ wrong and the measurement said so.
 
   The app is now asked to stop before any file is touched and shuts down through
   its normal exit path, tray icon and all, so there is nothing left to find.
-- Uninstalling removes `%ProgramData%\OpenLeanPrint`, which it used to leave
+- Uninstalling removes `%ProgramData%\Open-LeanPrint`, which it used to leave
   behind entirely.
 - **2-up was close to useless.** It laid two upright pages side by side on an
   upright sheet, which fills about half of it and wastes the top and bottom
@@ -221,14 +243,14 @@ part of installing.
 
 ### Added
 - **An installer (.msi)** that sets everything up: installs the app, creates the
-  virtual printer, and runs OpenLeanPrint in the background at login. Works
+  virtual printer, and runs Open-LeanPrint in the background at login. Works
   unattended as SYSTEM too, so it can be deployed by Intune or SCCM. The printer
   step needs `Impersonate="yes"` on the custom action: without it the action runs
   inside the Windows Installer service process, where `Add-Printer` is refused
   regardless of account.
 - **The app hosts the capture service itself.** Previously capturing meant
   running a separate console host from a source checkout, which an installed
-  copy had no way to do — so an installed OpenLeanPrint could not capture
+  copy had no way to do — so an installed Open-LeanPrint could not capture
   anything at all.
 - **Set up virtual printer…** in the app, for installs that cannot do it
   themselves (MSIX forbids install-time scripts). One confirmation, once.
@@ -288,7 +310,7 @@ First release: the whole chain works, and there is an app for it.
 - Single-file distributable build (`scripts/Publish-App.ps1`).
 
 ### Changed
-- Captured jobs now default to `%LOCALAPPDATA%\OpenLeanPrint\captured` instead
+- Captured jobs now default to `%LOCALAPPDATA%\Open-LeanPrint\captured` instead
   of the working directory: they are real documents, and a working directory is
   often a source tree.
 - CI runs on Linux **and** Windows, so the Windows-only tests actually execute.

@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    Builds the OpenLeanPrint installer (.msi).
+    Builds the Open-LeanPrint installer (.msi).
 
 .DESCRIPTION
     Publishes the desktop app self-contained, then packages it with WiX.
@@ -56,7 +56,7 @@ if (-not $Output) { $Output = Join-Path $repo "dist" }
 $now = (Get-Date).ToUniversalTime()
 $stamp = "{0}.{1}" -f ($now - [datetime]"2026-01-01").Days, ($now.Hour * 60 + $now.Minute)
 
-Write-Host "Building the OpenLeanPrint installer" -ForegroundColor Cyan
+Write-Host "Building the Open-LeanPrint installer" -ForegroundColor Cyan
 Write-Host "  runtime : $Runtime"
 
 # --- 1. the app itself ------------------------------------------------------
@@ -121,7 +121,7 @@ $msi = Get-ChildItem (Join-Path $installer "bin") -Recurse -Filter "OpenLeanPrin
 if (-not $msi) { throw "No .msi was produced." }
 
 New-Item -ItemType Directory -Force -Path $Output | Out-Null
-$target = Join-Path $Output "OpenLeanPrint-$Runtime.msi"
+$target = Join-Path $Output "Open-LeanPrint-$Runtime.msi"
 Copy-Item $msi.FullName $target -Force
 
 # --- 4. signing -------------------------------------------------------------

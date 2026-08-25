@@ -1,17 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  The OpenLeanPrint installer.
+  The Open-LeanPrint installer.
 
   It exists because the app alone cannot finish the job: creating a Windows
   printer queue needs administrator rights, and an installer already has them.
   So installing sets up the virtual printer too, and the user can print into
-  OpenLeanPrint straight away instead of hunting for a setup step.
+  Open-LeanPrint straight away instead of hunting for a setup step.
 -->
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
      xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
 
   <!--
-    The UpgradeCode is fixed for ever: it is what says "this is OpenLeanPrint",
+    The UpgradeCode is fixed for ever: it is what says "this is Open-LeanPrint",
     and it is how Windows finds an older copy to replace.
 
     The ProductCode changes with the version and only with the version, which is
@@ -27,7 +27,7 @@
     new version, new code - and the last group spells the version out, which
     keeps it readable and keeps two releases from ever colliding.
   -->
-  <Package Name="OpenLeanPrint"
+  <Package Name="Open-LeanPrint"
            Manufacturer="Alexander Zarenko"
            Version="$(ProductVersion)"
            ProductCode="$(ProductCode)"
@@ -37,7 +37,7 @@
 
     <SummaryInformation Description="Pool print jobs, impose them N-up or as a booklet, and print the result." />
     <MajorUpgrade AllowSameVersionUpgrades="yes"
-                  DowngradeErrorMessage="A newer version of OpenLeanPrint is already installed." />
+                  DowngradeErrorMessage="A newer version of Open-LeanPrint is already installed." />
     <MediaTemplate EmbedCab="yes" />
 
     <Icon Id="AppIcon" SourceFile="..\src\OpenLeanPrint.App\Assets\OpenLeanPrint.ico" />
@@ -54,12 +54,12 @@
     <ui:WixUI Id="WixUI_Minimal" />
 
     <StandardDirectory Id="ProgramFiles6432Folder">
-      <Directory Id="INSTALLFOLDER" Name="OpenLeanPrint" />
+      <Directory Id="INSTALLFOLDER" Name="Open-LeanPrint" />
     </StandardDirectory>
     <StandardDirectory Id="ProgramMenuFolder" />
     <StandardDirectory Id="StartupFolder" />
 
-    <Feature Id="Main" Title="OpenLeanPrint" Level="1">
+    <Feature Id="Main" Title="Open-LeanPrint" Level="1">
       <ComponentGroupRef Id="AppFiles" />
       <ComponentGroupRef Id="SetupFiles" />
       <ComponentGroupRef Id="Shortcuts" />
@@ -96,7 +96,7 @@
     <ComponentGroup Id="Shortcuts">
       <Component Directory="ProgramMenuFolder" Guid="a1f2c3d4-5e6f-4a7b-8c9d-0e1f2a3b4c5d">
         <Shortcut Id="StartMenuShortcut"
-                  Name="OpenLeanPrint"
+                  Name="Open-LeanPrint"
                   Description="Pool print jobs and put several pages on one sheet"
                   Target="[INSTALLFOLDER]OpenLeanPrint.exe"
                   WorkingDirectory="INSTALLFOLDER"
@@ -109,7 +109,7 @@
            listening when you print, and nobody wants a window for that. -->
       <Component Directory="StartupFolder" Guid="b2e3d4c5-6f7a-4b8c-9d0e-1f2a3b4c5d6e">
         <Shortcut Id="StartupShortcut"
-                  Name="OpenLeanPrint"
+                  Name="Open-LeanPrint"
                   Description="Collect print jobs in the background"
                   Target="[INSTALLFOLDER]OpenLeanPrint.exe"
                   Arguments="--tray"
@@ -251,7 +251,7 @@
     -->
     <CustomAction Id="LaunchApp"
                   Directory="INSTALLFOLDER"
-                  ExeCommand="explorer.exe &quot;[StartupFolder]OpenLeanPrint.lnk&quot;"
+                  ExeCommand="explorer.exe &quot;[StartupFolder]Open-LeanPrint.lnk&quot;"
                   Execute="immediate" Return="asyncNoWait" />
 
     <InstallExecuteSequence>

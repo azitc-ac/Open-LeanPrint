@@ -1,6 +1,6 @@
-# OpenLeanPrint — context for Claude Code
+# Open-LeanPrint — context for Claude Code
 
-You are working on **OpenLeanPrint**, a modern, lightweight, open-source
+You are working on **Open-LeanPrint**, a modern, lightweight, open-source
 alternative to **FinePrint**: pool print jobs, impose them **N-up** (2-on-1,
 4-on-1, booklet) with a WYSIWYG dialog, and forward the result to a real
 printer. It is designed to run on **Windows on ARM (ARM64)** as well as x64 by
@@ -17,7 +17,7 @@ are running locally on Windows, **you can now verify those end to end** — that
 is a big part of why this handoff exists. Do it for real rather than assuming.
 
 The user's environment (from prior sessions): Windows, repo cloned under
-`…\Documents\GitHub\OpenLeanPrint`. `Add-Printer` needs an **elevated**
+`…\Documents\GitHub\Open-LeanPrint`. `Add-Printer` needs an **elevated**
 PowerShell. The account may run PowerShell in *Constrained Language Mode* — if a
 script is blocked, say so rather than working around security.
 
@@ -110,9 +110,9 @@ End-to-end capture test on Windows (see `docs/M1-CAPTURE.md`):
 1. Start the capture host (above), leave it running.
 2. **Elevated** PowerShell: `.\scripts\Register-Printer.ps1 -Port 6310`
    (or `Add-Printer -IppURL http://localhost:6310/leanprint`).
-3. Print to "OpenLeanPrint Virtual Printer" from any app.
+3. Print to "Open-LeanPrint Virtual Printer" from any app.
 4. The host logs the job and saves the PDF to
-   `%LOCALAPPDATA%\OpenLeanPrint\captured` (`CaptureLocations.DefaultFolder`;
+   `%LOCALAPPDATA%\Open-LeanPrint\captured` (`CaptureLocations.DefaultFolder`;
    `--out DIR` overrides). Deliberately not the working directory: captured jobs
    are the user's real documents and the repo lives in a synced OneDrive folder.
 5. `.\scripts\Unregister-Printer.ps1 -Port 6310` to clean up.
