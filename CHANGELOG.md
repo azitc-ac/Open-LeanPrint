@@ -4,6 +4,19 @@ All notable changes to Open-LeanPrint. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.1] — 2026-08-25
+
+### Fixed
+
+- **"Set up virtual printer…" did nothing.** No elevation prompt, no printer, no
+  explanation. The button insisted on the app hosting the loopback service
+  itself, and on an installed machine the Windows service already owns that
+  port - so the app's own listener could not start and the code returned before
+  it ever asked for the printer.
+
+  What matters is that *something* is answering, not that it is this app. It now
+  checks the endpoint, and only starts its own listener when nobody else is
+  serving it.
 ## [0.4.0] — 2026-08-25
 
 ### Changed

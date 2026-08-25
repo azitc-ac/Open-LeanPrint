@@ -1,4 +1,5 @@
 using System.IO;
+using System.Net.Http;
 using OpenLeanPrint.Capture;
 using OpenLeanPrint.Capture.Server;
 using Path = System.IO.Path;
@@ -46,6 +47,27 @@ internal sealed class CaptureService : IDisposable
 
         _server = server;
         Port = port;
+    }
+
+    /// <summary>
+    /// Whether something is already answering on the port - this app, the
+    /// Windows service, or a console host. Windows will only create the printer
+    /// queue while its endpoint responds, and it does not care which of the
+    /// three is responding.
+    /// </summary>
+    public static bool IsAnswering(int port = DefaultPort)
+    {
+        try
+        {
+            using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(3) };
+            using var response = client.GetAsync($"http://localhost:{port}/leanprint")
+                                       .GetAwaiter().GetResult();
+            return true;   // any answer at all means somebody is home
+        }
+        catch (Exception)
+        {
+            return false;
+        }
     }
 
     public void Stop()

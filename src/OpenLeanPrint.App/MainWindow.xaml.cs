@@ -1066,22 +1066,41 @@ public partial class MainWindow : Window
     /// service behind it is answering, so the service has to be up *first* -
     /// getting that order wrong is the whole reason this is one method.
     /// </summary>
+    /// <summary>
+    /// Creates the printer queue, which Windows will only do while its endpoint
+    /// answers.
+    /// <para>
+    /// Something has to be listening - but it does not have to be this app. On
+    /// an installed machine the Windows service owns the port, and insisting on
+    /// hosting it here meant the button did nothing whatsoever: our own listener
+    /// could not start, so the code returned before it ever asked for the
+    /// printer. No elevation prompt, no printer, no explanation.
+    /// </para>
+    /// </summary>
     private void CreatePrinter()
     {
-        if (!_service.IsRunning)
+        int port = CaptureService.DefaultPort;
+
+        if (_service.IsRunning)
         {
+            port = _service.Port;
+        }
+        else if (!CaptureService.IsAnswering(port))
+        {
+            // Nobody is serving it, so we will.
             SetCollecting(true);
-            if (!_service.IsRunning)
+            if (!_service.IsRunning || !CaptureService.IsAnswering(_service.Port))
             {
-                StatusText.Text = "Could not start the print service, so the printer cannot be created yet.";
+                StatusText.Text = "Nothing is listening for print jobs, so the printer cannot be created yet.";
                 return;
             }
+            port = _service.Port;
         }
 
         StatusText.Text = "Creating the printer…";
         StatusText.Dispatcher.Invoke(() => { }, DispatcherPriority.Render);
 
-        StatusText.Text = PrinterSetup.Register(_service.Port)
+        StatusText.Text = PrinterSetup.Register(port)
             ? "The Open-LeanPrint printer is ready - print to it from any application."
             : "The printer was not created. Administrator rights are needed for that one step.";
     }
