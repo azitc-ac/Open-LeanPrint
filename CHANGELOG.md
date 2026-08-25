@@ -126,17 +126,15 @@ wrong and the measurement said so.
 
   An existing printer queue keeps the capabilities it was created with. Uninstall
   and install again to pick this up.
-- **Uninstalling was slow, noisy and left the tray icon behind.** All three came
-  from one place: the app was running, Windows found its files in use and set
-  the Restart Manager on it - which asked the user to close applications, spent
-  about two minutes looking, and had the process terminated in the end. A
-  terminated process never takes its tray icon away, because the notification
-  area only drops an icon when its owner asks it to.
+- **Uninstalling was slow, noisy and left the tray icon behind.** The app was
+  running, Windows found its files in use and set the Restart Manager on it -
+  which asked the user to close applications, spent about two minutes looking,
+  and had the process terminated in the end. A terminated process never takes
+  its tray icon away, because the notification area only drops an icon when its
+  owner asks it to.
 
   The app is now asked to stop before any file is touched and shuts down through
-  its normal exit path, tray icon and all. With nothing of ours left running
-  there is nothing for the Restart Manager to find, so it is switched off - its
-  scan was where the two minutes went.
+  its normal exit path, tray icon and all, so there is nothing left to find.
 - Uninstalling removes `%ProgramData%\OpenLeanPrint`, which it used to leave
   behind entirely.
 - **2-up was close to useless.** It laid two upright pages side by side on an

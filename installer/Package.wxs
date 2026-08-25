@@ -44,10 +44,7 @@
     <Property Id="ARPPRODUCTICON" Value="AppIcon" />
     <Property Id="ARPURLINFOABOUT" Value="https://github.com/azitc-ac/Open-LeanPrint" />
     <Property Id="ARPNOREPAIR" Value="1" />
-    <!-- See the StopApp comment below: our own processes are stopped first, so
-         there is nothing for the Restart Manager to find and its scan is pure
-         delay. It was where an uninstall spent about two minutes. -->
-    <Property Id="MSIRESTARTMANAGERCONTROL" Value="Disable" />
+
 
     <WixVariable Id="WixUILicenseRtf" Value="License.rtf" />
     <!-- Minimal, deliberately: the InstallDir dialog pulls in a path-validation
@@ -187,9 +184,15 @@
 
       So the app is asked to stop first - through its own exit path, which is
       what takes the tray icon away; a terminated process never gets to. With
-      nothing of ours left running there is nothing for the Restart Manager to
-      find, which is also why MSIRESTARTMANAGERCONTROL is off: its scan is what
-      the two minutes were spent on.
+      nothing of ours running there is nothing left to find.
+
+      Turning the Restart Manager off was tried here and is deliberately not
+      done any more. MSIRESTARTMANAGERCONTROL=Disable does not remove the "please
+      close these applications" question; it only falls back to Windows
+      Installer's older and coarser detection, which then asked for unrelated
+      programs - Outlook, in one case, which had no file of ours open at all.
+      The modern mechanism is the more precise one, so it stays on and the app is
+      simply out of its way before it looks.
     -->
     <CustomAction Id="StopApp"
                   Directory="INSTALLFOLDER"
