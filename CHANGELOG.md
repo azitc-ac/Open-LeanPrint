@@ -4,6 +4,46 @@ All notable changes to OpenLeanPrint. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.2] — 2026-08-25
+
+### Added
+
+- **Right-click a job in the pool** to remove it, to put all its pages back in
+  the printing, or to empty the pool. The row under the pointer is selected
+  first, so the menu acts on the job it opened over rather than on whatever was
+  selected before.
+
+### Changed
+
+- **Jobs look like jobs.** Each is a white card with a border on a quieter
+  background, instead of plain rows on the same white as their container - a
+  list of three read as one block of text.
+- **The selected layout buttons are readable.** They had white text in the
+  template and black text on screen: WPF draws a button's label with a TextBlock
+  of its own, and the theme's implicit TextBlock style set a colour explicitly,
+  which beats anything the button inherits. Text colour now comes from the
+  window, and controls that want something else say so.
+
+- **A new icon.** The old one carried a 2x3 grid of pages: fine on a 256-pixel
+  tile, a grey smudge at 16, which is the size that matters most because the
+  notification area is where this app mostly sits. It is now two landscape pages
+  on a folded sheet - simpler, and what 2-up actually produces.
+- The icon has a generator in the repository (`scripts/New-Icon.ps1`) which
+  writes the `.ico`, the MSIX tiles and the README image in one run. The previous
+  one was drawn once by hand and left no way to make it again.
+
+### Documentation
+
+- Where captured jobs live now that the service writes them, that colour goes
+  through, page borders, *Print and close*, and the current test count.
+- `CLAUDE.md` records the four installer rules this week established the hard
+  way: the launch must not inherit the installer's token, the product code
+  follows the version while the upgrade code never changes, every build needs a
+  rising file version, and `MSIRESTARTMANAGERCONTROL` does not remove the
+  "please close these applications" question.
+- Two-sided printing is written up as closed on this side, with the measurements,
+  so nobody goes looking for it in `PdfPrinter` again.
+
 ## [0.3.1] — 2026-08-25
 
 ### Fixed

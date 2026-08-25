@@ -10,8 +10,14 @@
     <SolidColorBrush x:Key="Accent"     Color="#FF2F6FEB"/>
     <SolidColorBrush x:Key="Mat"        Color="#FF56565E"/>
 
+    <!--
+        Deliberately no Foreground here. WPF draws a button's text with a
+        TextBlock of its own, and an implicit style with an explicit Foreground
+        beats anything the button inherits - so a pressed preset was white text
+        on blue in the template and black text on blue on screen. Text colour
+        comes from the window, and controls that need something else say so.
+    -->
     <Style TargetType="TextBlock">
-        <Setter Property="Foreground" Value="{StaticResource Ink}"/>
         <Setter Property="VerticalAlignment" Value="Center"/>
     </Style>
 
@@ -78,6 +84,44 @@
         <Setter Property="Foreground" Value="White"/>
         <Setter Property="BorderBrush" Value="{StaticResource Accent}"/>
         <Setter Property="FontWeight" Value="SemiBold"/>
+    </Style>
+
+    <!--
+        A job in the pool is a card: white, framed, sitting on the quieter panel
+        behind it. As plain rows on the same white as their container they had no
+        edges at all, and a list of three jobs read as one block of text.
+    -->
+    <Style x:Key="JobCard" TargetType="ListBoxItem">
+        <Setter Property="Margin" Value="2,0,2,6"/>
+        <Setter Property="Padding" Value="10,8"/>
+        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ListBoxItem">
+                    <Border x:Name="Card" CornerRadius="5"
+                            Background="{StaticResource Panel}"
+                            BorderBrush="{StaticResource Line}"
+                            BorderThickness="1"
+                            Padding="{TemplateBinding Padding}">
+                        <ContentPresenter/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Card" Property="BorderBrush" Value="{StaticResource Accent}"/>
+                        </Trigger>
+                        <!-- Selected is a border and a tint, not a filled bar:
+                             the file name has to stay readable, and the pool is
+                             a list of documents rather than a menu. -->
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter TargetName="Card" Property="Background" Value="#FFEDF2FD"/>
+                            <Setter TargetName="Card" Property="BorderBrush" Value="{StaticResource Accent}"/>
+                            <Setter TargetName="Card" Property="BorderThickness" Value="1.6"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
     </Style>
 
     <!-- Layout presets stay pressed while active. -->

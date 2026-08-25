@@ -549,6 +549,47 @@ public partial class MainWindow : Window
         _ = RefreshAsync();
     }
 
+    /// <summary>Whether the last right-click landed on a job rather than below them.</summary>
+    private bool _rightClickedAJob;
+
+    /// <summary>
+    /// Right-clicking a job selects it first.
+    /// <para>
+    /// WPF opens the menu without selecting anything, so it would appear over
+    /// one job while its commands acted on whichever was selected before - and
+    /// "Remove" would take away the wrong one.
+    /// </para>
+    /// </summary>
+    private void JobList_RightButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        var row = ItemsControl.ContainerFromElement(JobList, (DependencyObject)e.OriginalSource) as ListBoxItem;
+        _rightClickedAJob = row is not null;
+        if (row is not null) row.IsSelected = true;
+    }
+
+    /// <summary>Right-clicking the empty space below the jobs offers nothing.</summary>
+    private void JobList_ContextMenuOpening(object sender, ContextMenuEventArgs e)
+    {
+        if (!_rightClickedAJob) e.Handled = true;
+    }
+
+    /// <summary>Puts every page of the selected job back into the printing.</summary>
+    private void RestoreJobPages_Click(object sender, RoutedEventArgs e)
+    {
+        if (JobList.SelectedItem is not JobItem job) return;
+        if (job.Pages.IsAll && job.Rotations.Count == 0) return;
+
+        job.Pages = PageSelection.All;
+        job.Rotations.Clear();
+        job.NotifySummaryChanged();
+
+        _suppressPagesEdit = true;
+        PagesBox.Text = string.Empty;
+        _suppressPagesEdit = false;
+
+        _ = RefreshAsync();
+    }
+
     private void RemoveJob_Click(object sender, RoutedEventArgs e)
     {
         int index = JobList.SelectedIndex;

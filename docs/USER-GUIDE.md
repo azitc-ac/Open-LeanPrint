@@ -104,7 +104,8 @@ To remove the printer again: **Remove virtual printer** in the app, or
 dotnet run --project src/OpenLeanPrint.App
 ```
 
-**Job pool (left).** Every PDF you add is one job — this is the list of what
+**Job pool (left).** Right-click a job to remove it, to put all its pages back
+into the printing, or to empty the pool. Every PDF you add is one job — this is the list of what
 will be printed, in the order it will be printed. Jobs share sheets: with 4-up,
 a three-page job leaves one cell of its last sheet for the job after it, which is
 the point of pooling in the first place. Reorder with the arrows, remove what you

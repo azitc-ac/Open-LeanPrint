@@ -3,6 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="OpenLeanPrint" Height="800" Width="1220" MinHeight="560" MinWidth="900"
         WindowStartupLocation="CenterScreen" Background="{StaticResource Chrome}"
+        Foreground="{StaticResource Ink}"
         Icon="pack://application:,,,/OpenLeanPrint;component/Assets/OpenLeanPrint.ico"
         AllowDrop="True" DragOver="Window_DragOver" Drop="Window_Drop">
 
@@ -96,8 +97,9 @@
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
 
-            <!-- Job pool -->
-            <Border Background="{StaticResource Panel}" BorderBrush="{StaticResource Line}" BorderThickness="0,0,1,0">
+            <!-- Job pool. The quieter of the two greys, so the white job cards
+                 have something to stand out from. -->
+            <Border Background="{StaticResource Chrome}" BorderBrush="{StaticResource Line}" BorderThickness="0,0,1,0">
                 <DockPanel>
                     <Border DockPanel.Dock="Top" Padding="14,12,14,8">
                         <StackPanel>
@@ -123,14 +125,36 @@
                     </Border>
 
                     <Grid>
-                        <ListBox x:Name="JobList" BorderThickness="0" Margin="6,0"
+                        <ListBox x:Name="JobList" BorderThickness="0" Margin="8,0"
+                                 Background="Transparent"
                                  SelectionChanged="JobList_SelectionChanged"
+                                 PreviewMouseRightButtonDown="JobList_RightButtonDown"
+                                 ContextMenuOpening="JobList_ContextMenuOpening"
                                  HorizontalContentAlignment="Stretch">
+                            <ListBox.ItemContainerStyle>
+                                <Style TargetType="ListBoxItem" BasedOn="{StaticResource JobCard}"/>
+                            </ListBox.ItemContainerStyle>
+
+                            <!-- The menu lives on the list, not in the item
+                                 style. Handlers on elements inside a
+                                 Setter.Value are wired by the XAML compiler
+                                 through connection ids and come out crossed -
+                                 it hands a MenuItem to a TextBlock handler and
+                                 the window will not open at all. Which row was
+                                 clicked is settled in code instead. -->
+                            <ListBox.ContextMenu>
+                                <ContextMenu>
+                                    <MenuItem Header="Remove from the pool" Click="RemoveJob_Click"/>
+                                    <MenuItem Header="Print all pages of this job" Click="RestoreJobPages_Click"/>
+                                    <Separator/>
+                                    <MenuItem Header="Empty the pool" Click="Clear_Click"/>
+                                </ContextMenu>
+                            </ListBox.ContextMenu>
                             <ListBox.ItemTemplate>
                                 <DataTemplate>
-                                    <StackPanel Margin="6,7">
+                                    <StackPanel>
                                         <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis"/>
-                                        <TextBlock Text="{Binding Summary}" FontSize="11"
+                                        <TextBlock Text="{Binding Summary}" FontSize="11" Margin="0,2,0,0"
                                                    Foreground="{StaticResource InkMuted}"/>
                                     </StackPanel>
                                 </DataTemplate>
