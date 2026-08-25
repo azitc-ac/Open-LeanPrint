@@ -72,6 +72,11 @@ jobs:
 
       # SignPath reads its input from here. Keep the name stable: a signing
       # request names the artifact it wants.
+      #
+      # This step warns that it targets Node 20. v5 is the current release and
+      # warns just the same - it is GitHub's own action lagging behind their
+      # runner, and the run is forced onto Node 24 regardless. Nothing to fix
+      # here; do not go chasing it again.
       - name: Upload the package
         uses: actions/upload-artifact@v5
         with:
