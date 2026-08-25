@@ -94,6 +94,15 @@ if (-not $version) { $version = "0.0.0" }
 Write-Host "  version : $version"
 Write-Host "  build   : $stamp   (in the file version, so installing replaces the old binaries)"
 
+# The product code has to follow the version: one that never changes makes
+# upgrading impossible (Windows skips a package whose code is already installed
+# and refuses with 1638), and one that changes per build makes the uninstall GUID
+# a moving target. Same family prefix as the upgrade code, version spelled out in
+# the last group.
+$parts = ($version -split "[.+-]")[0..2] | ForEach-Object { "{0:0000}" -f [int]$_ }
+$productCode = "6f4c6e50-7072-696e-7421-{0}" -f ($parts -join "")
+Write-Host "  product : {$($productCode.ToUpperInvariant())}"
+
 # The package platform decides where ProgramFiles6432Folder points: an x86
 # package would put an arm64 build into "Program Files (x86)".
 $platform = switch -Wildcard ($Runtime) {
@@ -104,7 +113,7 @@ $platform = switch -Wildcard ($Runtime) {
 Write-Host "  platform: $platform"
 
 dotnet build (Join-Path $installer "OpenLeanPrint.Installer.wixproj") `
-    --configuration Release -v minimal -p:ProductVersion=$version -p:Platform=$platform
+    --configuration Release -v minimal -p:ProductVersion=$version -p:ProductCode=$productCode -p:Platform=$platform
 if ($LASTEXITCODE -ne 0) { throw "The WiX build failed." }
 
 $msi = Get-ChildItem (Join-Path $installer "bin") -Recurse -Filter "OpenLeanPrint.msi" |
@@ -146,5 +155,6 @@ Write-Host "Done: $target ($size MB)" -ForegroundColor Green
 Write-Host "Installing it sets up the virtual printer as well - nothing further to do."
 Write-Host ""
 Write-Host "  install  : msiexec /i `"$target`" /qb"
-Write-Host "  uninstall: msiexec /x {6F4C6E50-7072-696E-7421-4F70656E4C50} /qb"
-Write-Host "The product code is fixed, so that uninstall line keeps working across builds."
+Write-Host "  uninstall: msiexec /x {$($productCode.ToUpperInvariant())} /qb"
+Write-Host "That uninstall line holds for every build of $version. Installing over an"
+Write-Host "older version upgrades it; no need to remove anything first."

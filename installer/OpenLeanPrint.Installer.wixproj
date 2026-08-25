@@ -11,8 +11,12 @@
     <OutputName>OpenLeanPrint</OutputName>
     <!-- Overridden by scripts\Build-Installer.ps1 so the package version
          matches the app it wraps. -->
-    <ProductVersion Condition="'$(ProductVersion)' == ''">0.2.0</ProductVersion>
-    <DefineConstants>ProductVersion=$(ProductVersion)</DefineConstants>
+    <ProductVersion Condition="'$(ProductVersion)' == ''">0.3.1</ProductVersion>
+    <!-- Derived from the version by the script: the same for every build of a
+         version, different for the next one, so upgrading works and the
+         uninstall GUID still holds still. -->
+    <ProductCode Condition="'$(ProductCode)' == ''">6f4c6e50-7072-696e-7421-000000030001</ProductCode>
+    <DefineConstants>ProductVersion=$(ProductVersion);ProductCode=$(ProductCode)</DefineConstants>
     <!-- ICE61 objects to AllowSameVersionUpgrades on principle; that setting is
          deliberate, so the check is not. -->
     <SuppressIces>ICE61</SuppressIces>

@@ -11,15 +11,26 @@
      xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
 
   <!--
-    Both identifiers are fixed. WiX would otherwise generate a fresh ProductCode
-    on every build, which makes each build a different product to Windows: the
-    uninstall GUID changes constantly, "msiexec /x" with a written-down GUID
-    stops working, and reinstalling can leave two entries behind.
+    The UpgradeCode is fixed for ever: it is what says "this is OpenLeanPrint",
+    and it is how Windows finds an older copy to replace.
+
+    The ProductCode changes with the version and only with the version, which is
+    a narrower rule than it first appears and both halves matter. Left to itself
+    WiX generates a new one on every build, so every build is a different product
+    to Windows - the uninstall GUID moves under your feet and a written-down
+    "msiexec /x" line stops working after the next build. Nailed to one value
+    instead, upgrading breaks: Windows skips a package whose ProductCode matches
+    something already installed, so it finds nothing to replace and refuses with
+    "another version of this product is already installed".
+
+    So Build-Installer.ps1 derives it from the version - same version, same code;
+    new version, new code - and the last group spells the version out, which
+    keeps it readable and keeps two releases from ever colliding.
   -->
   <Package Name="OpenLeanPrint"
            Manufacturer="Alexander Zarenko"
            Version="$(ProductVersion)"
-           ProductCode="6f4c6e50-7072-696e-7421-4f70656e4c50"
+           ProductCode="$(ProductCode)"
            UpgradeCode="6f4c6e50-7072-696e-7420-4f70656e4c50"
            Scope="perMachine"
            Compressed="yes">
