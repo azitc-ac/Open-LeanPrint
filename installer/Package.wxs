@@ -204,16 +204,24 @@
       service running the printer already works. asyncNoWait so the installer
       does not wait for the app to be closed again.
 
-      The full path is not decoration. With a relative program name and
-      Directory="INSTALLFOLDER" as the working directory the program is simply
-      not found: a throwaway package ran both forms side by side, and
+      It goes through Explorer, and that is the whole point. A custom action
+      inherits the installer's token, so starting the program directly started it
+      as whoever authorised the installation - on a machine where that is a
+      separate administrator account, the app then ran as that account, with its
+      profile, its documents in the file dialog, and administrator rights it has
+      no use for. An elevated window with a file browser in it is a way to run
+      anything as administrator, which is not something a print utility should
+      hand out.
 
-        probe.exe ...                   error 1721, nothing started
-        "[INSTALLFOLDER]probe.exe" ...  started
+      Asking Explorer to open the shortcut hands the launch to the session that
+      already has one, so the app runs as the person sitting there. If nothing
+      answers - a silent deployment, nobody logged in - then nothing starts,
+      which is the right way round for this to fail: never running is a nuisance,
+      running as an administrator is a hole.
 
-      The script actions above only look like the failing form. There the
-      program is powershell.exe, found on PATH, and only its argument is
-      relative - which is why they worked and this one silently did not.
+      The shortcut rather than the executable, because Explorer passes no
+      arguments of its own, and the switch that starts it hidden has to come
+      from somewhere.
 
       Where it is sequenced was measured too, after a first attempt moved it to
       the UI sequence and quietly made things worse:
@@ -229,7 +237,7 @@
     -->
     <CustomAction Id="LaunchApp"
                   Directory="INSTALLFOLDER"
-                  ExeCommand="&quot;[INSTALLFOLDER]OpenLeanPrint.exe&quot; --tray"
+                  ExeCommand="explorer.exe &quot;[StartupFolder]OpenLeanPrint.lnk&quot;"
                   Execute="immediate" Return="asyncNoWait" />
 
     <InstallExecuteSequence>

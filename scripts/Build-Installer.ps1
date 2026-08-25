@@ -50,9 +50,11 @@ if (-not $Output) { $Output = Join-Path $repo "dist" }
 # packaged file whose version is not higher than the installed one, so rebuilding
 # without this leaves the old binaries in place and the new code never runs.
 # Days-then-minutes keeps it rising, and both parts stay inside the 16 bits a
-# version field allows.
+# version field allows. TimeSpan.Days truncates; [int] on TotalDays would round,
+# which made an evening build and the next morning share a day number - and the
+# morning one then lost the comparison it was supposed to win.
 $now = (Get-Date).ToUniversalTime()
-$stamp = "{0}.{1}" -f [int]($now - [datetime]"2026-01-01").TotalDays, ($now.Hour * 60 + $now.Minute)
+$stamp = "{0}.{1}" -f ($now - [datetime]"2026-01-01").Days, ($now.Hour * 60 + $now.Minute)
 
 Write-Host "Building the OpenLeanPrint installer" -ForegroundColor Cyan
 Write-Host "  runtime : $Runtime"

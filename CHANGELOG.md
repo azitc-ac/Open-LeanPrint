@@ -4,6 +4,29 @@ All notable changes to OpenLeanPrint. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.1] — 2026-08-25
+
+### Fixed
+
+- **The installer started the app with administrator rights.** Its launch action
+  inherited the installer's token, so the app ran as whoever had authorised the
+  installation. Where that is a separate administrator account, the app then ran
+  as *that* account: its profile in the file dialog, its settings, and
+  administrator rights the app has no use for. A window with a file dialog in it
+  and administrator rights behind it is a way to reach the whole machine as
+  administrator, which is not something a print utility should hand out.
+
+  The launch now goes through Explorer, which hands it to the session that
+  already has one, so the app runs as the person sitting there. If nothing
+  answers - a silent deployment, nobody logged in - nothing starts, which is the
+  right way for this to fail: never running is a nuisance, running as
+  administrator is a hole.
+
+  Anyone who installed 0.3.0 has a copy running under the administrator account
+  until they log out. It shows up in Task Manager under a different user name.
+- The app records the account it is running under, and says so in the window if
+  that account is an administrator. Nothing here needs administrator rights.
+
 ## [0.3.0] — 2026-08-24
 
 The release that came out of using it. Everything here was found by printing

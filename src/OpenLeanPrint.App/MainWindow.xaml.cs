@@ -139,6 +139,14 @@ public partial class MainWindow : Window
         // appear before anything is on screen.
         Loaded += (_, _) => OfferPrinterSetup(settings);
 
+        // Said out loud rather than left to be noticed: nothing here needs
+        // administrator rights, and a window with a file dialog that has them is
+        // a way to reach the whole machine as administrator. It happened once,
+        // because the installer started the app and handed it its own token.
+        if (App.RunningElevated)
+            Loaded += (_, _) => StatusText.Text =
+                "Running as administrator. Nothing here needs that - close it and start it normally.";
+
         // "OpenLeanPrint a.pdf b.pdf" (or "Open with…") starts with a filled pool.
         var startupFiles = Environment.GetCommandLineArgs().Skip(1)
             .Where(path => File.Exists(path)).ToList();

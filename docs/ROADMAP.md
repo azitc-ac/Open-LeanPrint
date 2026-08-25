@@ -113,6 +113,16 @@ visual check on paper still open).
   what "blank" means.
 - ▶ Edge cases: mixed page sizes, very large jobs, high-DPI/multi-monitor preview.
 
+## Later
+
+- **More than one language.** The interface is English throughout and has no
+  localisation layer at all - strings sit in the XAML. German first, since that
+  is where it is being used. Worth knowing before starting: the printing
+  vocabulary does not translate word for word. *Impose* is `ausschießen` in the
+  trade and unknown outside it, so the interface would want what people already
+  read in Word - "Seiten pro Blatt" - with the trade term kept for the
+  documentation.
+
 ## Cross-cutting
 
 - ✅ CI on every push: a **Linux** job (portable core, cross-platform tests) and

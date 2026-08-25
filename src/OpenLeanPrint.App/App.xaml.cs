@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.IO;
+using System.Security.Principal;
 using System.Windows;
 using System.Windows.Threading;
 using Path = System.IO.Path;
@@ -16,6 +17,32 @@ public partial class App : Application
 
     private CaptureService? _headlessService;
     private SingleInstance? _instance;
+
+    /// <summary>
+    /// Whether this copy is running with administrator rights.
+    /// <para>
+    /// It should not be. Nothing the app does needs them - creating the printer
+    /// is the installer's job, and the button that offers to do it asks for
+    /// them separately. An elevated window with a file dialog in it is a way to
+    /// reach anything on the machine as administrator, so this is worth saying
+    /// out loud rather than leaving for somebody to notice.
+    /// </para>
+    /// </summary>
+    internal static bool RunningElevated { get; } = CheckElevation();
+
+    private static bool CheckElevation()
+    {
+        try
+        {
+            if (!OperatingSystem.IsWindows()) return false;
+            using var identity = WindowsIdentity.GetCurrent();
+            return new WindowsPrincipal(identity).IsInRole(WindowsBuiltInRole.Administrator);
+        }
+        catch (Exception)
+        {
+            return false;
+        }
+    }
 
     protected override void OnStartup(StartupEventArgs e)
     {
@@ -111,8 +138,9 @@ public partial class App : Application
             if (File.Exists(path) && new FileInfo(path).Length > 64 * 1024) File.Delete(path);
 
             using var process = Process.GetCurrentProcess();
-            File.AppendAllText(path, string.Format("{0:yyyy-MM-dd HH:mm:ss}  {1}  session {2}  {3}{4}",
-                DateTime.Now, Environment.UserName, process.SessionId, message, Environment.NewLine));
+            File.AppendAllText(path, string.Format("{0:yyyy-MM-dd HH:mm:ss}  {1}{2}  session {3}  {4}{5}",
+                DateTime.Now, Environment.UserName, RunningElevated ? " (elevated)" : string.Empty,
+                process.SessionId, message, Environment.NewLine));
         }
         catch (Exception)
         {
