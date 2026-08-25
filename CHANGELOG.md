@@ -4,6 +4,21 @@ All notable changes to Open-LeanPrint. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.2] — 2026-08-25
+
+### Fixed
+
+- **An installation could end with no printer.** Printer setup only ran on a
+  first install. Installing a package whose product was already registered
+  counted as "installed", so setup was skipped — and when a related product was
+  removed in the same transaction, its uninstall took the printer with it.
+  Nothing was left to put it back: an installed program, no printer, no
+  explanation.
+
+  Setup now runs on any installation that is not a removal, which makes it
+  self-healing — if the printer is ever missing, installing again brings it back.
+  The scripts were already safe to repeat: the printer step exits when a queue is
+  there, and the service step only replaces itself.
 ## [0.4.1] — 2026-08-25
 
 ### Fixed

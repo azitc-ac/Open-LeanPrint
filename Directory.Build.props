@@ -5,7 +5,7 @@
     (Linux/macOS CI as well as Windows), while the Windows app targets net8.0-windows.
   -->
   <PropertyGroup>
-    <Version>0.4.1</Version>
+    <Version>0.4.2</Version>
     <!--
       A build stamp in the file version, because Windows Installer decides
       whether to replace a file by comparing versions: a packaged file whose
